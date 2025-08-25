@@ -1,23 +1,24 @@
-import { a } from "../chunks/event-state.js";
+import { g } from "../chunks/event.js";
 import "@sveltejs/kit";
 import { q } from "../chunks/query.js";
 import "puppeteer";
+import "../chunks/event-state.js";
 import "../chunks/form.js";
 import "../chunks/false.js";
 import "../chunks/paths.js";
 const getF1Schedule = q(async () => {
-  const event = a();
+  const event = g();
   const pb = event.locals.pb;
   let races = await pb.collection("races").getFullList();
   return races;
 });
 const getNextRace = q(async () => {
-  const event = a();
+  const event = g();
   const pb = event.locals.pb;
   let races = await pb.collection("races").getFullList();
   const currentDate = Date.now();
   races = races.sort(
-    (a2, b) => Date.parse(a2.sessions[a2.sessions.length - 1].date) - Date.parse(b.sessions[b.sessions.length - 1].date)
+    (a, b) => Date.parse(a.sessions[a.sessions.length - 1].date) - Date.parse(b.sessions[b.sessions.length - 1].date)
   );
   for (const race of races) {
     const fullRaceDate = Date.parse(
@@ -30,7 +31,7 @@ const getNextRace = q(async () => {
   return races[0];
 });
 const getRaces = q(async () => {
-  const event = a();
+  const event = g();
   const pb = event.locals.pb;
   const races = await pb.collection("races").getFullList();
   return races;

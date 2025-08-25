@@ -1,12 +1,13 @@
-import { a } from "../chunks/event-state.js";
+import { g } from "../chunks/event.js";
 import "@sveltejs/kit";
 import { q } from "../chunks/query.js";
 import "puppeteer";
+import "../chunks/event-state.js";
 import "../chunks/form.js";
 import "../chunks/false.js";
 import "../chunks/paths.js";
 const getDrivers = q(async () => {
-  const event = a();
+  const event = g();
   const pb = event.locals.pb;
   let drivers = await pb.collection("drivers").getFullList({ sort: "-points" });
   return drivers;

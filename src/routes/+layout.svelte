@@ -60,7 +60,7 @@
 							</svg>
 						</label>
 					</div>
-					<div class="mx-2 px-2 text-center text-lg lg:min-w-[25%]">
+					<div class="mx-2 px-2 text-lg lg:min-w-[25%] lg:text-left">
 						{url == '/predictions'
 							? 'Predictions (' + titleCase(nextRaceQuery.current?.location) + ' GP)'
 							: titleCase(url.replace('/', '') || 'Home')}
