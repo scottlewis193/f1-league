@@ -2,9 +2,26 @@ import puppeteer from 'puppeteer';
 import type { Race, Team } from './types';
 
 export async function scrapeAll() {
-	const races = await scrapeF1Races();
-	const drivers = await scrapeDrivers();
-	const teams = await scrapeTeams();
+	let races;
+	let drivers;
+	let teams;
+	let scrapeAttempt = 1;
+	let scrapeSuccess = false;
+
+	while (!scrapeSuccess && scrapeAttempt <= 3) {
+		try {
+			races = await scrapeF1Races();
+			drivers = await scrapeDrivers();
+			teams = await scrapeTeams();
+			scrapeSuccess = true;
+		} catch (e) {
+			if (scrapeAttempt === 3) {
+				return { error: e };
+			}
+			scrapeAttempt++;
+		}
+	}
+
 	return { races, drivers, teams };
 }
 
@@ -37,6 +54,8 @@ export async function scrapeDrivers(season = '2025') {
 		});
 
 		return standings;
+	} catch (e) {
+		console.error(e);
 	} finally {
 		await browser.close();
 	}
@@ -69,6 +88,8 @@ export async function scrapeTeams(season = 2025) {
 		})) as unknown as Team[];
 
 		return standings;
+	} catch (e) {
+		console.error(e);
 	} finally {
 		await browser.close();
 	}

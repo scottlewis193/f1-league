@@ -30,14 +30,14 @@
 {#if currentPlayerQuery.ready}
 	{@const player = currentPlayerQuery.current}
 	<div in:fade class="card h-full w-full bg-base-100">
-		<div class="card-body">
+		<div class="card-body w-full">
 			<form id="profile-form" class="flex flex-col gap-4" {...updatePlayerProfile}>
 				<div>Name</div>
 				<input
 					type="text"
 					placeholder="Name"
 					name="name"
-					class="input"
+					class="input w-full"
 					maxlength="25"
 					value={player?.name}
 				/>
@@ -47,7 +47,7 @@
 					type="password"
 					placeholder="Current Password"
 					name="oldPassword"
-					class="input"
+					class="input w-full"
 					bind:this={oldPassword}
 				/>
 
@@ -56,7 +56,7 @@
 					type="password"
 					placeholder="New Password"
 					name="password"
-					class="input"
+					class="input w-full"
 					bind:this={password}
 				/>
 
@@ -65,7 +65,7 @@
 					type="password"
 					placeholder="Confirm Password"
 					name="passwordConfirm"
-					class="input"
+					class="input w-full"
 					bind:this={confirmPassword}
 					onchange={validateConfirmPassword}
 					onkeyup={validateConfirmPassword}

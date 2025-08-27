@@ -31,7 +31,7 @@
 					<tr>
 						<th>Pos</th>
 						<th>Player</th>
-						<th>Places</th>
+						<th>Place</th>
 						<th>Exact</th>
 						<th>Points</th>
 					</tr>

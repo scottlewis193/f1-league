@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/favicon.png';
 	import '$lib/pwa.ts';
 	import { page } from '$app/state';
 	import PlayersIcon from '$lib/components/PlayersIcon.svelte';
@@ -100,7 +100,7 @@
 				<!-- Page content here -->
 				<div class="flex h-full w-full flex-col items-center justify-center">
 					<div
-						class=" flex h-[calc(100svh-5rem)] min-h-[calc(100svh-5rem)] w-full max-w-5xl flex-col gap-4 p-4"
+						class=" flex h-[calc(100svh-5rem)] min-h-[calc(100svh-5rem)] w-full max-w-2xl flex-col gap-4 p-4"
 					>
 						{@render children?.()}
 					</div>

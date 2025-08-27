@@ -7,7 +7,12 @@ const ONE_HOUR = 60 * 60 * 1000;
 export async function refreshF1DataHourly() {
 	//scrape all data and update db every hour
 	console.log('Refreshing F1 data...', new Date());
-	const { drivers, teams, races } = await scrapeAll();
+	const { drivers, teams, races, error } = await scrapeAll();
+
+	if (!drivers || !teams || !races) {
+		console.log('F1 data failed to refresh', error, new Date());
+		return;
+	}
 
 	await updateDrivers(drivers);
 	await updateTeams(teams);

@@ -41,10 +41,10 @@ const login = f(async (data) => {
   }
   return redirect(303, `/`);
 });
-const logout = f(async () => {
+const logout = f(() => {
   const event = g();
   const pb = event.locals.pb;
-  await pb.authStore.clear();
+  pb.authStore.clear();
   return redirect(303, `/login`);
 });
 const register = f(async (data) => {
@@ -55,7 +55,7 @@ const register = f(async (data) => {
   if (password !== passwordConfirm) {
     return fail(400, { error: "Passwords do not match" });
   }
-  const user = await pb.collection("users").create({ name, email, password, passwordConfirm, verified: true });
+  const user = await pb.collection("users").create({ name, email, password, passwordConfirm });
   console.log(user);
   return redirect(303, `/login`);
 });

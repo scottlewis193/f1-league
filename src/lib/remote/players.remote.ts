@@ -50,10 +50,10 @@ export const login = form(async (data) => {
 	return redirect(303, `/`);
 });
 
-export const logout = form(async () => {
+export const logout = form(() => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
-	await pb.authStore.clear();
+	pb.authStore.clear();
 	return redirect(303, `/login`);
 });
 
@@ -67,9 +67,7 @@ export const register = form(async (data) => {
 		return fail(400, { error: 'Passwords do not match' });
 	}
 
-	const user = await pb
-		.collection('users')
-		.create({ name, email, password, passwordConfirm, verified: true });
+	const user = await pb.collection('users').create({ name, email, password, passwordConfirm });
 	console.log(user);
 
 	return redirect(303, `/login`);
