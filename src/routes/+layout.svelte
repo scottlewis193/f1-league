@@ -1,7 +1,8 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.png';
-	import '$lib/pwa.ts';
+	// import '$lib/pwa.ts';
+	import { useRegisterSW } from 'virtual:pwa-register/svelte';
 	import { page } from '$app/state';
 	import PlayersIcon from '$lib/components/PlayersIcon.svelte';
 	import DriversIcon from '$lib/components/DriversIcon.svelte';
@@ -27,6 +28,21 @@
 
 	const nextRaceQuery = getNextRace();
 
+	// Set up SW registration
+	const { needRefresh, updateServiceWorker } = useRegisterSW({
+		immediate: true,
+		onRegisteredSW(swUrl, r) {
+			console.log('SW registered:', swUrl, r);
+		},
+		onNeedRefresh() {
+			console.log('SW waiting to update...');
+		},
+		onOfflineReady() {
+			console.log('App ready to work offline');
+		}
+	});
+
+	//client init
 	onMount(async () => {
 		await subscribeToPush();
 	});
@@ -34,7 +50,9 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<link rel="manifest" href="/manifest.webmanifest" />
 </svelte:head>
+
 {#if url !== '/login' && url !== '/register'}
 	{#if nextRaceQuery.ready}
 		{@const nextRace = nextRaceQuery.current}
@@ -194,6 +212,36 @@
 				</form>
 			</li>
 		</ul>
+	{/if}
+	{#if $needRefresh}
+		<div
+			role="alert"
+			class="absolute bottom-6 left-[calc(50%-145px)] z-1000 alert flex bg-base-300"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				fill="none"
+				viewBox="0 0 24 24"
+				class="h-6 w-6 shrink-0 stroke-current"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+				></path>
+			</svg>
+			<span>New update available.</span>
+			<button
+				class="btn btn-sm btn-primary"
+				onclick={() => {
+					console.log('update');
+					updateServiceWorker(true).then(() => {
+						console.log('updateServiceWorker(true) resolved');
+					});
+				}}>Reload</button
+			>
+		</div>
 	{/if}
 {:else}
 	{@render children?.()}

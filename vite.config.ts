@@ -8,7 +8,7 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit(),
 		SvelteKitPWA({
-			registerType: 'autoUpdate',
+			registerType: 'prompt',
 			strategies: 'injectManifest',
 			srcDir: 'src',
 			filename: 'service-worker.js', // output SW for browser
@@ -32,5 +32,9 @@ export default defineConfig({
 				]
 			}
 		})
-	]
+	],
+	define: {
+		// Inject a global build timestamp
+		__BUILD_TIMESTAMP__: JSON.stringify(Date.now())
+	}
 });
