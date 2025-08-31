@@ -166,14 +166,17 @@ export async function scrapeF1Races(season = '2025') {
 					return { date, time, title };
 				});
 
-				const currentResultsType = document
-					.querySelector<HTMLSpanElement>(
-						'#maincontent > div > div:nth-child(2) > div > div > div:nth-child(4) > div > span > span > button > span > span'
-					)
-					?.innerText.trim();
-				if (currentResultsType !== 'Race') return { raceName, sessions, raceResults: [] };
+				const raceResultBtn = [...document.querySelectorAll('button')].find(
+					(btn) => btn.textContent?.trim() === 'Race Result'
+				);
 
-				//get race results if exists. First table element on page
+				//#maincontent > div > div:nth-child(2) > div > div > div:nth-child(4) > div.flex.flex-col.md\:flex-row.justify-between.gap-px-16 > span > span > button > span > span
+				//#maincontent > div > div:nth-child(2) > div > div > div:nth-child(4) > div.flex.flex-col.md\:flex-row.justify-between.gap-px-16 > span > span > button > span > span
+				if (!raceResultBtn) {
+					return { raceName, sessions, raceResults: [] };
+				}
+
+				//get race results if exists. First table element on pageflex.flex-col.md\\:flex-row.justify-between.gap-px-16
 				const raceResultsTbl = document.querySelector<HTMLTableElement>('table');
 				if (!raceResultsTbl) return { raceName, sessions, raceResults: [] };
 				const raceResultItems = Array.from(

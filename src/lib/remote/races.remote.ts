@@ -21,13 +21,29 @@ export const getNextRace = query(async () => {
 	const currentDate = Date.now();
 	races = races.sort(
 		(a, b) =>
-			Date.parse(a.sessions[a.sessions.length - 1].date) -
-			Date.parse(b.sessions[b.sessions.length - 1].date)
+			Date.parse(
+				a.sessions[a.sessions.length - 1].date +
+					' ' +
+					new Date(currentDate).getFullYear() +
+					' ' +
+					a.sessions[a.sessions.length - 1].time
+			) -
+			Date.parse(
+				b.sessions[a.sessions.length - 1].date +
+					' ' +
+					new Date(currentDate).getFullYear() +
+					' ' +
+					b.sessions[b.sessions.length - 1].time
+			)
 	);
 
 	for (const race of races) {
 		const fullRaceDate = Date.parse(
-			race.sessions[race.sessions.length - 1].date + ' ' + new Date(currentDate).getFullYear()
+			race.sessions[race.sessions.length - 1].date +
+				' ' +
+				new Date(currentDate).getFullYear() +
+				' ' +
+				race.sessions[race.sessions.length - 1].time
 		);
 
 		if (fullRaceDate > currentDate) {
