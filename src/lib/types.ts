@@ -9,6 +9,8 @@ export type Player = {
 	id: string;
 	name: string;
 	points: number;
+	place: number;
+	exact: number;
 };
 
 export type Team = {

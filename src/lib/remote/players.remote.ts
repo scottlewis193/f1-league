@@ -1,13 +1,33 @@
 import { form, getRequestEvent, query } from '$app/server';
 import type { Player } from '$lib/types';
 import { fail, redirect } from '@sveltejs/kit';
+import { getPredictions } from './predictions.remote';
+import { getRaces } from './races.remote';
+import { getPlayerStats } from '$lib/utils';
 
 export const getPlayers = query(async () => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
 
-	const players: Player[] = await pb.collection('users').getFullList();
-	return players;
+	const players: Partial<Player>[] = await pb.collection('users').getFullList();
+	let playersWithStats: Player[] = [];
+
+	const submissions = await getPredictions();
+	const races = await getRaces();
+
+	players.forEach((player) => {
+		const id = player.id || '';
+		const name = player.name || '';
+		playersWithStats.push({
+			id,
+			name,
+			...getPlayerStats(id, submissions, races)
+		});
+	});
+
+	playersWithStats.sort((a, b) => b.points - a.points);
+
+	return playersWithStats;
 });
 
 export const getCurrentPlayer = query(async () => {

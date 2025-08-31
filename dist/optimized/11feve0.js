@@ -2,14 +2,31 @@ import { g } from "../chunks/event.js";
 import { fail, redirect } from "@sveltejs/kit";
 import { f } from "../chunks/form.js";
 import { q } from "../chunks/query.js";
+import { getPredictions } from "./lrcjri.js";
+import { getRaces } from "./pkzxfy.js";
+import { g as g$1 } from "../chunks/utils.js";
 import "../chunks/event-state.js";
 import "../chunks/false.js";
 import "../chunks/paths.js";
+import "puppeteer";
 const getPlayers = q(async () => {
   const event = g();
   const pb = event.locals.pb;
   const players = await pb.collection("users").getFullList();
-  return players;
+  let playersWithStats = [];
+  const submissions = await getPredictions();
+  const races = await getRaces();
+  players.forEach((player) => {
+    const id = player.id || "";
+    const name = player.name || "";
+    playersWithStats.push({
+      id,
+      name,
+      ...g$1(id, submissions, races)
+    });
+  });
+  playersWithStats.sort((a, b) => b.points - a.points);
+  return playersWithStats;
 });
 const getCurrentPlayer = q(async () => {
   const event = g();

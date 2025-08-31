@@ -32,7 +32,7 @@ export function getPointsGained(race: Race, submission: Prediction) {
 
 export function getPlayerStats(user: string, submissions: Prediction[], races: Race[]) {
 	let points = 0;
-	let places = 0;
+	let place = 0;
 	let exact = 0;
 	let userSubmissions = submissions.filter((submission) => submission.expand.user.id === user);
 
@@ -47,7 +47,7 @@ export function getPlayerStats(user: string, submissions: Prediction[], races: R
 			//if driver is in top 3
 			if (race.raceResults.includes(driverName)) {
 				points += 1;
-				places += 1;
+				place += 1;
 			}
 
 			//if driver is in exact finishing position
@@ -58,7 +58,7 @@ export function getPlayerStats(user: string, submissions: Prediction[], races: R
 		}
 	}
 
-	return { points, places, exact };
+	return { points, place, exact };
 }
 
 export function userHasSubmitted(submissions: Prediction[], user: string) {

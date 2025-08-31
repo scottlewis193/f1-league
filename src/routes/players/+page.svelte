@@ -8,8 +8,6 @@
 	import { PUBLIC_PB_URL } from '$env/static/public';
 	import { onMount } from 'svelte';
 	const query = getPlayers();
-	const submissionsQuery = getPredictions();
-	const racesQuery = getRaces();
 	const pb = new PocketBase(PUBLIC_PB_URL);
 
 	onMount(() => {
@@ -25,7 +23,7 @@
 			<div class="flex h-full w-full items-center justify-center">
 				<span class="loading loading-md loading-spinner"></span>
 			</div>
-		{:else if query.ready && submissionsQuery.ready && racesQuery.ready}
+		{:else if query.ready}
 			<table class="table">
 				<thead>
 					<tr>
@@ -38,17 +36,12 @@
 				</thead>
 				<tbody>
 					{#each query.current as player, index}
-						{@const stats = getPlayerStats(
-							pb.authStore.record?.id || '',
-							submissionsQuery.current,
-							racesQuery.current
-						)}
 						<tr>
 							<td>{index + 1}</td>
 							<td>{player.name}</td>
-							<td>{stats.places}</td>
-							<td>{stats.exact}</td>
-							<td>{stats.points}</td>
+							<td>{player.place}</td>
+							<td>{player.exact}</td>
+							<td>{player.points}</td>
 						</tr>
 					{/each}
 				</tbody>
