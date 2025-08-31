@@ -202,8 +202,8 @@ export async function scrapeF1Races(season = '2025') {
 		await browser.close();
 		allRaces.sort((a, b) => Date.parse(a.sessions[0].date) - Date.parse(b.sessions[0].date));
 		return allRaces;
-	} catch (err) {
+	} catch (e) {
 		await browser.close();
-		throw err;
+		console.error(e);
 	}
 }
