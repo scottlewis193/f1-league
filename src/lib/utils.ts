@@ -41,19 +41,23 @@ export function getPlayerStats(user: string, submissions: Prediction[], races: R
 		if (!race) continue;
 		if (!race.raceResults) continue;
 
+		const top3 = race.raceResults.slice(0, 3);
+
 		for (let i = 0; i < submission.predictions.length; i++) {
 			const driverName = submission.predictions[i];
 
 			//if driver is in top 3
-			if (race.raceResults.includes(driverName)) {
+			if (top3.includes(driverName)) {
 				points += 1;
 				place += 1;
+				continue;
 			}
 
 			//if driver is in exact finishing position
-			if (race.raceResults[i] === driverName) {
+			if (top3[i] === driverName) {
 				points += 3;
 				exact += 1;
+				continue;
 			}
 		}
 	}
