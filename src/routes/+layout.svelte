@@ -18,13 +18,16 @@
 	import { onMount } from 'svelte';
 	import { subscribeToPush } from '$lib/subscribe';
 	import { logout } from '$lib/remote/players.remote';
-
+	import { Confetti } from 'svelte-confetti';
+	import ConfettiContainer from '$lib/components/ConfettiContainer.svelte';
 	let { children, data } = $props();
 	const url = $derived(page.url.pathname);
 	// svelte-ignore non_reactive_update
 	let drawerToggle: HTMLInputElement;
 	// svelte-ignore non_reactive_update
 	let userPopover: HTMLElement;
+	// svelte-ignore non_reactive_update
+	let updateModal: HTMLDialogElement;
 
 	const nextRaceQuery = getNextRace();
 
@@ -42,9 +45,14 @@
 		}
 	});
 
+	let isDecember = new Date().getMonth() === 12;
+
 	//client init
 	onMount(async () => {
 		await subscribeToPush();
+		if ($needRefresh) {
+			updateModal.showModal();
+		}
 	});
 </script>
 
@@ -106,7 +114,7 @@
 						</div>
 						<div class="avatar avatar-placeholder items-center">
 							<button
-								class="h-12 w-12 rounded-full bg-neutral text-neutral-content"
+								class="h-12 w-12 cursor-pointer rounded-full bg-neutral text-neutral-content"
 								popovertarget="popover-1"
 								style="anchor-name:--anchor-1"
 							>
@@ -213,36 +221,48 @@
 			</li>
 		</ul>
 	{/if}
-	{#if $needRefresh}
-		<div
-			role="alert"
-			class="absolute bottom-6 left-[calc(50%-145px)] z-1000 alert flex bg-base-300"
-		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				fill="none"
-				viewBox="0 0 24 24"
-				class="h-6 w-6 shrink-0 stroke-current"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-				></path>
-			</svg>
-			<span>New update available.</span>
-			<button
-				class="btn btn-sm btn-primary"
-				onclick={() => {
-					console.log('update');
-					updateServiceWorker(true).then(() => {
-						console.log('updateServiceWorker(true) resolved');
-					});
-				}}>Reload</button
-			>
+
+	<!-- Open the modal using ID.showModal() method -->
+
+	<dialog
+		bind:this={updateModal}
+		id="updateModal"
+		class="modal modal-bottom w-[100vw] sm:modal-middle"
+	>
+		<div class="modal-box">
+			<h3 class="text-lg font-bold">New Update Available!</h3>
+			<p class="py-4">Changelog</p>
+			<div class="modal-action">
+				<button
+					class="btn btn-sm btn-primary"
+					onclick={() => {
+						console.log('update');
+						updateServiceWorker(true).then(() => {
+							console.log('updateServiceWorker(true) resolved');
+						});
+					}}>Reload</button
+				>
+			</div>
 		</div>
-	{/if}
+	</dialog>
 {:else}
 	{@render children?.()}
+{/if}
+
+<!-- Snow confetti effect for christmas -->
+{#if isDecember}
+	<ConfettiContainer toggleOnce relative={false} activeOnMount>
+		<div class="fixed top-[-50px] left-0 flex h-[100vh] w-[100vw] justify-center overflow-hidden">
+			<Confetti
+				colorArray={['#ffffff']}
+				x={[-5, 5]}
+				y={[0, 0.1]}
+				delay={[500, 2000]}
+				infinite
+				duration={7500}
+				amount={200}
+				fallDistance="100vh"
+			/>
+		</div>
+	</ConfettiContainer>
 {/if}

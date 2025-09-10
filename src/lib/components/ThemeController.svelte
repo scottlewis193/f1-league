@@ -72,7 +72,7 @@ nord, sunset, caramellatte, abyss, silk
 	});
 </script>
 
-<div class="dropdown mb-72">
+<div class="dropdown">
 	<div tabindex="0" role="button" class="btn w-52">
 		{_theme}
 		<svg

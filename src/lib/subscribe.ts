@@ -55,6 +55,7 @@
 // }
 
 import { PUBLIC_VAPID_PUBLIC_KEY } from '$env/static/public';
+import pb from './pocketbase';
 
 function urlBase64ToUint8Array(base64String: string) {
 	const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -75,6 +76,12 @@ export async function subscribeToPush() {
 	const existing = await registration.pushManager.getSubscription();
 	if (existing) {
 		await existing.unsubscribe();
+		//remove from db
+		const record = await pb
+			.collection('subscriptions')
+			.getFirstListItem(`endpoint="${existing.endpoint}"`);
+		await pb.collection('subscriptions').delete(record.id);
+
 		console.log('Old push subscription removed');
 	}
 

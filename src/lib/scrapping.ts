@@ -1,10 +1,14 @@
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import type { Race, Team } from './types';
+
+puppeteer.use(StealthPlugin());
 
 export async function scrapeAll() {
 	let races;
 	let drivers;
 	let teams;
+	let odds;
 	let scrapeAttempt = 1;
 	let scrapeSuccess = false;
 
@@ -13,6 +17,7 @@ export async function scrapeAll() {
 			races = await scrapeF1Races();
 			drivers = await scrapeDrivers();
 			teams = await scrapeTeams();
+			odds = await scrapeOdds();
 			scrapeSuccess = true;
 		} catch (e) {
 			if (scrapeAttempt === 3) {
@@ -22,7 +27,7 @@ export async function scrapeAll() {
 		}
 	}
 
-	return { races, drivers, teams };
+	return { races, drivers, teams, odds };
 }
 
 export async function scrapeDrivers(season = '2025') {
@@ -34,6 +39,7 @@ export async function scrapeDrivers(season = '2025') {
 	const page = await browser.newPage();
 
 	try {
+		console.log(`Scraping F1 Drivers: ${url}`);
 		await page.goto(url);
 
 		// Wait for the standings table to load
@@ -70,6 +76,7 @@ export async function scrapeTeams(season = 2025) {
 	const page = await browser.newPage();
 
 	try {
+		console.log(`Scraping F1 Teams: ${url}`);
 		await page.goto(url);
 
 		// Wait for the standings table to load
@@ -104,7 +111,7 @@ export async function scrapeF1Races(season = '2025') {
 	const page = await browser.newPage();
 
 	try {
-		console.log(`Loading season schedule: ${baseUrl}`);
+		console.log(`Scraping F1 Races: ${baseUrl}`);
 		await page.goto(baseUrl);
 
 		// Wait for race cards to load
@@ -210,3 +217,64 @@ export async function scrapeF1Races(season = '2025') {
 		console.error(e);
 	}
 }
+
+export const scrapeOdds = async () => {
+	const baseUrl = 'https://www.oddschecker.com';
+	const url = `${baseUrl}/motorsport/formula-1`;
+	const browser = await puppeteer.launch({
+		headless: true,
+		args: ['--no-sandbox', '--disable-setuid-sandbox']
+	});
+	const page = await browser.newPage();
+
+	try {
+		console.log(`Scraping F1 Race Odds: ${url}`);
+		await page.goto(url);
+
+		await page.waitForNetworkIdle({ idleTime: 1000 });
+
+		//wait for outrights div
+		await page.waitForSelector('#outrights > div');
+
+		//click menu button
+		await page.locator('#mid-nav > div.container > div > button').click();
+
+		//change to decimal odds
+		await page.locator('#odds-type > label:nth-child(4)').click();
+
+		await page.waitForNetworkIdle({ idleTime: 1000 });
+
+		//click view all odds link for podium finish
+		const viewAllOddsUrl = (await page.$eval(
+			'#outrights > div > div:nth-child(2) > span > h3 > a',
+			(el) => el.getAttribute('href')
+		)) as string;
+
+		await page.goto(baseUrl + viewAllOddsUrl);
+
+		//wait for event table
+		await page.waitForSelector('table.eventTable');
+
+		//iterate over table rows and grab driver name and odds
+		const driverOdds = await page.evaluate(() => {
+			const driverOdds: { driverName: string; odds: number }[] = [];
+			const table = document.querySelector('table.eventTable');
+			const rows = table?.querySelectorAll('tbody > tr');
+			rows?.forEach((row) => {
+				const driverName =
+					row.querySelector<HTMLAnchorElement>(
+						'td.sel.nm.basket-active > span.float-wrap.name-wrap > span > div > a'
+					)?.innerText || '';
+				const odds = row.querySelector<HTMLParagraphElement>('td > p')?.innerText || '';
+				driverOdds.push({ driverName, odds: Number(odds) });
+			});
+			return driverOdds;
+		});
+
+		await browser.close();
+		return driverOdds;
+	} catch (e) {
+		await browser.close();
+		console.error(e);
+	}
+};

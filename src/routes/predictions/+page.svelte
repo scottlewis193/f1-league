@@ -8,10 +8,12 @@
 	import { fade } from 'svelte/transition';
 	import PocketBase from 'pocketbase';
 	import { onMount } from 'svelte';
+	import { getNextRaceOdds } from '$lib/remote/odds.remote';
 
 	const driversQuery = getDrivers();
 	const predictionsQuery = getNextRacePredictions();
 	const nextRaceQuery = getNextRace();
+	const oddsQuery = getNextRaceOdds();
 	const pb = new PocketBase(PUBLIC_PB_URL);
 
 	onMount(() => {
@@ -22,9 +24,9 @@
 	let submissionModal: HTMLDialogElement;
 
 	let driverSelections = $state({
-		Driver1st: { value: 'Select a Driver', lastChanged: false },
-		Driver2nd: { value: 'Select a Driver', lastChanged: false },
-		Driver3rd: { value: 'Select a Driver', lastChanged: false }
+		Driver1st: { value: 'Select a Driver', lastChanged: false, place: 0, exact: 0 },
+		Driver2nd: { value: 'Select a Driver', lastChanged: false, place: 0, exact: 0 },
+		Driver3rd: { value: 'Select a Driver', lastChanged: false, place: 0, exact: 0 }
 	});
 
 	let userSubmissionId: string = $state('');
@@ -52,7 +54,7 @@
 			Date.parse(firstSession.date + ' ' + year + ' ' + firstSession.time)
 		);
 
-		return now > raceWeekendStartDate;
+		return now < raceWeekendStartDate;
 	};
 
 	$effect(() => {
@@ -64,6 +66,16 @@
 		if (!lastChangedDriverSelection) {
 			return;
 		}
+
+		//update place and exact based on selection
+		lastChangedDriverSelection.place =
+			oddsQuery.current?.find(
+				(oddsRecord) => oddsRecord.expand.driver.name === lastChangedDriverSelection.value
+			)?.pointsForPlace || 0;
+		lastChangedDriverSelection.exact =
+			oddsQuery.current?.find(
+				(oddsRecord) => oddsRecord.expand.driver.name === lastChangedDriverSelection.value
+			)?.pointsForExact || 0;
 
 		for (const driver of Object.values(driverSelections)) {
 			if (driver.value === lastChangedDriverSelection.value && !driver.lastChanged) {
@@ -80,7 +92,7 @@
 	<div class="flex h-full w-full items-center justify-center">
 		<span class="loading loading-md loading-spinner"></span>
 	</div>
-{:else if predictionsQuery.ready && nextRaceQuery.ready && driversQuery.ready}
+{:else if predictionsQuery.ready && nextRaceQuery.ready && driversQuery.ready && oddsQuery.ready}
 	<div in:fade class="card h-full w-full overflow-auto bg-base-100">
 		<div class="card-body">
 			<table class="table">
@@ -108,7 +120,7 @@
 		</div>
 	</div>
 	<button
-		disabled={isSubmissionWindowOpen()}
+		disabled={!isSubmissionWindowOpen()}
 		onclick={() => {
 			loadUserSelections();
 			submissionModal.showModal();
@@ -120,49 +132,92 @@
 	>
 
 	<!--submission modal-->
-	<dialog bind:this={submissionModal} id="submission-modal" class="modal">
-		<div class="modal-box flex h-100 justify-center">
-			<button
-				onclick={() => submissionModal.close()}
-				class="btn absolute top-2 right-2 btn-circle btn-ghost btn-sm">✕</button
-			>
-			<div class="flex justify-center">
-				<form class="flex flex-col justify-center gap-4" {...addUpdatePrediction}>
-					<div class="flex flex-col items-center gap-4">
-						<div>
-							<SubmissionSelect
-								id="1st"
-								bind:driver={driverSelections.Driver1st}
-								drivers={driversQuery.current.map((driver) => driver.name)}
-							/>
-						</div>
-						<div>
-							<SubmissionSelect
-								id="2nd"
-								bind:driver={driverSelections.Driver2nd}
-								drivers={driversQuery.current.map((driver) => driver.name)}
-							/>
-						</div>
-						<div>
-							<SubmissionSelect
-								id="3rd"
-								bind:driver={driverSelections.Driver3rd}
-								drivers={driversQuery.current.map((driver) => driver.name)}
-							/>
-						</div>
-
-						<!-- submit raceNo with hidden input -->
-						<input type="hidden" name="race-id" value={nextRaceQuery.current.id} />
-						<input type="hidden" name="id" value={userSubmissionId} />
-					</div>
-					<!-- if there is a button in form, it will close the modal -->
+	<dialog bind:this={submissionModal} id="submission-modal" class="modal overflow-hidden">
+		<div class="modal-box flex justify-center overflow-hidden">
+			<form class="flex flex-col justify-center gap-4" {...addUpdatePrediction}>
+				<div class="flex justify-end">
 					<button
-						type="submit"
-						class="btn mt-4 btn-secondary"
-						onclick={() => submissionModal.close()}>Submit</button
+						type="button"
+						onclick={() => submissionModal.close()}
+						class="btn btn-circle btn-ghost btn-sm">✕</button
 					>
-				</form>
-			</div>
+				</div>
+				<div class="overflow-hidden rounded-box border border-base-content/5 bg-base-100">
+					<table class="table">
+						<!-- head -->
+						<thead>
+							<tr>
+								<th>Position</th>
+								<th>Driver</th>
+								<th>Place</th>
+								<th>Exact</th>
+							</tr>
+						</thead>
+						<tbody>
+							<!-- row 1 -->
+							<tr>
+								<th>1st</th>
+								<td>
+									<SubmissionSelect
+										id="1st"
+										bind:driver={driverSelections.Driver1st}
+										drivers={driversQuery.current.map((driver) => driver.name)}
+									/></td
+								>
+								<td>{driverSelections.Driver1st.place}</td>
+								<td>{driverSelections.Driver1st.exact}</td>
+							</tr>
+							<!-- row 2 -->
+							<tr>
+								<th>2nd</th>
+								<td>
+									<SubmissionSelect
+										id="2nd"
+										bind:driver={driverSelections.Driver2nd}
+										drivers={driversQuery.current.map((driver) => driver.name)}
+									/></td
+								>
+								<td>{driverSelections.Driver2nd.place}</td>
+								<td>{driverSelections.Driver2nd.exact}</td>
+							</tr>
+							<!-- row 3 -->
+							<tr>
+								<th>3rd</th>
+								<td>
+									<SubmissionSelect
+										id="3rd"
+										bind:driver={driverSelections.Driver3rd}
+										drivers={driversQuery.current.map((driver) => driver.name)}
+									/></td
+								>
+								<td>{driverSelections.Driver3rd.place}</td>
+								<td>{driverSelections.Driver3rd.exact}</td>
+							</tr>
+							<tr class="h-16">
+								<th></th>
+								<td class="text-right font-bold">Total</td>
+								<td
+									>{Object.values(driverSelections)
+										.map((driver) => driver.place)
+										.reduce((a, b) => a + b, 0)}</td
+								><td
+									>{Object.values(driverSelections)
+										.map((driver) => driver.exact)
+										.reduce((a, b) => a + b, 0)}</td
+								>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<!-- submit raceNo with hidden input -->
+				<input type="hidden" name="race-id" value={nextRaceQuery.current.id} />
+				<input type="hidden" name="id" value={userSubmissionId} />
+
+				<!-- if there is a button in form, it will close the modal -->
+				<button type="submit" class="btn mt-4 btn-secondary" onclick={() => submissionModal.close()}
+					>Submit</button
+				>
+			</form>
 		</div>
 	</dialog>
 {/if}

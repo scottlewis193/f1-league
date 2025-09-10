@@ -1,4 +1,5 @@
 <script>
+	import Select from '$lib/components/Select.svelte';
 	import ThemeController from '$lib/components/ThemeController.svelte';
 	import { fade } from 'svelte/transition';
 </script>
@@ -8,6 +9,11 @@
 		<div class="flex flex-col gap-4">
 			<div>Theme</div>
 			<ThemeController />
+		</div>
+		<div class="flex flex-col gap-4">
+			<div>Test</div>
+
+			<Select name="test" options={['false', 'true']} />
 		</div>
 	</div>
 </div>

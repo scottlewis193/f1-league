@@ -42,3 +42,13 @@ export type Race = {
 	raceResults: string[];
 	year: number;
 };
+
+export type OddsRecord = {
+	id: string;
+	driver: string;
+	race: string;
+	odds: number;
+	pointsForPlace: number;
+	pointsForExact: number;
+	expand: { driver: Driver; race: Race };
+};

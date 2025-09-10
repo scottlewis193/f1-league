@@ -1,6 +1,7 @@
 import { getRequestEvent, query } from '$app/server';
 import { scrapeF1Races } from '$lib/scrapping';
 import type { Race } from '$lib/types';
+import pb from '../server/pocketbase';
 
 let lastFetch = 0;
 const ONE_HOUR = 60 * 60 * 1000;

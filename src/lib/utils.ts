@@ -1,3 +1,4 @@
+import { getNextRace } from './remote/races.remote';
 import type { Race, Prediction } from './types';
 
 export function titleCase(str: string) {
@@ -67,4 +68,10 @@ export function getPlayerStats(user: string, submissions: Prediction[], races: R
 
 export function userHasSubmitted(submissions: Prediction[], user: string) {
 	return submissions.some((submission) => submission.expand.user.id === user);
+}
+
+export function oddsToPoints(odds: number) {
+	const a = Math.round((odds - 0.01) * 2);
+	const b = a > 10 ? Math.floor(a / 10) * 10 : a;
+	return b;
 }

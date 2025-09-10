@@ -3,7 +3,11 @@
 		drivers,
 		driver = $bindable(),
 		id
-	}: { drivers: string[]; driver: { value: string; lastChanged: boolean }; id: string } = $props();
+	}: {
+		drivers: string[];
+		driver: { value: string; lastChanged: boolean; place: number; exact: number };
+		id: string;
+	} = $props();
 
 	let userPopover: HTMLElement;
 
@@ -17,7 +21,7 @@
 </script>
 
 <div class="flex gap-2">
-	<div class="flex w-7 items-center justify-center text-center">{id}</div>
+	<!-- <div class="flex w-7 items-center justify-center text-center">{id}</div> -->
 	<button
 		type="button"
 		tabindex="0"
