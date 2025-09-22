@@ -10,10 +10,5 @@
 			<div>Theme</div>
 			<ThemeController />
 		</div>
-		<div class="flex flex-col gap-4">
-			<div>Test</div>
-
-			<Select name="test" options={['false', 'true']} />
-		</div>
 	</div>
 </div>

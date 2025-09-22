@@ -1,5 +1,5 @@
 import { getNextRace } from './remote/races.remote';
-import type { Race, Prediction } from './types';
+import type { Race, Prediction, OddsRecord } from './types';
 
 export function titleCase(str: string) {
 	return str.replace(/\w\S*/g, function (txt) {
@@ -31,39 +31,57 @@ export function getPointsGained(race: Race, submission: Prediction) {
 	return pointsGained;
 }
 
-export function getPlayerStats(user: string, submissions: Prediction[], races: Race[]) {
+export function getPlayerStats(
+	user: string,
+	submissions: Prediction[],
+	races: Race[],
+	odds: OddsRecord[]
+) {
 	let points = 0;
 	let place = 0;
 	let exact = 0;
+	let lastPointsEarned = 0;
 	let userSubmissions = submissions.filter((submission) => submission.expand.user.id === user);
 
 	for (const submission of userSubmissions) {
 		const race = races.find((race) => race.id === submission.expand.race.id);
 		if (!race) continue;
 		if (!race.raceResults) continue;
+		const raceOdds = odds.filter((odd) => odd.race === race.id);
+		if (!raceOdds) continue;
 
 		const top3 = race.raceResults.slice(0, 3);
 
 		for (let i = 0; i < submission.predictions.length; i++) {
 			const driverName = submission.predictions[i];
+			const raceDriverOdds = raceOdds.find((odd) => odd.expand.driver.name == driverName);
+			if (!raceDriverOdds) continue;
 
 			//if driver is in top 3
 			if (top3.includes(driverName)) {
-				points += 1;
+				points += raceDriverOdds.pointsForPlace;
+				lastPointsEarned +=
+					submission === userSubmissions[userSubmissions.length - 1]
+						? raceDriverOdds.pointsForPlace
+						: 0;
 				place += 1;
 				continue;
 			}
 
 			//if driver is in exact finishing position
 			if (top3[i] === driverName) {
-				points += 3;
+				points += raceDriverOdds.pointsForExact;
+				lastPointsEarned +=
+					submission === userSubmissions[userSubmissions.length - 1]
+						? raceDriverOdds.pointsForExact
+						: 0;
 				exact += 1;
 				continue;
 			}
 		}
 	}
 
-	return { points, place, exact };
+	return { points, place, exact, lastPointsEarned };
 }
 
 export function userHasSubmitted(submissions: Prediction[], user: string) {

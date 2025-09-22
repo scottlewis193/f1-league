@@ -8,7 +8,10 @@ export type Prediction = {
 export type Player = {
 	id: string;
 	name: string;
+	email: string;
+	displayLatestResultsDialog: boolean;
 	points: number;
+	lastPointsEarned: number;
 	place: number;
 	exact: number;
 };

@@ -1,10 +1,34 @@
 import PocketBase from 'pocketbase';
 import { PUBLIC_PB_URL } from '$env/static/public';
 import { redirect, type ServerInit } from '@sveltejs/kit';
-import webPush from 'web-push';
-import { refreshF1DataHourly } from '$lib/server/data';
+import { refreshF1DataHourly, updateOdds } from '$lib/server/data';
+import { getOdds } from '$lib/remote/odds.remote';
+import pb from '$lib/server/pocketbase';
+import type { OddsRecord } from '$lib/types';
 
-export const init: ServerInit = () => {
+export const init: ServerInit = async () => {
+	// const odds: OddsRecord[] = await pb.collection('odds').getFullList({ expand: 'driver,race' });
+
+	// for (let odd of odds) {
+	// 	await pb.collection('odds').create({
+	// 		driver: odd.expand.driver.id,
+	// 		odds: odd.odds,
+	// 		pointsForPlace: odd.pointsForPlace,
+	// 		pointsForExact: odd.pointsForExact,
+	// 		race: '99saqy43eo8bb3s'
+	// 	});
+	// }
+
+	// for (let odd of odds) {
+	// 	await pb.collection('odds').create({
+	// 		driver: odd.expand.driver.id,
+	// 		odds: odd.odds,
+	// 		pointsForPlace: odd.pointsForPlace,
+	// 		pointsForExact: odd.pointsForExact,
+	// 		race: '8s08skmfhr48nhq'
+	// 	});
+	// }
+
 	refreshF1DataHourly();
 };
 

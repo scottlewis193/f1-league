@@ -17,7 +17,7 @@
 	import { titleCase } from '$lib/utils';
 	import { onMount } from 'svelte';
 	import { subscribeToPush } from '$lib/subscribe';
-	import { logout } from '$lib/remote/players.remote';
+	import { logout, updateCurrentPlayer } from '$lib/remote/players.remote';
 	import { Confetti } from 'svelte-confetti';
 	import ConfettiContainer from '$lib/components/ConfettiContainer.svelte';
 	let { children, data } = $props();
@@ -28,6 +28,8 @@
 	let userPopover: HTMLElement;
 	// svelte-ignore non_reactive_update
 	let updateModal: HTMLDialogElement;
+	// svelte-ignore non_reactive_update
+	let raceResultsDialog: HTMLDialogElement;
 
 	const nextRaceQuery = getNextRace();
 
@@ -50,8 +52,11 @@
 	//client init
 	onMount(async () => {
 		await subscribeToPush();
-		if ($needRefresh) {
-			updateModal.showModal();
+		if ($needRefresh) updateModal.showModal();
+		if (data.user.displayLatestResultsDialog) {
+			raceResultsDialog.showModal();
+
+			setTimeout(() => {}, 3000); //remove container-container element after 2 seconds so user can click close button in dialog
 		}
 	});
 </script>
@@ -222,8 +227,6 @@
 		</ul>
 	{/if}
 
-	<!-- Open the modal using ID.showModal() method -->
-
 	<dialog
 		bind:this={updateModal}
 		id="updateModal"
@@ -243,6 +246,30 @@
 					}}>Reload</button
 				>
 			</div>
+		</div>
+	</dialog>
+
+	<dialog bind:this={raceResultsDialog} class="modal w-[100vw]">
+		<div class="modal-box">
+			<h3 class="text-lg font-bold">Congratulations!</h3>
+			<p class="py-4">You have earned {data.user.lastPointsEarned} point(s)</p>
+			<div class="modal-action">
+				<button
+					class="btn btn-sm btn-primary"
+					onclick={async () => {
+						const currentPlayer = data.user;
+						currentPlayer.displayLatestResultsDialog = false;
+						await updateCurrentPlayer(currentPlayer);
+						raceResultsDialog.close();
+					}}>Close</button
+				>
+			</div>
+		</div>
+		<div
+			id="confetti-container"
+			class="absolute bottom-0 left-0 flex h-[calc(100%-10rem)] w-full items-center justify-center overflow-hidden"
+		>
+			<Confetti duration={2000} delay={[2675, 2675]} />
 		</div>
 	</dialog>
 {:else}

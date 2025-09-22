@@ -29,7 +29,7 @@
 </script>
 
 <div onclick={click} class:relative class="w-fit">
-	<button class="btn">Test</button>
+	<!-- <button class="btn">Test</button> -->
 	{#if active}
 		<div class="confetti">
 			{@render children?.()}

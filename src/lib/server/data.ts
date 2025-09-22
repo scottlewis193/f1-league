@@ -197,7 +197,7 @@ async function updateRaces(races: Partial<Race>[]) {
 	}
 }
 
-async function updateOdds(
+export async function updateOdds(
 	odds: { driverName: string; odds: number }[],
 	drivers: Partial<Driver>[]
 ) {

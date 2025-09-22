@@ -1,9 +1,10 @@
-import { form, getRequestEvent, query } from '$app/server';
+import { command, form, getRequestEvent, query } from '$app/server';
 import type { Player } from '$lib/types';
 import { fail, redirect } from '@sveltejs/kit';
 import { getPredictions } from './predictions.remote';
 import { getRaces } from './races.remote';
 import { getPlayerStats } from '$lib/utils';
+import { getOdds } from './odds.remote';
 
 export const getPlayers = query(async () => {
 	const event = getRequestEvent();
@@ -14,6 +15,7 @@ export const getPlayers = query(async () => {
 
 	const submissions = await getPredictions();
 	const races = await getRaces();
+	const odds = await getOdds();
 
 	players.forEach((player) => {
 		const id = player.id || '';
@@ -21,7 +23,9 @@ export const getPlayers = query(async () => {
 		playersWithStats.push({
 			id,
 			name,
-			...getPlayerStats(id, submissions, races)
+			email: player.email || '',
+			displayLatestResultsDialog: player.displayLatestResultsDialog || false,
+			...getPlayerStats(id, submissions, races, odds)
 		});
 	});
 
@@ -35,7 +39,26 @@ export const getCurrentPlayer = query(async () => {
 	const pb = event.locals.pb;
 	if (!event.locals.user?.id) return;
 	const player: Player = await pb.collection('users').getOne(event.locals.user?.id);
-	return player;
+
+	const submissions = await getPredictions();
+	const races = await getRaces();
+	const odds = await getOdds();
+
+	const playerWithStats = {
+		id: player.id,
+		name: player.name,
+		email: player.email,
+		displayLatestResultsDialog: player.displayLatestResultsDialog || false,
+		...getPlayerStats(player.id, submissions, races, odds)
+	};
+
+	return playerWithStats;
+});
+
+export const updateCurrentPlayer = command('unchecked', async (playerData: Player) => {
+	const event = getRequestEvent();
+	const pb = event.locals.pb;
+	await pb.collection('users').update(event.locals.user?.id || '', playerData);
 });
 
 export const updatePlayerProfile = form(async (data) => {
