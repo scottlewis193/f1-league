@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { getCurrentPlayer, updatePlayerProfile } from '$lib/remote/players.remote';
-	import { get } from 'svelte/store';
 	import { fade } from 'svelte/transition';
 
 	let oldPassword: HTMLInputElement;

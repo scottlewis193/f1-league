@@ -1,5 +1,4 @@
 <script>
-	import Select from '$lib/components/Select.svelte';
 	import ThemeController from '$lib/components/ThemeController.svelte';
 	import { fade } from 'svelte/transition';
 </script>

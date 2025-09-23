@@ -1,4 +1,4 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 
 export const load = async ({ url, locals }) => {
 	if (locals.pb.authStore.record) {

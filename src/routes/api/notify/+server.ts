@@ -1,4 +1,3 @@
-// src/routes/api/notify/+server.ts
 import { type RequestHandler } from '@sveltejs/kit';
 import { sendNotifications } from '$lib/notifications';
 

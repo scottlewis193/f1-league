@@ -24,9 +24,9 @@
 	let submissionModal: HTMLDialogElement;
 
 	let driverSelections = $state({
-		Driver1st: { value: 'Select a Driver', lastChanged: false, place: 0, exact: 0 },
-		Driver2nd: { value: 'Select a Driver', lastChanged: false, place: 0, exact: 0 },
-		Driver3rd: { value: 'Select a Driver', lastChanged: false, place: 0, exact: 0 }
+		Driver1st: { value: 'Driver', lastChanged: false, place: 0, exact: 0 },
+		Driver2nd: { value: 'Driver', lastChanged: false, place: 0, exact: 0 },
+		Driver3rd: { value: 'Driver', lastChanged: false, place: 0, exact: 0 }
 	});
 
 	let userSubmissionId: string = $state('');
@@ -134,8 +134,8 @@
 	<!--submission modal-->
 	<dialog bind:this={submissionModal} id="submission-modal" class="modal overflow-hidden">
 		<div class="modal-box flex justify-center overflow-hidden">
-			<form class="flex flex-col justify-center gap-4" {...addUpdatePrediction}>
-				<div class="flex justify-end">
+			<form class="flex flex-col justify-center" {...addUpdatePrediction}>
+				<div class="flex justify-end gap-4">
 					<button
 						type="button"
 						onclick={() => submissionModal.close()}
@@ -147,10 +147,10 @@
 						<!-- head -->
 						<thead>
 							<tr>
-								<th>Position</th>
+								<th>Pos</th>
 								<th>Driver</th>
-								<th>Place</th>
-								<th>Exact</th>
+								<th>Pl</th>
+								<th>Ex</th>
 							</tr>
 						</thead>
 						<tbody>

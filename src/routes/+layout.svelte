@@ -30,6 +30,8 @@
 	let updateModal: HTMLDialogElement;
 	// svelte-ignore non_reactive_update
 	let raceResultsDialog: HTMLDialogElement;
+	// svelte-ignore non_reactive_update
+	let confettiContainer: HTMLDivElement;
 
 	const nextRaceQuery = getNextRace();
 
@@ -56,7 +58,9 @@
 		if (data.user.displayLatestResultsDialog) {
 			raceResultsDialog.showModal();
 
-			setTimeout(() => {}, 3000); //remove container-container element after 2 seconds so user can click close button in dialog
+			setTimeout(() => {
+				confettiContainer.remove();
+			}, 5000); //remove container-container element so user can click close button in dialog
 		}
 	});
 </script>
@@ -66,7 +70,7 @@
 	<link rel="manifest" href="/manifest.webmanifest" />
 </svelte:head>
 
-{#if url !== '/login' && url !== '/register'}
+{#if url !== '/login'}
 	{#if nextRaceQuery.ready}
 		{@const nextRace = nextRaceQuery.current}
 		<div class="drawer">
@@ -266,10 +270,11 @@
 			</div>
 		</div>
 		<div
+			bind:this={confettiContainer}
 			id="confetti-container"
 			class="absolute bottom-0 left-0 flex h-[calc(100%-10rem)] w-full items-center justify-center overflow-hidden"
 		>
-			<Confetti duration={2000} delay={[2675, 2675]} />
+			<Confetti duration={2000} delay={[1500, 1500]} />
 		</div>
 	</dialog>
 {:else}

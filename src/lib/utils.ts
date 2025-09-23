@@ -1,4 +1,3 @@
-import { getNextRace } from './remote/races.remote';
 import type { Race, Prediction, OddsRecord } from './types';
 
 export function titleCase(str: string) {
@@ -42,6 +41,14 @@ export function getPlayerStats(
 	let exact = 0;
 	let lastPointsEarned = 0;
 	let userSubmissions = submissions.filter((submission) => submission.expand.user.id === user);
+	let historyEntries: {
+		location: string;
+		predictions: string[];
+		results: string[];
+		points: number[];
+		place: string[];
+		exact: string[];
+	}[] = [];
 
 	for (const submission of userSubmissions) {
 		const race = races.find((race) => race.id === submission.expand.race.id);
@@ -52,6 +59,22 @@ export function getPlayerStats(
 
 		const top3 = race.raceResults.slice(0, 3);
 
+		let historyEntry: {
+			location: string;
+			predictions: string[];
+			results: string[];
+			points: number[];
+			place: string[];
+			exact: string[];
+		} = {
+			location: race.location,
+			results: top3,
+			predictions: submission.predictions,
+			points: [0, 0, 0],
+			place: ['No', 'No', 'No'],
+			exact: ['No', 'No', 'No']
+		};
+
 		for (let i = 0; i < submission.predictions.length; i++) {
 			const driverName = submission.predictions[i];
 			const raceDriverOdds = raceOdds.find((odd) => odd.expand.driver.name == driverName);
@@ -60,28 +83,36 @@ export function getPlayerStats(
 			//if driver is in top 3
 			if (top3.includes(driverName)) {
 				points += raceDriverOdds.pointsForPlace;
+
 				lastPointsEarned +=
 					submission === userSubmissions[userSubmissions.length - 1]
 						? raceDriverOdds.pointsForPlace
 						: 0;
 				place += 1;
-				continue;
+
+				historyEntry.points[i] += raceDriverOdds.pointsForPlace;
+				historyEntry.place[i] = 'Yes';
 			}
 
 			//if driver is in exact finishing position
-			if (top3[i] === driverName) {
+
+			if (top3[i] == driverName) {
 				points += raceDriverOdds.pointsForExact;
 				lastPointsEarned +=
 					submission === userSubmissions[userSubmissions.length - 1]
 						? raceDriverOdds.pointsForExact
 						: 0;
 				exact += 1;
-				continue;
+
+				historyEntry.points[i] += raceDriverOdds.pointsForExact;
+				historyEntry.exact[i] = 'Yes';
 			}
 		}
+
+		historyEntries.push(historyEntry);
 	}
 
-	return { points, place, exact, lastPointsEarned };
+	return { points, place, exact, lastPointsEarned, historyEntries };
 }
 
 export function userHasSubmitted(submissions: Prediction[], user: string) {

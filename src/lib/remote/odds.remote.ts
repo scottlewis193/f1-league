@@ -1,7 +1,5 @@
-import { browser } from '$app/environment';
 import { getRequestEvent, query } from '$app/server';
-import { scrapeDrivers } from '$lib/scrapping';
-import type { Driver, OddsRecord } from '$lib/types';
+import type { OddsRecord } from '$lib/types';
 import { getNextRace } from './races.remote';
 
 export const getOdds = query(async () => {

@@ -14,6 +14,14 @@ export type Player = {
 	lastPointsEarned: number;
 	place: number;
 	exact: number;
+	historyEntries: {
+		location: string;
+		predictions: string[];
+		results: string[];
+		points: number[];
+		place: string[];
+		exact: string[];
+	}[];
 };
 
 export type Team = {

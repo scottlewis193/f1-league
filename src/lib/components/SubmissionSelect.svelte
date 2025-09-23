@@ -25,7 +25,7 @@
 	<button
 		type="button"
 		tabindex="0"
-		class="btn grid w-52 grid-flow-col grid-cols-[0.5rem_1fr_0.5rem]"
+		class="btn grid w-36 grid-flow-col grid-cols-[0.5rem_1fr_0.5rem]"
 		popovertarget={id}
 		style="anchor-name:--anchor-{id}"
 	>
@@ -44,7 +44,7 @@
 </div>
 <ul
 	bind:this={userPopover}
-	class="dropdown-content dropdown h-52 w-52 overflow-y-auto rounded-box bg-base-300 p-2 shadow-2xl"
+	class="dropdown-content dropdown h-52 w-36 overflow-y-auto rounded-box bg-base-300 p-2 shadow-2xl"
 	popover
 	{id}
 	style="position-anchor:--anchor-{id}; bottom:anchor(top); position:absolute;"

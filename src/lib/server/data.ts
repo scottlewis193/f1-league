@@ -214,7 +214,7 @@ export async function updateOdds(
 			race: currentRace.id,
 			odds: odd.odds || 0,
 			pointsForPlace: oddsToPoints(odd.odds || 1),
-			pointsForExact: oddsToPoints(odd.odds || 1) * 4
+			pointsForExact: oddsToPoints(odd.odds || 1) * 3
 		};
 
 		oddsRecords.push(oddsRecord);

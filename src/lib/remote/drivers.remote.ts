@@ -1,5 +1,4 @@
 import { getRequestEvent, query } from '$app/server';
-import { scrapeDrivers } from '$lib/scrapping';
 import type { Driver } from '$lib/types';
 
 export const getDrivers = query(async () => {

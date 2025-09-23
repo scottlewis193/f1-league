@@ -275,6 +275,7 @@ export const scrapeOdds = async () => {
 		return driverOdds;
 	} catch (e) {
 		await browser.close();
-		console.error(e);
+		console.log(`Warning: Odds Not Available (${page.url()})`);
+		return [];
 	}
 };
