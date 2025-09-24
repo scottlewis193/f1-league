@@ -8,7 +8,7 @@
 			<p class="text-2xl">Objective</p>
 			<p>Predict the top 3 drivers at the end of each race</p>
 			<br />
-			<p class="text-2xl">Prediction Submissions</p>
+			<p class="text-2xl">Predictions</p>
 			<p>Predictions submissions close at the start of FP1</p>
 			<p>You can change them at any time between these times</p>
 			<br />

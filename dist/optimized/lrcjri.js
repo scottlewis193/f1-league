@@ -3,10 +3,10 @@ import { redirect } from "@sveltejs/kit";
 import { f } from "../chunks/form.js";
 import { q } from "../chunks/query.js";
 import { getNextRace } from "./pkzxfy.js";
-import "../chunks/event-state.js";
+import "../chunks/command.js";
 import "../chunks/false.js";
+import "../chunks/event-state.js";
 import "../chunks/paths.js";
-import "puppeteer";
 const getPredictions = q(async () => {
   const event = g();
   const pb = event.locals.pb;

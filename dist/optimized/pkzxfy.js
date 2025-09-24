@@ -1,10 +1,10 @@
 import { g } from "../chunks/event.js";
 import "@sveltejs/kit";
 import { q } from "../chunks/query.js";
-import "puppeteer";
-import "../chunks/event-state.js";
+import "../chunks/command.js";
 import "../chunks/form.js";
 import "../chunks/false.js";
+import "../chunks/event-state.js";
 import "../chunks/paths.js";
 const getF1Schedule = q(async () => {
   const event = g();

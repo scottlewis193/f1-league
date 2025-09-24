@@ -238,7 +238,7 @@
 	>
 		<div class="modal-box">
 			<h3 class="text-lg font-bold">New Update Available!</h3>
-			<p class="py-4">Changelog</p>
+			<p class="py-4">Click reload to update</p>
 			<div class="modal-action">
 				<button
 					class="btn btn-sm btn-primary"

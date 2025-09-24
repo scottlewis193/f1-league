@@ -3,6 +3,11 @@
 	themes: all;
 }
 
+@plugin "./catppuccinTheme.latte.ts";
+@plugin "./catppuccinTheme.frappe.ts";
+@plugin "./catppuccinTheme.macchiato.ts";
+@plugin "./catppuccinTheme.mocha.ts";
+
 html,
 body {
 	@apply h-full w-full overflow-hidden bg-base-200;

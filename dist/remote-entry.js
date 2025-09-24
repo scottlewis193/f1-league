@@ -1,42 +1,18 @@
-import { g } from "./chunks/event.js";
-import { c, r, g as g$2, p } from "./chunks/query.js";
-import { q } from "./chunks/query.js";
-import { g as g$1, a, b as b$1, s } from "./chunks/event-state.js";
+import { c } from "./chunks/command.js";
 import { f } from "./chunks/form.js";
 import { error, json } from "@sveltejs/kit";
 import { D } from "./chunks/false.js";
+import { g } from "./chunks/event.js";
+import { g as g$1, a, b as b$1, s } from "./chunks/event-state.js";
 import { b, c as c$1 } from "./chunks/paths.js";
-// @__NO_SIDE_EFFECTS__
-function command(validate_or_fn, maybe_fn) {
-  const fn = maybe_fn ?? validate_or_fn;
-  const validate = c(validate_or_fn, maybe_fn);
-  const __ = { type: "command", id: "", name: "" };
-  const wrapper = (arg) => {
-    const event = g();
-    if (!event.isRemoteRequest) {
-      throw new Error(
-        `Cannot call a command (\`${__.name}(${maybe_fn ? "..." : ""})\`) during server-side rendering`
-      );
-    }
-    g$1(event).refreshes ??= {};
-    const promise = Promise.resolve(r(event, true, arg, validate, fn));
-    promise.updates = () => {
-      throw new Error(`Cannot call '${__.name}(...).updates(...)' on the server`);
-    };
-    return (
-      /** @type {ReturnType<RemoteCommand<Input, Output>>} */
-      promise
-    );
-  };
-  Object.defineProperty(wrapper, "__", { value: __ });
-  return wrapper;
-}
+import { c as c2, g as g$2, p, r } from "./chunks/query.js";
+import { q } from "./chunks/query.js";
 // @__NO_SIDE_EFFECTS__
 function prerender(validate_or_fn, fn_or_options, maybe_options) {
   const maybe_fn = typeof fn_or_options === "function" ? fn_or_options : void 0;
   const options = maybe_options ?? (maybe_fn ? void 0 : fn_or_options);
   const fn = maybe_fn ?? validate_or_fn;
-  const validate = c(validate_or_fn, maybe_fn);
+  const validate = c2(validate_or_fn, maybe_fn);
   const __ = {
     type: "prerender",
     id: "",
@@ -105,7 +81,7 @@ function prerender(validate_or_fn, fn_or_options, maybe_options) {
   return wrapper;
 }
 export {
-  command,
+  c as command,
   f as form,
   prerender,
   q as query

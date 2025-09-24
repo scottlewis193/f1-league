@@ -44,7 +44,11 @@ nord, sunset, caramellatte, abyss, silk
 		'sunset',
 		'caramellatte',
 		'abyss',
-		'silk'
+		'silk',
+		'frappe',
+		'latte',
+		'macchiato',
+		'mocha'
 	];
 
 	const setTheme = (theme: string) => {
