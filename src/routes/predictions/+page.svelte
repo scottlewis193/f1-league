@@ -41,6 +41,23 @@
 			driverSelections.Driver2nd.value = userPredictions.predictions[1];
 			driverSelections.Driver3rd.value = userPredictions.predictions[2];
 			userSubmissionId = userPredictions.id;
+
+			const driver1stOddsPointsPotential = getDriverOddsPointsPotential(
+				driverSelections.Driver1st.value
+			);
+			const driver2ndOddsPointsPotential = getDriverOddsPointsPotential(
+				driverSelections.Driver2nd.value
+			);
+			const driver3rdOddsPointsPotential = getDriverOddsPointsPotential(
+				driverSelections.Driver3rd.value
+			);
+
+			driverSelections.Driver1st.place = driver1stOddsPointsPotential.place;
+			driverSelections.Driver2nd.place = driver2ndOddsPointsPotential.place;
+			driverSelections.Driver3rd.place = driver3rdOddsPointsPotential.place;
+			driverSelections.Driver1st.exact = driver1stOddsPointsPotential.exact;
+			driverSelections.Driver2nd.exact = driver2ndOddsPointsPotential.exact;
+			driverSelections.Driver3rd.exact = driver3rdOddsPointsPotential.exact;
 		}
 	}
 
