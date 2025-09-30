@@ -31,7 +31,7 @@
 
 	let userSubmissionId: string = $state('');
 
-	const loadUserSelections = () => {
+	function loadUserSelections() {
 		if (!predictionsQuery.ready) return;
 		const userPredictions = predictionsQuery.current.find(
 			(submission) => submission.expand.user.id === pb.authStore.record?.id
@@ -42,9 +42,9 @@
 			driverSelections.Driver3rd.value = userPredictions.predictions[2];
 			userSubmissionId = userPredictions.id;
 		}
-	};
+	}
 
-	const isSubmissionWindowOpen = () => {
+	function isSubmissionWindowOpen() {
 		if (!nextRaceQuery.ready) return false;
 		const firstSession = nextRaceQuery.current.sessions[0];
 		const year = nextRaceQuery.current.year;
@@ -55,7 +55,17 @@
 		);
 
 		return now < raceWeekendStartDate;
-	};
+	}
+
+	function getDriverOddsPointsPotential(driverName: string) {
+		const driverOddsRecord = oddsQuery.current?.find(
+			(oddsRecord) => oddsRecord.expand.driver.name === driverName
+		);
+		return {
+			place: driverOddsRecord?.pointsForPlace || 0,
+			exact: driverOddsRecord?.pointsForExact || 0
+		};
+	}
 
 	$effect(() => {
 		//this is to check if the user has selected the same driver for more than one position
@@ -98,21 +108,65 @@
 			<table class="table">
 				<thead>
 					<tr>
-						<th>Player</th>
-						<th>1st</th>
-						<th>2nd</th>
-						<th>3rd</th>
-						<!-- <th>Points Gained</th> -->
+						<th class="w-1/4">Player</th>
+						<th class="w-1/4">1st</th>
+						<th class="w-1/4">2nd</th>
+						<th class="w-1/4">3rd</th>
 					</tr>
 				</thead>
 				<tbody>
 					{#each predictionsQuery.current as submission, index}
+						{@const driver1stOddsPointsPotential = getDriverOddsPointsPotential(
+							submission.predictions[0]
+						)}
+						{@const driver2ndOddsPointsPotential = getDriverOddsPointsPotential(
+							submission.predictions[1]
+						)}
+						{@const driver3rdOddsPointsPotential = getDriverOddsPointsPotential(
+							submission.predictions[2]
+						)}
 						<tr>
-							<td>{submission.expand.user.name}</td>
-							<td>{submission.predictions[0]}</td>
-							<td>{submission.predictions[1]}</td>
-							<td>{submission.predictions[2]}</td>
-							<!-- <td>{getPointsGained(nextRaceQuery.current, submission)}</td> -->
+							<td class="font-bold">{submission.expand.user.name}</td>
+							<td>
+								<div class="flex flex-col">
+									<div>{submission.predictions[0]}</div>
+									<div class="flex opacity-50">
+										<div class="w-1/2">Pl</div>
+										<div class="w-1/2 text-right">{driver1stOddsPointsPotential.place}</div>
+									</div>
+									<div class="flex opacity-50">
+										<div class="w-1/2">Ex</div>
+										<div class="w-1/2 text-right">{driver1stOddsPointsPotential.exact}</div>
+									</div>
+								</div>
+							</td>
+							<td>
+								<div class="flex flex-col">
+									<div>{submission.predictions[1]}</div>
+									<div class="flex opacity-50">
+										<div class="w-1/2">Pl</div>
+										<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.place}</div>
+									</div>
+									<div class="flex opacity-50">
+										<div class="w-1/2">Ex</div>
+										<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.exact}</div>
+									</div>
+								</div>
+							</td>
+							<td>
+								<div class="flex flex-col">
+									<div>{submission.predictions[2]}</div>
+
+									<div class="flex opacity-50">
+										<div class="w-1/2">Pl</div>
+										<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.place}</div>
+									</div>
+									<div class="flex opacity-50">
+										<div class="w-1/2">Ex</div>
+										<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.exact}</div>
+									</div>
+								</div>
+							</td>
 						</tr>
 					{/each}
 				</tbody>
@@ -134,30 +188,30 @@
 	<!--submission modal-->
 	<dialog bind:this={submissionModal} id="submission-modal" class="modal overflow-hidden">
 		<div class="modal-box flex justify-center overflow-hidden">
-			<form class="flex flex-col justify-center" {...addUpdatePrediction}>
-				<div class="flex justify-end gap-4">
+			<form class="flex w-full flex-col justify-center" {...addUpdatePrediction}>
+				<!-- <div class="flex justify-end gap-4">
 					<button
 						type="button"
 						onclick={() => submissionModal.close()}
 						class="btn btn-circle btn-ghost btn-sm">✕</button
 					>
-				</div>
+				</div> -->
 				<div class="overflow-hidden rounded-box border border-base-content/5 bg-base-100">
 					<table class="table">
 						<!-- head -->
 						<thead>
 							<tr>
-								<th>Pos</th>
-								<th>Driver</th>
-								<th>Pl</th>
-								<th>Ex</th>
+								<th class="w-1/10">Pos</th>
+								<th class="w-5/10">Driver</th>
+								<th class="w-2/10">Pl</th>
+								<th class="w-2/10">Ex</th>
 							</tr>
 						</thead>
 						<tbody>
 							<!-- row 1 -->
 							<tr>
 								<th>1st</th>
-								<td>
+								<td class="flex justify-center">
 									<SubmissionSelect
 										id="1st"
 										bind:driver={driverSelections.Driver1st}
@@ -170,7 +224,7 @@
 							<!-- row 2 -->
 							<tr>
 								<th>2nd</th>
-								<td>
+								<td class="flex justify-center">
 									<SubmissionSelect
 										id="2nd"
 										bind:driver={driverSelections.Driver2nd}
@@ -183,7 +237,7 @@
 							<!-- row 3 -->
 							<tr>
 								<th>3rd</th>
-								<td>
+								<td class="flex justify-center">
 									<SubmissionSelect
 										id="3rd"
 										bind:driver={driverSelections.Driver3rd}
@@ -214,9 +268,22 @@
 				<input type="hidden" name="id" value={userSubmissionId} />
 
 				<!-- if there is a button in form, it will close the modal -->
-				<button type="submit" class="btn mt-4 btn-secondary" onclick={() => submissionModal.close()}
-					>Submit</button
-				>
+				<div class="flex w-full gap-2">
+					<div class="w-1/2">
+						<button
+							type="reset"
+							class="btn mt-4 w-full btn-error"
+							onclick={() => submissionModal.close()}>Cancel</button
+						>
+					</div>
+					<div class="w-1/2">
+						<button
+							type="submit"
+							class="btn mt-4 w-full btn-success"
+							onclick={() => submissionModal.close()}>Submit</button
+						>
+					</div>
+				</div>
 			</form>
 		</div>
 	</dialog>

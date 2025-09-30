@@ -39,7 +39,7 @@
 				<tbody>
 					{#each query.current as player, index}
 						<tr>
-							<td>{player.name}</td>
+							<td class="font-bold">{player.name}</td>
 							<td>{player.place}</td>
 							<td>{player.exact}</td>
 							<td>{player.points}</td>
@@ -95,7 +95,7 @@
 			{/if}
 		</div>
 		<div class="absolute bottom-4 left-4 flex w-[calc(100%-2rem)] justify-center gap-6">
-			<button class="btn w-full" onclick={() => historyDialog.close()}>Close</button>
+			<button class="btn w-full btn-secondary" onclick={() => historyDialog.close()}>Close</button>
 		</div>
 	</div>
 </dialog>
