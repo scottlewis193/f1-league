@@ -38,11 +38,12 @@
 	"type": "module",
 	"dependencies": {
 		"@types/web-push": "^3.6.4",
+		"nodemon": "^3.1.10",
 		"puppeteer": "^24.22.2",
 		"puppeteer-extra": "^3.3.6",
 		"puppeteer-extra-plugin-stealth": "^2.11.2",
+		"valibot": "^1.1.0",
 		"vite-plugin-pwa": "^1.0.3",
-		"web-push": "^3.6.7",
-		"nodemon": "^3.1.10"
+		"web-push": "^3.6.7"
 	}
 }

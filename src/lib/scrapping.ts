@@ -173,6 +173,7 @@ export async function scrapeF1Races(season = '2025') {
 					return { date, time, title };
 				});
 
+				console.log('get race results btn');
 				const raceResultBtn = [...document.querySelectorAll('button')].find(
 					(btn) => btn.textContent?.trim() === 'Race Result'
 				);
@@ -223,7 +224,8 @@ export const scrapeOdds = async () => {
 	const url = `${baseUrl}/motorsport/formula-1`;
 	const browser = await puppeteer.launch({
 		headless: true,
-		args: ['--no-sandbox', '--disable-setuid-sandbox']
+		args: ['--no-sandbox', '--disable-setuid-sandbox'],
+		defaultViewport: { width: 1920, height: 1080 }
 	});
 	const page = await browser.newPage();
 
@@ -233,30 +235,50 @@ export const scrapeOdds = async () => {
 
 		await page.waitForNetworkIdle({ idleTime: 1000 });
 
-		//wait for outrights div
-		await page.waitForSelector('#outrights > div');
+		//wait for accept cookies button
+
+		await page.waitForSelector('body > div > div > div > div > button');
+
+		//click accept cookies button
+
+		await page.locator('body > div > div > div > div > button').click({ delay: 100 });
+
+		//wait for menu button
+
+		//await page.waitForSelector('#mid-nav > div.container > div > button');
+		await page.waitForSelector('#oddsItem > button');
 
 		//click menu button
-		await page.locator('#mid-nav > div.container > div > button').click();
+
+		await page.locator('#oddsItem > button').click();
+		//await page.locator('#mid-nav > div.container > div > button').click();
 
 		//change to decimal odds
-		await page.locator('#odds-type > label:nth-child(4)').click();
 
-		await page.waitForNetworkIdle({ idleTime: 1000 });
+		await page.waitForSelector('#OddsDropdown-2');
+		await page.locator('#OddsDropdown-2').click();
 
-		//click view all odds link for podium finish
-		const viewAllOddsUrl = (await page.$eval(
-			'#outrights > div > div:nth-child(2) > span > h3 > a',
-			(el) => el.getAttribute('href')
-		)) as string;
+		//wait for podium finish
+		await page.waitForSelector('a[href*="podium-finish"]');
 
-		await page.goto(baseUrl + viewAllOddsUrl);
+		//get href from podium finish a
+		const podiumFinishUrl = await page.evaluate(() => {
+			const podiumFinishUrl = document
+				.querySelector('a[href*="podium-finish"]')
+				?.getAttribute('href');
+
+			return podiumFinishUrl;
+		});
+
+		const podiumFinishPage = await browser.newPage();
+		await podiumFinishPage.goto(baseUrl + podiumFinishUrl);
+		await podiumFinishPage.waitForNetworkIdle({ idleTime: 1000 });
 
 		//wait for event table
-		await page.waitForSelector('table.eventTable');
+		await podiumFinishPage.waitForSelector('table.eventTable');
 
 		//iterate over table rows and grab driver name and odds
-		const driverOdds = await page.evaluate(() => {
+		const driverOdds = await podiumFinishPage.evaluate(() => {
 			const driverOdds: { driverName: string; odds: number }[] = [];
 			const table = document.querySelector('table.eventTable');
 			const rows = table?.querySelectorAll('tbody > tr');
@@ -275,6 +297,7 @@ export const scrapeOdds = async () => {
 		return driverOdds;
 	} catch (e) {
 		await browser.close();
+		console.error(e);
 		console.log(`Warning: Odds Not Available (${page.url()})`);
 		return [];
 	}

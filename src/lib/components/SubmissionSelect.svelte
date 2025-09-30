@@ -53,7 +53,6 @@
 		<li>
 			<input
 				type="radio"
-				name={'driver-' + id}
 				class=" btn w-full justify-start btn-ghost"
 				aria-label={driver}
 				value={driver}
@@ -63,7 +62,7 @@
 	{/each}
 </ul>
 
-<input type="hidden" name={'driver-' + id} value={driver.value} />
+<input type="hidden" name={'driver' + id} value={driver.value} />
 
 <!--  -->
 

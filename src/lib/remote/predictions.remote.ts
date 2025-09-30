@@ -2,6 +2,7 @@ import { form, getRequestEvent, query } from '$app/server';
 import type { Prediction as Prediction } from '$lib/types';
 import { redirect } from '@sveltejs/kit';
 import { getNextRace } from './races.remote';
+import * as v from 'valibot';
 
 export const getPredictions = query(async () => {
 	const event = getRequestEvent();
@@ -35,21 +36,30 @@ export const getUserPredictions = query(async (raceId: string = '') => {
 	return submissions;
 });
 
-export const addUpdatePrediction = form(async (data) => {
-	const event = getRequestEvent();
-	const pb = event.locals.pb;
+export const addUpdatePrediction = form(
+	v.object({
+		driver1st: v.string(),
+		driver2nd: v.string(),
+		driver3rd: v.string(),
+		raceId: v.string(),
+		id: v.optional(v.string())
+	}),
+	async (data) => {
+		const event = getRequestEvent();
+		const pb = event.locals.pb;
 
-	const predictions = [data.get('driver-1st'), data.get('driver-2nd'), data.get('driver-3rd')];
-	const user = pb.authStore.record?.id;
-	const year = new Date().getFullYear();
-	const race = data.get('race-id');
-	const id: string = data.get('id')?.toString() || '';
+		const predictions = [data.driver1st, data.driver2nd, data.driver3rd];
+		const user = pb.authStore.record?.id;
+		const year = new Date().getFullYear();
+		const race = data.raceId;
+		const id: string = data.id?.toString() || '';
 
-	if (id !== '') {
-		pb.collection('predictions').update(id, { predictions });
-	} else {
-		pb.collection('predictions').create({ predictions, user, year, race });
+		if (id !== '') {
+			pb.collection('predictions').update(id, { predictions });
+		} else {
+			pb.collection('predictions').create({ predictions, user, year, race });
+		}
+
+		redirect(303, `/predictions`);
 	}
-
-	redirect(303, `/predictions`);
-});
+);

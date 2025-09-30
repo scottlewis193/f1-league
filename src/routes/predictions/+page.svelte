@@ -79,7 +79,7 @@
 
 		for (const driver of Object.values(driverSelections)) {
 			if (driver.value === lastChangedDriverSelection.value && !driver.lastChanged) {
-				driver.value = 'Select a Driver';
+				driver.value = 'Driver';
 			}
 		}
 		lastChangedDriverSelection.lastChanged = false;
@@ -210,7 +210,7 @@
 					</table>
 				</div>
 				<!-- submit raceNo with hidden input -->
-				<input type="hidden" name="race-id" value={nextRaceQuery.current.id} />
+				<input type="hidden" name="raceId" value={nextRaceQuery.current.id} />
 				<input type="hidden" name="id" value={userSubmissionId} />
 
 				<!-- if there is a button in form, it will close the modal -->
