@@ -1,6 +1,6 @@
 import { sendNotifications } from '$lib/notifications';
 import { scrapeAll } from '$lib/scrapping';
-import type { Driver, OddsRecord, Race, Team } from '$lib/types';
+import type { Driver, OddsRecord, Player, Race, Team } from '$lib/types';
 import { oddsToPoints } from '$lib/utils';
 import pb from './pocketbase';
 
@@ -38,13 +38,19 @@ export async function refreshF1DataHourly() {
 		sendNotifications({
 			title: 'New Race Results',
 			body: 'Check out the latest race results.',
-			icon: '/logo.png',
-			badge: '/logo.png',
+			icon: 'https://f1-league.hades.ws/logo.png',
+			badge: 'https://f1-league.hades.ws/logo.png',
 			data: {
 				url: 'https://f1-league.hades.ws/players'
 			},
 			tag: 'message-notification'
 		});
+
+		const players = await getPlayers();
+		players.forEach((player) => {
+			player.displayLatestResultsDialog = true;
+		});
+		await updateAllPlayers(players);
 	}
 
 	await updateDrivers(drivers);
@@ -57,6 +63,17 @@ export async function refreshF1DataHourly() {
 
 	// Schedule the next run
 	setTimeout(refreshF1DataHourly, ONE_HOUR);
+}
+
+async function getPlayers() {
+	const players: Player[] = await pb.collection('users').getFullList();
+	return players;
+}
+
+async function updateAllPlayers(players: Player[]) {
+	players.forEach(async (player) => {
+		await pb.collection('users').update(player.id, player);
+	});
 }
 
 async function getCurrentData() {

@@ -20,12 +20,12 @@
 	};
 </script>
 
-<div class="flex gap-2">
+<div class="flex w-full gap-2">
 	<!-- <div class="flex w-7 items-center justify-center text-center">{id}</div> -->
 	<button
 		type="button"
 		tabindex="0"
-		class="btn grid w-52 grid-flow-col grid-cols-[0.5rem_1fr_0.5rem]"
+		class="btn grid w-full grid-flow-col grid-cols-[0.5rem_1fr_0.5rem]"
 		popovertarget={id}
 		style="anchor-name:--anchor-{id}"
 	>
@@ -44,7 +44,7 @@
 </div>
 <ul
 	bind:this={userPopover}
-	class="dropdown-content dropdown h-52 w-52 overflow-y-auto rounded-box bg-base-300 p-2 shadow-2xl"
+	class="dropdown-content dropdown h-52 w-[anchor-size(width)] overflow-y-auto rounded-box bg-base-300 p-2 shadow-2xl"
 	popover
 	{id}
 	style="position-anchor:--anchor-{id}; bottom:anchor(top); position:absolute;"
@@ -56,13 +56,16 @@
 				class=" btn w-full justify-start btn-ghost"
 				aria-label={driver}
 				value={driver}
-				onchange={(e) => setDriver(e.currentTarget.value)}
+				onchange={(e) => {
+					setDriver(e.currentTarget.value);
+					e.currentTarget.setCustomValidity('');
+				}}
 			/>
 		</li>
 	{/each}
 </ul>
 
-<input type="hidden" name={'driver' + id} value={driver.value} />
+<input id={'driver' + id} type="hidden" name={'driver' + id} value={driver.value} />
 
 <!--  -->
 

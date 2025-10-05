@@ -4,7 +4,7 @@
 	import { getDrivers } from '$lib/remote/drivers.remote.js';
 	import { getNextRace } from '$lib/remote/races.remote';
 	import { addUpdatePrediction, getNextRacePredictions } from '$lib/remote/predictions.remote.js';
-	import { getPointsGained, titleCase, userHasSubmitted } from '$lib/utils';
+	import { userHasSubmitted } from '$lib/utils';
 	import { fade } from 'svelte/transition';
 	import PocketBase from 'pocketbase';
 	import { onMount } from 'svelte';
@@ -22,6 +22,7 @@
 
 	// svelte-ignore non_reactive_update
 	let submissionModal: HTMLDialogElement;
+	let submissionsValid = $state(false);
 
 	let driverSelections = $state({
 		Driver1st: { value: 'Driver', lastChanged: false, place: 0, exact: 0 },
@@ -59,6 +60,8 @@
 			driverSelections.Driver2nd.exact = driver2ndOddsPointsPotential.exact;
 			driverSelections.Driver3rd.exact = driver3rdOddsPointsPotential.exact;
 		}
+
+		validateSelections();
 	}
 
 	function isSubmissionWindowOpen() {
@@ -84,6 +87,17 @@
 		};
 	}
 
+	function validateSelections() {
+		for (const [driver, values] of Object.entries(driverSelections)) {
+			if (values.value === 'Driver') {
+				submissionsValid = false;
+				return;
+			}
+		}
+
+		submissionsValid = true;
+	}
+
 	$effect(() => {
 		//this is to check if the user has selected the same driver for more than one position
 		//if they have, we will reset the one that isn't the last changed one
@@ -104,11 +118,14 @@
 				(oddsRecord) => oddsRecord.expand.driver.name === lastChangedDriverSelection.value
 			)?.pointsForExact || 0;
 
-		for (const driver of Object.values(driverSelections)) {
-			if (driver.value === lastChangedDriverSelection.value && !driver.lastChanged) {
-				driver.value = 'Driver';
+		for (const [driver, values] of Object.entries(driverSelections)) {
+			if (values.value === lastChangedDriverSelection.value && !values.lastChanged) {
+				values.value = 'Driver';
 			}
 		}
+
+		validateSelections();
+
 		lastChangedDriverSelection.lastChanged = false;
 	});
 </script>
@@ -218,10 +235,10 @@
 						<!-- head -->
 						<thead>
 							<tr>
-								<th class="w-1/10">Pos</th>
-								<th class="w-5/10">Driver</th>
-								<th class="w-2/10">Pl</th>
-								<th class="w-2/10">Ex</th>
+								<th class="w-[10%]">Pos</th>
+								<th class="w-[60%]">Driver</th>
+								<th class="w-[15%]">Pl</th>
+								<th class="w-[15%]">Ex</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -294,10 +311,8 @@
 						>
 					</div>
 					<div class="w-1/2">
-						<button
-							type="submit"
-							class="btn mt-4 w-full btn-success"
-							onclick={() => submissionModal.close()}>Submit</button
+						<button disabled={!submissionsValid} type="submit" class="btn mt-4 w-full btn-success"
+							>Submit</button
 						>
 					</div>
 				</div>

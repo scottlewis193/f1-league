@@ -6,6 +6,7 @@ export type Prediction = {
 };
 
 export type Player = {
+	[key: string]: any;
 	id: string;
 	name: string;
 	email: string;

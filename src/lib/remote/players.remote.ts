@@ -5,6 +5,29 @@ import { getPredictions } from './predictions.remote';
 import { getRaces } from './races.remote';
 import { getPlayerStats } from '$lib/utils';
 import { getOdds } from './odds.remote';
+import * as v from 'valibot';
+
+const playerProfileSchema = v.intersect([
+	v.object({
+		name: v.string(),
+		email: v.string(),
+		password: v.string(),
+		passwordConfirm: v.string()
+	}),
+	v.record(v.string(), v.string())
+]);
+
+const playerLoginSchema = v.object({
+	email: v.string(),
+	password: v.string()
+});
+
+const playerRegisterSchema = v.object({
+	name: v.string(),
+	email: v.string(),
+	password: v.string(),
+	passwordConfirm: v.string()
+});
 
 export const getPlayers = query(async () => {
 	const event = getRequestEvent();
@@ -61,25 +84,25 @@ export const updateCurrentPlayer = command('unchecked', async (playerData: Playe
 	await pb.collection('users').update(event.locals.user?.id || '', playerData);
 });
 
-export const updatePlayerProfile = form(async (data) => {
+export const updatePlayerProfile = form(playerProfileSchema, async (data) => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
-	const updateData = Object.fromEntries(data);
-
 	// remove empty string values
-	Object.keys(updateData).forEach((key) => {
-		if (updateData[key] === '') delete updateData[key];
+	Object.keys(data).forEach((key) => {
+		if (data[key] === '') delete data[key];
 	});
 
 	if (!event.locals.user?.id) return;
 
-	await pb.collection('users').update(event.locals.user?.id, updateData);
+	await pb.collection('users').update(event.locals.user?.id, data);
+
+	return redirect(303, `/profile`);
 });
 
-export const login = form(async (data) => {
+export const login = form(playerLoginSchema, async (data) => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
-	const { email, password } = Object.fromEntries(data);
+	const { email, password } = data;
 
 	if (!email || !password) {
 		return fail(400, { error: 'Email and password are required' });
@@ -100,10 +123,10 @@ export const logout = form(() => {
 	return redirect(303, `/login`);
 });
 
-export const register = form(async (data) => {
+export const register = form(playerRegisterSchema, async (data) => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
-	const { name, email, password, passwordConfirm } = Object.fromEntries(data);
+	const { name, email, password, passwordConfirm } = data;
 
 	console.log({ name, email, password, passwordConfirm });
 	if (password !== passwordConfirm) {
