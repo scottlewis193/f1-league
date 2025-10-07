@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { getPlayers } from '$lib/remote/players.remote';
+	import { getPlayersWithStats } from '$lib/remote/players.remote';
 	import { titleCase } from '$lib/utils';
 	import { fade } from 'svelte/transition';
 	import PocketBase from 'pocketbase';
 	import { PUBLIC_PB_URL } from '$env/static/public';
 	import { onMount } from 'svelte';
 	import type { Player } from '$lib/types';
-	const query = getPlayers();
+	const query = getPlayersWithStats();
 	const pb = new PocketBase(PUBLIC_PB_URL);
 
 	let historyDialog: HTMLDialogElement;

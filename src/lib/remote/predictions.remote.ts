@@ -1,39 +1,32 @@
 import { form, getRequestEvent, query } from '$app/server';
 import type { Prediction as Prediction } from '$lib/types';
 import { redirect } from '@sveltejs/kit';
-import { getNextRace } from './races.remote';
 import * as v from 'valibot';
+import {
+	getNextRaceDb,
+	getNextRacePredictionsDb,
+	getPredictionsDb,
+	getUserPredictionsDb
+} from '$lib/server/data';
 
 export const getPredictions = query(async () => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
 
-	const submissions: Prediction[] = await pb
-		.collection('predictions')
-		.getFullList({ expand: 'user,race' });
-
-	return submissions;
+	return getPredictionsDb(pb);
 });
 
 export const getNextRacePredictions = query(async () => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
-	const race = (await getNextRace()).id;
-	const submissions: Prediction[] = await pb
-		.collection('predictions')
-		.getFullList({ expand: 'user,race', filter: `race='${race}'` });
-	return submissions;
+	return getNextRacePredictionsDb(pb);
 });
 
 export const getUserPredictions = query(async (raceId: string = '') => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
-
 	const user = pb.authStore.record?.id;
-	const submissions: Prediction[] = await pb
-		.collection('predictions')
-		.getFullList({ expand: 'user,race', filter: `user="${user}" && race='${raceId}'` });
-	return submissions;
+	return getUserPredictionsDb(user || '', pb);
 });
 
 export const addUpdatePrediction = form(

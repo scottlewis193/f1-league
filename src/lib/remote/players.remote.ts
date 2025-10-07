@@ -1,11 +1,12 @@
 import { command, form, getRequestEvent, query } from '$app/server';
 import type { Player } from '$lib/types';
 import { fail, redirect } from '@sveltejs/kit';
-import { getPredictions } from './predictions.remote';
-import { getRaces } from './races.remote';
-import { getPlayerStats } from '$lib/utils';
-import { getOdds } from './odds.remote';
 import * as v from 'valibot';
+import {
+	getCurrentPlayerWithStatsDb,
+	getPlayersWithStatsDb,
+	updateCurrentPlayerDb
+} from '$lib/server/data';
 
 const playerProfileSchema = v.intersect([
 	v.object({
@@ -29,59 +30,23 @@ const playerRegisterSchema = v.object({
 	passwordConfirm: v.string()
 });
 
-export const getPlayers = query(async () => {
+export const getPlayersWithStats = query(async () => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
-
-	const players: Partial<Player>[] = await pb.collection('users').getFullList();
-	let playersWithStats: Player[] = [];
-
-	const submissions = await getPredictions();
-	const races = await getRaces();
-	const odds = await getOdds();
-
-	players.forEach((player) => {
-		const id = player.id || '';
-		const name = player.name || '';
-		playersWithStats.push({
-			id,
-			name,
-			email: player.email || '',
-			displayLatestResultsDialog: player.displayLatestResultsDialog || false,
-			...getPlayerStats(id, submissions, races, odds)
-		});
-	});
-
-	playersWithStats.sort((a, b) => b.points - a.points);
-
-	return playersWithStats;
+	return getPlayersWithStatsDb(pb);
 });
 
-export const getCurrentPlayer = query(async () => {
+export const getCurrentPlayerWithStats = query(async () => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
 	if (!event.locals.user?.id) return;
-	const player: Player = await pb.collection('users').getOne(event.locals.user?.id);
-
-	const submissions = await getPredictions();
-	const races = await getRaces();
-	const odds = await getOdds();
-
-	const playerWithStats = {
-		id: player.id,
-		name: player.name,
-		email: player.email,
-		displayLatestResultsDialog: player.displayLatestResultsDialog || false,
-		...getPlayerStats(player.id, submissions, races, odds)
-	};
-
-	return playerWithStats;
+	return getCurrentPlayerWithStatsDb(event.locals.user?.id, pb);
 });
 
 export const updateCurrentPlayer = command('unchecked', async (playerData: Player) => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
-	await pb.collection('users').update(event.locals.user?.id || '', playerData);
+	await updateCurrentPlayerDb(event.locals.user?.id || '', playerData, pb);
 });
 
 export const updatePlayerProfile = form(playerProfileSchema, async (data) => {

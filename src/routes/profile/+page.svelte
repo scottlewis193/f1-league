@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { getCurrentPlayer, updatePlayerProfile } from '$lib/remote/players.remote';
+	import { getCurrentPlayerWithStats, updatePlayerProfile } from '$lib/remote/players.remote';
 	import { fade } from 'svelte/transition';
 
 	let oldPassword: HTMLInputElement;
 	let password: HTMLInputElement;
 	let confirmPassword: HTMLInputElement;
 
-	const currentPlayerQuery = getCurrentPlayer();
+	const currentPlayerQuery = getCurrentPlayerWithStats();
 
 	function validateConfirmPassword() {
 		if (!password) {

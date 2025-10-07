@@ -20,6 +20,7 @@
 	import { logout, updateCurrentPlayer } from '$lib/remote/players.remote';
 	import { Confetti } from 'svelte-confetti';
 	import ConfettiContainer from '$lib/components/ConfettiContainer.svelte';
+	import StreamIcon from '$lib/components/StreamIcon.svelte';
 	let { children, data } = $props();
 	const url = $derived(page.url.pathname);
 	// svelte-ignore non_reactive_update
@@ -109,6 +110,7 @@
 							<li><a href="/races">Races</a></li>
 							<li><a href="/rules">Rules</a></li>
 							<li><a href="/predictions">Predictions</a></li>
+							<li><a href="/stream">Stream (Beta)</a></li>
 						</ul>
 					</div>
 					<div class="flex justify-end gap-4 lg:min-w-[25%]">
@@ -134,11 +136,15 @@
 				</div>
 				<!-- Page content here -->
 				<div class="flex h-full w-full flex-col items-center justify-center">
-					<div
-						class=" flex h-[calc(100svh-5rem)] min-h-[calc(100svh-5rem)] w-full max-w-2xl flex-col gap-4 p-4"
-					>
+					{#if url !== '/stream'}
+						<div
+							class=" flex h-[calc(100svh-5rem)] min-h-[calc(100svh-5rem)] w-full max-w-2xl flex-col gap-4 p-4"
+						>
+							{@render children?.()}
+						</div>
+					{:else}
 						{@render children?.()}
-					</div>
+					{/if}
 				</div>
 			</div>
 			<!-- Side Drawer -->
@@ -189,6 +195,13 @@
 							class="flex h-16 items-center"
 							href="/predictions"
 							onclick={() => (drawerToggle.checked = false)}><SubmissionsIcon /> Predictions</a
+						>
+					</li>
+					<li>
+						<a
+							class="flex h-16 items-center"
+							href="/stream"
+							onclick={() => (drawerToggle.checked = false)}><StreamIcon /> Stream (Beta)</a
 						>
 					</li>
 				</ul>
