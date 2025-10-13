@@ -37,6 +37,10 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@solana/spl-token": "^0.4.14",
+		"@solana/wallet-adapter-base": "^0.9.27",
+		"@solana/wallet-adapter-wallets": "^0.19.37",
+		"@solana/web3.js": "^1.98.4",
 		"@types/web-push": "^3.6.4",
 		"nodemon": "^3.1.10",
 		"puppeteer": "^24.22.2",

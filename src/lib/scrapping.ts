@@ -43,10 +43,10 @@ export async function scrapeDrivers(season = '2025') {
 		await page.goto(url);
 
 		// Wait for the standings table to load
-		await page.waitForSelector('.f1-table');
+		await page.waitForSelector('#results-table');
 
 		const standings = await page.evaluate(() => {
-			const rows = Array.from(document.querySelectorAll('.f1-table tbody tr'));
+			const rows = Array.from(document.querySelectorAll('#results-table > div > table tbody tr'));
 			return rows.map((row) => {
 				const cols = row.querySelectorAll('td');
 				return {
@@ -80,10 +80,10 @@ export async function scrapeTeams(season = 2025) {
 		await page.goto(url);
 
 		// Wait for the standings table to load
-		await page.waitForSelector('.f1-table');
+		await page.waitForSelector('#results-table');
 
 		const standings = (await page.evaluate(() => {
-			const rows = Array.from(document.querySelectorAll('.f1-table tbody tr'));
+			const rows = Array.from(document.querySelectorAll('#results-table > div > table tbody tr'));
 			return rows.map((row) => {
 				const cols = row.querySelectorAll('td');
 				return {

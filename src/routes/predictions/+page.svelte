@@ -223,13 +223,6 @@
 	<dialog bind:this={submissionModal} id="submission-modal" class="modal overflow-hidden">
 		<div class="modal-box flex justify-center overflow-hidden">
 			<form class="flex w-full flex-col justify-center" {...addUpdatePrediction}>
-				<!-- <div class="flex justify-end gap-4">
-					<button
-						type="button"
-						onclick={() => submissionModal.close()}
-						class="btn btn-circle btn-ghost btn-sm">✕</button
-					>
-				</div> -->
 				<div class="overflow-hidden rounded-box border border-base-content/5 bg-base-100">
 					<table class="table">
 						<!-- head -->

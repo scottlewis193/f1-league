@@ -11,8 +11,10 @@
 			src={streamNo == 1
 				? 'https://dlhd.dad/plus/stream-60.php'
 				: streamNo == 2
-					? 'https://dlhd.dad/stream/stream-60.php'
-					: 'https://dlhd.dad/cast/stream-60.php'}
+					? 'https://dlhd.dad/player/stream-60.php'
+					: streamNo == 3
+						? 'https://dlhd.dad/plus/stream-38.php'
+						: 'https://dlhd.dad/player/stream-38.php'}
 			marginheight="0"
 			marginwidth="0"
 			scrolling="no"
@@ -25,8 +27,29 @@
 	</div>
 
 	<div class="flex w-full items-center justify-center gap-4">
-		<button class="btn btn-primary" onclick={() => (streamNo = 1)}>Stream 1</button>
-		<button class="btn btn-primary" onclick={() => (streamNo = 2)}>Stream 2</button>
-		<button class="btn btn-primary" onclick={() => (streamNo = 3)}>Stream 3</button>
+		<button
+			class="btn btn-primary"
+			onclick={() => {
+				streamNo = 1;
+			}}>1 - SSF1</button
+		>
+		<button
+			class="btn btn-primary"
+			onclick={() => {
+				streamNo = 2;
+			}}>2 - SSF1</button
+		>
+		<button
+			class="btn btn-primary"
+			onclick={() => {
+				streamNo = 3;
+			}}>3 - SSME</button
+		>
+		<button
+			class="btn btn-primary"
+			onclick={() => {
+				streamNo = 4;
+			}}>4 - SSME</button
+		>
 	</div>
 </div>
