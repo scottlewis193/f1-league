@@ -32,8 +32,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check .",
-		"copy": "scp -r ./build root@192.168.0.2:/mnt/cache/appdata/f1-league",
-		"start": "npm install && npx puppeteer browsers install chrome && export PORT=9003 && nodemon ./build"
+		"copy": "scp -r ./package.json ./bun.lockb ./svelte.config.js ./src ./build root@192.168.0.2:/mnt/cache/appdata/f1-league",
+		"start": "bun install && bunx @puppeteer/browsers install chrome@stable && export PORT=9173 && bun build/index.js"
 	},
 	"type": "module",
 	"dependencies": {
