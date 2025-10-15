@@ -40,7 +40,8 @@ export const getCurrentPlayerWithStats = query(async () => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
 	if (!event.locals.user?.id) return;
-	return getCurrentPlayerWithStatsDb(event.locals.user?.id, pb);
+	const playerWithStats = await getCurrentPlayerWithStatsDb(event.locals.user?.id, pb);
+	return playerWithStats;
 });
 
 export const updateCurrentPlayer = command('unchecked', async (playerData: Player) => {

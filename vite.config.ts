@@ -2,6 +2,8 @@ import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 import { defineConfig } from 'vite';
+import fs from 'fs';
+import path from 'path';
 
 export default defineConfig({
 	plugins: [
@@ -36,5 +38,13 @@ export default defineConfig({
 	define: {
 		// Inject a global build timestamp
 		__BUILD_TIMESTAMP__: JSON.stringify(Date.now())
+	},
+	server: {
+		https: {
+			key: fs.readFileSync(path.resolve('localhost-key.pem')),
+			cert: fs.readFileSync(path.resolve('localhost.pem'))
+		},
+		host: 'localhost',
+		port: 5173
 	}
 });

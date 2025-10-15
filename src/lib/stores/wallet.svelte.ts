@@ -1,68 +1,91 @@
-import { browser } from '$app/environment';
-import { Connection, clusterApiUrl, PublicKey } from '@solana/web3.js';
+import { connection } from '$lib/utils';
+import { SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
+import type { PublicKey, Transaction } from '@solana/web3.js';
 
-const isDev = import.meta.env.MODE !== 'production';
-
-export const connection = new Connection(
-	isDev ? clusterApiUrl('devnet') : 'https://mainnet.helius-rpc.com/?api-key=YOUR_API_KEY',
-	'confirmed'
-);
-
-// --- Wallet state ---
-export const wallet = $state({
+export let wallet = $state({
 	connected: false,
-	publicKey: null as PublicKey | null,
-	provider: null as any, // Phantom provider
-	balance: 0, // SOL balance
-	usdcBalance: 0 // USDC balance (optional)
+	publicKey: null as string | null,
+	adapter: null as SolflareWalletAdapter | null,
+	sessionToken: null as string | null
 });
 
-// --- Connection logic ---
-export async function connect() {
-	if (!browser) return;
+export async function connectWallet() {
+	const adapter = new SolflareWalletAdapter();
+	wallet.adapter = adapter;
 
 	try {
-		const provider = window?.phantom?.solana || window?.solana;
-		if (!provider?.isPhantom) {
-			return;
-		}
+		await adapter.connect();
+		const pk = adapter.publicKey?.toBase58();
+		if (!pk) return;
 
-		const resp = await provider.connect();
+		// Sign a one-time message
+		const message = `Sign this to login: ${Date.now()}`;
+		const encoded = new TextEncoder().encode(message);
+		const signature = await adapter.signMessage(encoded);
 
-		wallet.provider = provider;
-		wallet.publicKey = new PublicKey(resp.publicKey.toString());
-		wallet.connected = true;
-
-		provider.on('disconnect', () => {
-			resetWallet();
+		// Send to SvelteKit endpoint
+		const res = await fetch('/api/auth', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ publicKey: pk, message, signature: Array.from(signature) })
 		});
-
-		console.log('Connected to wallet:', wallet.publicKey.toBase58());
-		await updateBalances();
+		const data = await res.json();
+		wallet.sessionToken = data.token;
+		wallet.publicKey = pk;
+		wallet.connected = true;
 	} catch (err) {
-		console.error('Wallet connect failed:', err);
+		console.error(err);
 	}
 }
 
-// --- Disconnect logic ---
-export async function disconnect() {
-	if (!browser || !wallet.provider) return;
-	await wallet.provider.disconnect();
-	resetWallet();
+export async function disconnectWallet() {
+	if (wallet.adapter?.connected) await wallet.adapter.disconnect();
 }
 
-function resetWallet() {
-	wallet.connected = false;
-	wallet.publicKey = null;
-	wallet.balance = 0;
-	wallet.usdcBalance = 0;
-	wallet.provider = null;
+export async function restoreSession() {
+	const token = wallet.sessionToken;
+	if (!token) return;
+
+	try {
+		const res = await fetch(`/api/session/${token}`);
+		if (!res.ok) return;
+		const data = await res.json();
+		if (data.publicKey) {
+			wallet.publicKey = data.publicKey;
+			wallet.connected = true;
+		}
+	} catch (err) {
+		console.error(err);
+	}
 }
 
-// --- Balance updater ---
-export async function updateBalances() {
-	if (!browser || !wallet.connected || !wallet.publicKey) return;
+export async function signAndSendTx(transaction: Transaction) {
+	const adapter = wallet.adapter;
+	if (!adapter || !adapter.connected) throw new Error('Wallet not connected');
 
-	const solBalance = await connection.getBalance(wallet.publicKey);
-	wallet.balance = solBalance / 1e9; // lamports → SOL
+	try {
+		// Attach latest blockhash before signing
+		const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+		transaction.recentBlockhash = blockhash;
+		transaction.feePayer = adapter.publicKey as PublicKey;
+
+		// Sign
+		const signedTx = await adapter.signTransaction(transaction);
+
+		// Send
+		const txId = await connection.sendRawTransaction(signedTx.serialize());
+
+		// Confirm (modern syntax)
+		await connection.confirmTransaction({
+			signature: txId,
+			blockhash,
+			lastValidBlockHeight
+		});
+
+		console.log('✅ Transaction confirmed:', txId);
+		return txId;
+	} catch (err) {
+		console.error('Transaction failed:', err);
+		throw err;
+	}
 }

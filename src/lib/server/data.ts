@@ -105,6 +105,8 @@ export async function getCurrentPlayerWithStatsDb(
 	const pb = pbInstance || _pb;
 	const player: Player = await pb.collection('users').getOne(playerId);
 
+	if (!player) return {};
+
 	const submissions = await getPredictionsDb();
 	const races = await getRacesDb();
 	const odds = await getOddsDb();

@@ -1,4 +1,7 @@
 import type { Race, Prediction, OddsRecord } from './types';
+import { Transaction, SystemProgram, PublicKey, Connection, clusterApiUrl } from '@solana/web3.js';
+
+export const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
 
 export function titleCase(str: string) {
 	return str.replace(/\w\S*/g, function (txt) {
@@ -123,4 +126,38 @@ export function oddsToPoints(odds: number) {
 	const a = Math.round((odds - 0.01) * 2);
 	const b = a > 10 ? Math.floor(a / 10) * 10 : a;
 	return b;
+}
+
+import nacl from 'tweetnacl';
+import bs58 from 'bs58';
+
+/**
+ * Verify a Solana signature
+ * @param message - original message as Uint8Array
+ * @param signature - signature from wallet (Uint8Array)
+ * @param publicKey - wallet public key as base58 string
+ */
+export function verifySolanaSignature(
+	message: Uint8Array,
+	signature: Uint8Array,
+	publicKey: string
+) {
+	const pkBytes = bs58.decode(publicKey);
+	return nacl.sign.detached.verify(message, signature, pkBytes);
+}
+
+/**
+ * Create a simple SOL transfer transaction
+ * @param fromPubKey - sender public key
+ * @param toPubKey - recipient public key
+ * @param lamports - amount in lamports
+ */
+export function createTransferTx(fromPubKey: PublicKey, toPubKey: PublicKey, lamports: number) {
+	return new Transaction().add(
+		SystemProgram.transfer({
+			fromPubkey: fromPubKey,
+			toPubkey: toPubKey,
+			lamports
+		})
+	);
 }

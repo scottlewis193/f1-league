@@ -21,6 +21,7 @@
 	import { Confetti } from 'svelte-confetti';
 	import ConfettiContainer from '$lib/components/ConfettiContainer.svelte';
 	import StreamIcon from '$lib/components/StreamIcon.svelte';
+	import WalletIcon from '$lib/components/WalletIcon.svelte';
 	let { children, data } = $props();
 	const url = $derived(page.url.pathname);
 	// svelte-ignore non_reactive_update
@@ -55,6 +56,7 @@
 	//client init
 	onMount(async () => {
 		await subscribeToPush();
+
 		if ($needRefresh) updateModal.showModal();
 		if (data.user.displayLatestResultsDialog) {
 			raceResultsDialog.showModal();
@@ -237,6 +239,11 @@
 				>
 			</li>
 			<li>
+				<a href="/wallet" class="flex h-16 items-center" onclick={() => userPopover.hidePopover()}
+					><WalletIcon /> Wallet</a
+				>
+			</li>
+			<li>
 				<form {...logout} class="flex h-16 items-center" onclick={() => userPopover.hidePopover()}>
 					<LogOutIcon /> <button type="submit">Log Out</button>
 				</form>
@@ -269,7 +276,7 @@
 	<dialog bind:this={raceResultsDialog} class="modal w-[100vw]">
 		<div class="modal-box">
 			<h3 class="text-lg font-bold">Congratulations!</h3>
-			<p class="py-4">You have earned {data.user.lastPointsEarned} point(s)</p>
+			<p class="py-4">You have earned {data?.user?.lastPointsEarned} point(s)</p>
 			<div class="modal-action">
 				<button
 					class="btn btn-sm btn-primary"
