@@ -1,5 +1,9 @@
 import { connection } from '$lib/utils';
-import { SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+// import { SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
+import { WalletConnectWalletAdapter } from '@solana/wallet-adapter-walletconnect';
+
 import type { PublicKey, Transaction } from '@solana/web3.js';
 
 export let wallet = $state({
@@ -8,6 +12,55 @@ export let wallet = $state({
 	adapter: null as SolflareWalletAdapter | null,
 	sessionToken: null as string | null
 });
+
+export async function initWallet() {
+	let adapter;
+
+	const isMobile = /android|iphone|ipad|mobile/i.test(navigator.userAgent);
+
+	if (isMobile) {
+		// ✅ Use WalletConnect for Solflare mobile
+		adapter = new WalletConnectWalletAdapter({
+			network: WalletAdapterNetwork.Devnet,
+			options: {
+				projectId: '4efa7e2a208fcdf925b186da2061a942', // get from walletconnect.com
+				metadata: {
+					name: 'F1 League',
+					description: 'F1 League',
+					url: 'https://f1-league.hades.ws',
+					icons: ['https://f1-league.hades.ws/logo.png']
+				}
+			}
+		});
+	} else {
+		// ✅ Use direct Solflare adapter for desktop
+		const { SolflareWalletAdapter } = await import('@solana/wallet-adapter-wallets');
+		adapter = new SolflareWalletAdapter({ network: WalletAdapterNetwork.Devnet });
+	}
+
+	wallet.set({
+		adapter,
+		publicKey: null,
+		connected: false
+	});
+
+	// auto-reconnect if already connected
+	adapter.on('connect', () => {
+		wallet.update((w) => ({
+			...w,
+			publicKey: adapter.publicKey,
+			connected: true
+		}));
+	});
+
+	adapter.on('disconnect', () => {
+		wallet.update((w) => ({
+			...w,
+			publicKey: null,
+			connected: false
+		}));
+	});
+}
 
 export async function connectWallet() {
 	const adapter = new SolflareWalletAdapter();
