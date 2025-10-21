@@ -1,7 +1,5 @@
 import type { Race, Prediction, OddsRecord } from './types';
-import { Transaction, SystemProgram, PublicKey, Connection, clusterApiUrl } from '@solana/web3.js';
-
-export const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
+import { Transaction, SystemProgram, PublicKey } from '@solana/web3.js';
 
 export function titleCase(str: string) {
 	return str.replace(/\w\S*/g, function (txt) {
@@ -126,6 +124,12 @@ export function oddsToPoints(odds: number) {
 	const a = Math.round((odds - 0.01) * 2);
 	const b = a > 10 ? Math.floor(a / 10) * 10 : a;
 	return b;
+}
+
+export function shortAddress(address: string, start = 4, end = 4): string {
+	if (!address) return '';
+	if (address.length <= start + end) return address;
+	return `${address.slice(0, start)}...${address.slice(-end)}`;
 }
 
 import nacl from 'tweetnacl';

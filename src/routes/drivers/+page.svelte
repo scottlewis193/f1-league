@@ -14,8 +14,8 @@
 			</div>
 		{:else if query.ready}
 			<table class="table table-sm">
-				<thead class="sticky top-0 bg-base-100">
-					<tr class="bg-base-100">
+				<thead class="sticky top-0">
+					<tr class="">
 						<th>Pos</th>
 						<th>Driver</th>
 						<th>Team</th>

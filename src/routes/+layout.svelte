@@ -112,7 +112,7 @@
 							<li><a href="/races">Races</a></li>
 							<li><a href="/rules">Rules</a></li>
 							<li><a href="/predictions">Predictions</a></li>
-							<li><a href="/stream">Stream (Beta)</a></li>
+							<li><a href="/stream">Stream</a></li>
 						</ul>
 					</div>
 					<div class="flex justify-end gap-4 lg:min-w-[25%]">
@@ -203,7 +203,7 @@
 						<a
 							class="flex h-16 items-center"
 							href="/stream"
-							onclick={() => (drawerToggle.checked = false)}><StreamIcon /> Stream (Beta)</a
+							onclick={() => (drawerToggle.checked = false)}><StreamIcon /> Stream</a
 						>
 					</li>
 				</ul>
