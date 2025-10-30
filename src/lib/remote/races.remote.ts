@@ -2,14 +2,14 @@ import { getRequestEvent, query } from '$app/server';
 import { getNextRaceDb, getRacesDb } from '$lib/server/data';
 import type { Race } from '$lib/types';
 
-let lastFetch = 0;
+const lastFetch = 0;
 const ONE_HOUR = 60 * 60 * 1000;
 
 export const getF1Schedule = query(async () => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
 
-	let races: Race[] = await pb.collection('races').getFullList();
+	const races: Race[] = await pb.collection('races').getFullList();
 
 	return races;
 });

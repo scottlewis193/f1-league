@@ -50,8 +50,8 @@ export function getPlayerStats(
 	let place = 0;
 	let exact = 0;
 	let lastPointsEarned = 0;
-	let userSubmissions = submissions.filter((submission) => submission.expand.user.id === user);
-	let historyEntries: {
+	const userSubmissions = submissions.filter((submission) => submission.expand.user.id === user);
+	const historyEntries: {
 		location: string;
 		predictions: string[];
 		results: string[];
@@ -69,7 +69,7 @@ export function getPlayerStats(
 
 		const top3 = race.raceResults.slice(0, 3);
 
-		let historyEntry: {
+		const historyEntry: {
 			location: string;
 			predictions: string[];
 			results: string[];

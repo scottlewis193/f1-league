@@ -1,10 +1,8 @@
 import { form, getRequestEvent, query } from '$app/server';
-import type { Prediction as Prediction } from '$lib/types';
 import { redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
 import {
 	getFeatureFlagStatus,
-	getNextRaceDb,
 	getNextRacePredictionsDb,
 	getPredictionsDb,
 	getUserPredictionsDb

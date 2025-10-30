@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { pollTxs, restoreWallet, wallet } from '$lib/stores/wallet.svelte';
-	import { shortAddress, usdToGbp } from '$lib/utils';
+	import { shortAddress } from '$lib/utils';
 	import { onDestroy, onMount } from 'svelte';
 	import { flip } from 'svelte/animate';
 	import { fade } from 'svelte/transition';
-	import { getToastManagerContext } from '$lib/stores/toastmanager.svelte';
 	import WalletCard from './WalletCard.svelte';
 
 	onMount(async () => {

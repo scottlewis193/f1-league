@@ -6,20 +6,15 @@ import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import {
 	Connection,
 	PublicKey,
-	SystemProgram,
 	Transaction,
-	TransactionInstruction,
-	sendAndConfirmTransaction
+	TransactionInstruction
 } from '@solana/web3.js';
 import {
-	createAssociatedTokenAccountInstruction,
 	createTransferCheckedInstruction,
 	getAssociatedTokenAddress,
-	getOrCreateAssociatedTokenAccount,
 	TOKEN_PROGRAM_ID
 } from '@solana/spl-token';
 import { PUBLIC_HELIUS_API_KEY, PUBLIC_PROJECT_ID } from '$env/static/public';
-import { updateCurrentPlayerWalletAddress } from '../remote/players.remote';
 import { hasWalletConnectSession } from '../walletSessionCheck';
 
 const TX_POLL_INTERVAL = 10000;

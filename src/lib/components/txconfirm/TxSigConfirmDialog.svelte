@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import ConfirmSuccess from './ConfirmSuccess.svelte';
 	import ConfirmFail from './ConfirmFail.svelte';
 

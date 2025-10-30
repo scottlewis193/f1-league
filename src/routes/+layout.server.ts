@@ -1,8 +1,8 @@
 import { getCurrentPlayerWithStats } from '$lib/remote/players.remote';
-import { getCurrentPlayerWithStatsDb, getPlayersWithStatsDb } from '$lib/server/data.js';
+import { getPlayersWithStatsDb } from '$lib/server/data.js';
 import type { Player } from '$lib/types';
 
-export const load = async ({ locals, url }) => {
+export const load = async ({ url }) => {
 	const players = await getPlayersWithStatsDb();
 	const currentUser = await getCurrentPlayerWithStats();
 	return {

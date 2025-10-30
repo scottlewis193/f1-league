@@ -2,8 +2,6 @@ import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 import { defineConfig } from 'vite';
-import fs from 'fs';
-import path from 'path';
 
 export default defineConfig({
 	plugins: [

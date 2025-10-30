@@ -75,7 +75,7 @@ export async function getPlayersDb(pbInstance: PocketBase | undefined = undefine
 export async function getPlayersWithStatsDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
 	const players: Partial<Player>[] = await pb.collection('users').getFullList();
-	let playersWithStats: Player[] = [];
+	const playersWithStats: Player[] = [];
 
 	const submissions = await getPredictionsDb();
 	const races = await getRacesDb();
@@ -278,7 +278,7 @@ export async function updateDriversDb(
 
 export async function getTeamsDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
-	let teams: Team[] = await pb.collection('teams').getFullList({ sort: '-points' });
+	const teams: Team[] = await pb.collection('teams').getFullList({ sort: '-points' });
 	return teams;
 }
 
@@ -311,14 +311,14 @@ export async function updateTeamsDb(
 
 export async function getOddsDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
-	let odds: OddsRecord[] = await pb.collection('odds').getFullList({ expand: 'driver,race' });
+	const odds: OddsRecord[] = await pb.collection('odds').getFullList({ expand: 'driver,race' });
 	return odds;
 }
 
 export async function getNextRaceOddsDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
 	const race = (await getNextRaceDb()).id;
-	let odds: OddsRecord[] = await pb
+	const odds: OddsRecord[] = await pb
 		.collection('odds')
 		.getFullList({ expand: 'driver,race', filter: `race='${race}'` });
 	return odds;
@@ -387,7 +387,7 @@ export async function getFeatureFlagStatus(
 
 export async function getPredictionsDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
-	let predictions: Prediction[] = await pb
+	const predictions: Prediction[] = await pb
 		.collection('predictions')
 		.getFullList({ expand: 'user,race' });
 	return predictions;
@@ -396,7 +396,7 @@ export async function getPredictionsDb(pbInstance: PocketBase | undefined = unde
 export async function getNextRacePredictionsDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
 	const race = (await getNextRaceDb()).id;
-	let predictions: Prediction[] = await pb
+	const predictions: Prediction[] = await pb
 		.collection('predictions')
 		.getFullList({ expand: 'user,race', filter: `race='${race}'` });
 	return predictions;
@@ -407,7 +407,7 @@ export async function getUserPredictionsDb(
 	pbInstance: PocketBase | undefined = undefined
 ) {
 	const pb = pbInstance || _pb;
-	let predictions: Prediction[] = await pb
+	const predictions: Prediction[] = await pb
 		.collection('predictions')
 		.getFullList({ expand: 'user,race', filter: `user='${userId}'` });
 	return predictions;
@@ -415,6 +415,6 @@ export async function getUserPredictionsDb(
 
 export async function getDriversDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
-	let drivers: Driver[] = await pb.collection('drivers').getFullList({ sort: '-points' });
+	const drivers: Driver[] = await pb.collection('drivers').getFullList({ sort: '-points' });
 	return drivers;
 }
