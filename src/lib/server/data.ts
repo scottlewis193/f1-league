@@ -32,8 +32,8 @@ export async function refreshF1DataHourly() {
 	const currentRaceResults = currentRaces.map((r) => r.raceResults).filter((rr) => rr.length > 0);
 	const newRaceResults = races.map((r) => r.raceResults).filter((rr) => rr.length > 0);
 
-	//if race results have come in, we will notify users/players
-	if (currentRaceResults.length != newRaceResults.length) {
+	//if race results have come in, we will notify users/players and pay out the winnings
+	if (currentRaceResults.length !== newRaceResults.length) {
 		console.log('notifications sent');
 
 		sendNotifications({
@@ -88,7 +88,9 @@ export async function getPlayersWithStatsDb(pbInstance: PocketBase | undefined =
 			id,
 			name,
 			email: player.email || '',
+			avatar: player.avatar || '',
 			displayLatestResultsDialog: player.displayLatestResultsDialog || false,
+			walletAddress: player.walletAddress || '',
 			...getPlayerStats(id, submissions, races, odds)
 		});
 	});
@@ -101,11 +103,11 @@ export async function getPlayersWithStatsDb(pbInstance: PocketBase | undefined =
 export async function getCurrentPlayerWithStatsDb(
 	playerId: string,
 	pbInstance: PocketBase | undefined = undefined
-) {
+): Promise<Player | null> {
 	const pb = pbInstance || _pb;
 	const player: Player = await pb.collection('users').getOne(playerId);
 
-	if (!player) return {};
+	if (!player) return null;
 
 	const submissions = await getPredictionsDb();
 	const races = await getRacesDb();
@@ -115,7 +117,9 @@ export async function getCurrentPlayerWithStatsDb(
 		id: player.id,
 		name: player.name,
 		email: player.email,
+		avatar: player.avatar,
 		displayLatestResultsDialog: player.displayLatestResultsDialog || false,
+		walletAddress: player.walletAddress || '',
 		...getPlayerStats(player.id, submissions, races, odds)
 	};
 
@@ -370,6 +374,15 @@ export async function updateOddsDb(
 			});
 		}
 	}
+}
+
+export async function getFeatureFlagStatus(
+	pbInstance: PocketBase | undefined = undefined,
+	name: string
+) {
+	const pb = pbInstance || _pb;
+	const result = await pb.collection('feature_flags').getFirstListItem(`name="${name}"`);
+	return result.enabled;
 }
 
 export async function getPredictionsDb(pbInstance: PocketBase | undefined = undefined) {

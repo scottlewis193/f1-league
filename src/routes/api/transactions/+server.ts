@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { PublicKey, type ConfirmedSignatureInfo } from '@solana/web3.js';
-import { connection } from '$lib/appkit.svelte.js';
+import { connection } from '$lib/server/solana';
 
 const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
 
@@ -14,12 +14,16 @@ export async function GET({ url }) {
 	if (!address) return json({ error: 'Missing address' }, { status: 400 });
 
 	const pubKey = new PublicKey(address);
+	const usdcTokenAccount = await connection.getParsedTokenAccountsByOwner(pubKey, {
+		mint: USDC_MINT
+	});
+	if (usdcTokenAccount.value.length === 0) return json({ transactions: [], balance: 0 });
+
+	const tokenAccountPubKey = usdcTokenAccount.value[0].pubkey;
 
 	try {
 		// Step 1: get signatures since last known
-		const signatures = await connection.getSignaturesForAddress(pubKey, {
-			limit: 10
-		});
+		const signatures = await connection.getSignaturesForAddress(tokenAccountPubKey);
 
 		// no new sigs → return cached
 		if (signatures.length === 0) {
@@ -52,35 +56,34 @@ export async function GET({ url }) {
 			slot: number;
 			amount: number;
 			source: string;
-			walletSource: string;
+			authority: string;
 			destination: string;
 			transferIn: boolean;
 		}[] = [];
 
 		for (const tx of txns) {
 			if (!tx) continue;
+			if (cachedTxs.some((t) => t.signature === tx.transaction.signatures[0])) continue;
 			for (const instr of tx.transaction.message.instructions) {
 				//@ts-ignore
-				if (instr.program === 'spl-token' && instr.parsed?.type === 'transferChecked') {
+				if (instr.program === 'spl-token') {
 					//@ts-ignore
 					const info = instr.parsed.info;
-					if (info.mint === USDC_MINT.toBase58()) {
-						newTransfers.push({
-							signature: tx.transaction.signatures[0],
-							slot: tx.slot,
-							amount: info.tokenAmount.uiAmount,
-							source: info.source,
-							walletSource: info.authority,
-							destination: info.destination,
-							transferIn: info.destination === userTokenAccount
-						});
-					}
+					newTransfers.push({
+						signature: tx.transaction.signatures[0],
+						slot: tx.slot,
+						amount: info.tokenAmount.uiAmount,
+						source: info.source,
+						authority: info.authority,
+						destination: info.destination,
+						transferIn: info.destination === userTokenAccount
+					});
 				}
 			}
 		}
 
 		// Step 5: update latest signature + cached txs
-		lastSignature = signatures[0]?.signature || lastSignature;
+		lastSignature = signatures[signatures.length - 1]?.signature || lastSignature;
 		cachedTxs = [...newTransfers, ...cachedTxs].slice(0, 50);
 
 		// Step 6: if there were new transfers, refresh balance

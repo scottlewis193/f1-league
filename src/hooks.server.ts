@@ -26,18 +26,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 		const url = new URL(event.request.url);
 		const isLoginPage = url.pathname === '/login';
-		const hasEphemeralToken = url.searchParams.has('token');
-		const ua = event.request.headers.get('user-agent') || '';
-		const isPhantomBrowser = /Phantom/i.test(ua);
-		const isWalletRoute = url.pathname.startsWith('/wallet');
-		const isPhantomReturn = url.pathname.startsWith('/phantom-return');
-		const allowedUnauthed =
-			isLoginPage || isWalletRoute || isPhantomReturn || hasEphemeralToken || isPhantomBrowser;
-
-		if (!event.locals.user && !allowedUnauthed) {
-			console.log('Redirecting unauthenticated user to /login');
-			throw redirect(303, '/login');
-		}
+		const allowedUnauthed = isLoginPage;
 
 		// --- Only redirect normal browsers without auth ---
 		if (!event.locals.user && !allowedUnauthed) {

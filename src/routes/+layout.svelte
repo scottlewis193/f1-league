@@ -1,18 +1,22 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.png';
-	// import '$lib/pwa.ts';
 	import { useRegisterSW } from 'virtual:pwa-register/svelte';
+	import { PUBLIC_PB_URL } from '$env/static/public';
 	import { page } from '$app/state';
-	import PlayersIcon from '$lib/components/PlayersIcon.svelte';
-	import DriversIcon from '$lib/components/DriversIcon.svelte';
-	import TeamsIcon from '$lib/components/TeamsIcon.svelte';
-	import RulesIcon from '$lib/components/RulesIcon.svelte';
-	import ProfileIcon from '$lib/components/ProfileIcon.svelte';
-	import SettingsIcon from '$lib/components/SettingsIcon.svelte';
-	import LogOutIcon from '$lib/components/LogOutIcon.svelte';
-	import SubmissionsIcon from '$lib/components/SubmissionsIcon.svelte';
-	import RacesIcon from '$lib/components/RacesIcon.svelte';
+	import {
+		DriversIcon,
+		PlayersIcon,
+		TeamsIcon,
+		RacesIcon,
+		ProfileIcon,
+		SettingsIcon,
+		WalletIcon,
+		LogOutIcon,
+		StreamIcon,
+		SubmissionsIcon,
+		RulesIcon
+	} from '$lib/components/icons';
 	import { getNextRace } from '$lib/remote/races.remote';
 	import { titleCase } from '$lib/utils';
 	import { onMount } from 'svelte';
@@ -20,8 +24,9 @@
 	import { logout, updateCurrentPlayer } from '$lib/remote/players.remote';
 	import { Confetti } from 'svelte-confetti';
 	import ConfettiContainer from '$lib/components/ConfettiContainer.svelte';
-	import StreamIcon from '$lib/components/StreamIcon.svelte';
-	import WalletIcon from '$lib/components/WalletIcon.svelte';
+	import ToastManager from '$lib/components/ToastManager.svelte';
+	import MessageDialog from '$lib/components/MessageDialog.svelte';
+	import { setToastManagerContext } from '$lib/stores/toastmanager.svelte';
 	let { children, data } = $props();
 	const url = $derived(page.url.pathname);
 	// svelte-ignore non_reactive_update
@@ -36,6 +41,7 @@
 	let confettiContainer: HTMLDivElement;
 
 	const nextRaceQuery = getNextRace();
+	setToastManagerContext();
 
 	// Set up SW registration
 	const { needRefresh, updateServiceWorker } = useRegisterSW({
@@ -56,9 +62,11 @@
 	//client init
 	onMount(async () => {
 		await subscribeToPush();
+	});
 
+	onMount(() => {
 		if ($needRefresh) updateModal.showModal();
-		if (data.user.displayLatestResultsDialog) {
+		if (data.currentUser.displayLatestResultsDialog) {
 			raceResultsDialog.showModal();
 
 			setTimeout(() => {
@@ -131,7 +139,20 @@
 								popovertarget="popover-1"
 								style="anchor-name:--anchor-1"
 							>
-								<span>{data.user?.name.substring(0, 1).toUpperCase()}</span>
+								{#if data.currentUser.avatar}
+									<img
+										src={PUBLIC_PB_URL +
+											'/api/files/users/' +
+											data.currentUser?.id +
+											'/' +
+											data.currentUser?.avatar +
+											'?thumb=48x48'}
+										alt="User Avatar"
+										class="h-full w-full rounded-full object-cover"
+									/>
+								{:else}
+									<span>{data.currentUser?.name.substring(0, 1).toUpperCase()}</span>
+								{/if}
 							</button>
 						</div>
 					</div>
@@ -262,11 +283,8 @@
 			<div class="modal-action">
 				<button
 					class="btn btn-sm btn-primary"
-					onclick={() => {
-						console.log('update');
-						updateServiceWorker(true).then(() => {
-							console.log('updateServiceWorker(true) resolved');
-						});
+					onclick={async () => {
+						await updateServiceWorker(true);
 					}}>Reload</button
 				>
 			</div>
@@ -275,19 +293,25 @@
 
 	<dialog bind:this={raceResultsDialog} class="modal w-[100vw]">
 		<div class="modal-box">
-			<h3 class="text-lg font-bold">Congratulations!</h3>
-			<p class="py-4">You have earned {data?.user?.lastPointsEarned} point(s)</p>
-			<div class="modal-action">
-				<button
-					class="btn btn-sm btn-primary"
-					onclick={async () => {
-						const currentPlayer = data.user;
-						currentPlayer.displayLatestResultsDialog = false;
-						await updateCurrentPlayer(currentPlayer);
-						raceResultsDialog.close();
-					}}>Close</button
-				>
+			<h3 class="text-lg font-bold">Prediction Results</h3>
+			<div class="flex flex-col items-center justify-center gap-4 py-4">
+				{#each data?.users.sort((a, b) => b.lastPointsEarned - a.lastPointsEarned) as user, index}
+					<div style={'font-size: ' + (data?.users.length - (index - 1)) * 12 + 'px'}>
+						{user.name}
+						{user.lastPointsEarned} pts
+					</div>
+				{/each}
 			</div>
+			<div class="modal-action"></div>
+			<button
+				class="btn w-full btn-neutral"
+				onclick={async () => {
+					const currentPlayer = data.currentUser;
+					currentPlayer.displayLatestResultsDialog = false;
+					await updateCurrentPlayer(currentPlayer);
+					raceResultsDialog.close();
+				}}>Close</button
+			>
 		</div>
 		<div
 			bind:this={confettiContainer}
@@ -318,3 +342,6 @@
 		</div>
 	</ConfettiContainer>
 {/if}
+
+<MessageDialog />
+<ToastManager />

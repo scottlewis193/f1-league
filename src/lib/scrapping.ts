@@ -173,7 +173,6 @@ export async function scrapeF1Races(season = '2025') {
 					return { date, time, title };
 				});
 
-				console.log('get race results btn');
 				const raceResultBtn = [...document.querySelectorAll('button')].find(
 					(btn) => btn.textContent?.trim() === 'Race Result'
 				);
@@ -195,8 +194,6 @@ export async function scrapeF1Races(season = '2025') {
 				const raceResults: string[] = raceResultItems.map((span: HTMLSpanElement) => {
 					return span.innerText.trim();
 				});
-
-				console.log('sessions', sessions);
 
 				return { raceName, sessions, raceResults };
 			});

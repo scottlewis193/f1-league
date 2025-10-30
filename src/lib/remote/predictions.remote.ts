@@ -3,11 +3,18 @@ import type { Prediction as Prediction } from '$lib/types';
 import { redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
 import {
+	getFeatureFlagStatus,
 	getNextRaceDb,
 	getNextRacePredictionsDb,
 	getPredictionsDb,
 	getUserPredictionsDb
 } from '$lib/server/data';
+
+export const isWageringEnabled = query(async () => {
+	const event = getRequestEvent();
+	const pb = event.locals.pb;
+	return getFeatureFlagStatus(pb, 'wagering');
+});
 
 export const getPredictions = query(async () => {
 	const event = getRequestEvent();

@@ -13,9 +13,10 @@ const playerProfileSchema = v.intersect([
 		name: v.string(),
 		email: v.string(),
 		password: v.string(),
-		passwordConfirm: v.string()
+		passwordConfirm: v.string(),
+		avatar: v.file()
 	}),
-	v.record(v.string(), v.string())
+	v.record(v.string(), v.any())
 ]);
 
 const playerLoginSchema = v.object({
@@ -49,6 +50,16 @@ export const updateCurrentPlayer = command('unchecked', async (playerData: Playe
 	const pb = event.locals.pb;
 	await updateCurrentPlayerDb(event.locals.user?.id || '', playerData, pb);
 });
+
+export const updateCurrentPlayerWalletAddress = command(
+	'unchecked',
+	async (walletAddress: string) => {
+		const event = getRequestEvent();
+		const player = event.locals.user as unknown as Player;
+		player.walletAddress = walletAddress;
+		await updateCurrentPlayer(player);
+	}
+);
 
 export const updatePlayerProfile = form(playerProfileSchema, async (data) => {
 	const event = getRequestEvent();
@@ -94,13 +105,11 @@ export const register = form(playerRegisterSchema, async (data) => {
 	const pb = event.locals.pb;
 	const { name, email, password, passwordConfirm } = data;
 
-	console.log({ name, email, password, passwordConfirm });
 	if (password !== passwordConfirm) {
 		return fail(400, { error: 'Passwords do not match' });
 	}
 
 	const user = await pb.collection('users').create({ name, email, password, passwordConfirm });
-	console.log(user);
 
 	return redirect(303, `/login`);
 });

@@ -37,6 +37,15 @@ export function getPlayerStats(
 	races: Race[],
 	odds: OddsRecord[]
 ) {
+	let lastRaceWithResults: Race = races.sort((a, b) => b.raceNo - a.raceNo)[0];
+	//we iterate through races in descending order of race no
+	for (const race of races.sort((a, b) => b.raceNo - a.raceNo)) {
+		if (race.raceResults.length > 0) {
+			lastRaceWithResults = race;
+			break;
+		}
+	}
+
 	let points = 0;
 	let place = 0;
 	let exact = 0;
@@ -86,7 +95,8 @@ export function getPlayerStats(
 				points += raceDriverOdds.pointsForPlace;
 
 				lastPointsEarned +=
-					submission === userSubmissions[userSubmissions.length - 1]
+					submission ===
+					userSubmissions.find((submission) => submission.expand.race.id == lastRaceWithResults.id)
 						? raceDriverOdds.pointsForPlace
 						: 0;
 				place += 1;
@@ -100,7 +110,8 @@ export function getPlayerStats(
 			if (top3[i] == driverName) {
 				points += raceDriverOdds.pointsForExact;
 				lastPointsEarned +=
-					submission === userSubmissions[userSubmissions.length - 1]
+					submission ===
+					userSubmissions.find((submission) => submission.expand.race.id == lastRaceWithResults.id)
 						? raceDriverOdds.pointsForExact
 						: 0;
 				exact += 1;
@@ -164,4 +175,24 @@ export function createTransferTx(fromPubKey: PublicKey, toPubKey: PublicKey, lam
 			lamports
 		})
 	);
+}
+
+export function getCSSVarValue(varName: string) {
+	return window.getComputedStyle(document.body).getPropertyValue(varName);
+}
+
+export function setCSSVarValue(varName: string, value: string) {
+	const r = document.querySelector(':root') as HTMLElement;
+	r.style.setProperty(varName, value);
+}
+
+export async function usdToGbp(usdAmount: number) {
+	const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=GBP');
+	const data = await res.json();
+	const rate = data.rates.GBP; // e.g., 0.80
+	return usdAmount * rate;
+}
+
+export function copyToClipboard(text: string) {
+	navigator.clipboard.writeText(text);
 }

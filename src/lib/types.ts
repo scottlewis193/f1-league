@@ -10,7 +10,9 @@ export type Player = {
 	id: string;
 	name: string;
 	email: string;
+	avatar: string;
 	displayLatestResultsDialog: boolean;
+	walletAddress: string;
 	points: number;
 	lastPointsEarned: number;
 	place: number;

@@ -30,7 +30,12 @@
 	{@const player = currentPlayerQuery.current}
 	<div in:fade class="card h-full w-full bg-base-100">
 		<div class="card-body w-full">
-			<form id="profile-form" class="flex flex-col gap-4" {...updatePlayerProfile}>
+			<form
+				id="profile-form"
+				class="flex flex-col gap-4"
+				{...updatePlayerProfile}
+				enctype="multipart/form-data"
+			>
 				<div>Name</div>
 				<input
 					type="text"
@@ -39,6 +44,15 @@
 					class="input w-full"
 					maxlength="25"
 					value={player?.name}
+				/>
+
+				<div>Email</div>
+				<input
+					type="email"
+					placeholder="Email"
+					name="email"
+					class="input w-full"
+					value={player?.email}
 				/>
 
 				<div>Current Password</div>
@@ -69,6 +83,8 @@
 					onchange={validateConfirmPassword}
 					onkeyup={validateConfirmPassword}
 				/>
+				<div>Avatar</div>
+				<input class="file-input w-full" type="file" name="avatar" />
 			</form>
 		</div>
 	</div>

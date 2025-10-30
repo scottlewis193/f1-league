@@ -1,27 +1,36 @@
 <script lang="ts">
-	import { PUBLIC_PB_URL } from '$env/static/public';
-	import SubmissionSelect from '$lib/components/SubmissionSelect.svelte';
+	import { PUBLIC_PB_URL, PUBLIC_POT_WALLET_ADDRESS } from '$env/static/public';
+	import SubmissionSelect from '$lib/components/submissions/SubmissionSelect.svelte';
 	import { getDrivers } from '$lib/remote/drivers.remote.js';
 	import { getNextRace } from '$lib/remote/races.remote';
-	import { addUpdatePrediction, getNextRacePredictions } from '$lib/remote/predictions.remote.js';
-	import { userHasSubmitted } from '$lib/utils';
+	import {
+		addUpdatePrediction,
+		getNextRacePredictions,
+		isWageringEnabled
+	} from '$lib/remote/predictions.remote.js';
+	import { usdToGbp, userHasSubmitted } from '$lib/utils';
 	import { fade } from 'svelte/transition';
 	import PocketBase from 'pocketbase';
 	import { onMount } from 'svelte';
 	import { getNextRaceOdds } from '$lib/remote/odds.remote';
+	import TxSigConfirmDialog from '$lib/components/txconfirm/TxSigConfirmDialog.svelte';
+	import { restoreWallet, sendUSDC, wallet } from '$lib/stores/wallet.svelte';
+	import { MessageButtons, showMessageDialog } from '$lib/stores/messagedialog.svelte';
+	import { getToastManagerContext } from '$lib/stores/toastmanager.svelte';
 
+	const wageringEnabled = isWageringEnabled();
 	const driversQuery = getDrivers();
 	const predictionsQuery = getNextRacePredictions();
 	const nextRaceQuery = getNextRace();
 	const oddsQuery = getNextRaceOdds();
-	const pb = new PocketBase(PUBLIC_PB_URL);
+	const toastManager = getToastManagerContext();
 
-	onMount(() => {
-		pb.authStore.loadFromCookie(document.cookie);
-	});
+	const pb = new PocketBase(PUBLIC_PB_URL);
 
 	// svelte-ignore non_reactive_update
 	let submissionModal: HTMLDialogElement;
+	// svelte-ignore non_reactive_update
+	let submissionForm: HTMLFormElement;
 	let submissionsValid = $state(false);
 
 	let driverSelections = $state({
@@ -31,6 +40,9 @@
 	});
 
 	let userSubmissionId: string = $state('');
+
+	//last confirmed transaction
+	let confirmedTx = $state({ signature: '', hasFailed: false });
 
 	function loadUserSelections() {
 		if (!predictionsQuery.ready) return;
@@ -98,7 +110,49 @@
 		submissionsValid = true;
 	}
 
+	async function sendToPot() {
+		if (!wallet.connected) {
+			await showMessageDialog({
+				title: 'Wallet not connected',
+				message: 'Please connect your wallet to make a submission',
+				buttons: MessageButtons.Ok
+			});
+			return;
+		}
+		if ((await usdToGbp(wallet.balanceUSDC)) < 7) {
+			await showMessageDialog({
+				title: 'Insufficient funds',
+				message: 'You need to have at least 5 GBP in your wallet to make a submission',
+				buttons: MessageButtons.Ok
+			});
+			return;
+		}
+		const confirmDialog = document.getElementById('txSigConfirmDialog') as HTMLDialogElement;
+		confirmDialog.showModal();
+		const details = await sendUSDC(
+			wallet.publicKey?.toBase58() || '',
+			PUBLIC_POT_WALLET_ADDRESS,
+			1
+		);
+		confirmedTx.signature = details.signature || '';
+		confirmedTx.hasFailed = details.hasFailed;
+	}
+
+	onMount(async () => {
+		pb.authStore.loadFromCookie(document.cookie);
+		await restoreWallet();
+	});
+
 	$effect(() => {
+		// if (
+		// 	predictionsQuery.current &&
+		// 	nextRaceQuery.current &&
+		// 	driversQuery.current &&
+		// 	oddsQuery.current
+		// ) {
+		// 	submissionModal.showModal();
+		// }
+
 		//this is to check if the user has selected the same driver for more than one position
 		//if they have, we will reset the one that isn't the last changed one
 		const lastChangedDriverSelection = Object.values(driverSelections).find(
@@ -136,7 +190,7 @@
 	<div class="flex h-full w-full items-center justify-center">
 		<span class="loading loading-md loading-spinner"></span>
 	</div>
-{:else if predictionsQuery.ready && nextRaceQuery.ready && driversQuery.ready && oddsQuery.ready}
+{:else if predictionsQuery.ready && nextRaceQuery.ready && driversQuery.ready && oddsQuery.ready && wageringEnabled.ready}
 	<div in:fade class="card h-full w-full overflow-auto bg-base-100">
 		<div class="card-body">
 			<table class="table">
@@ -222,7 +276,11 @@
 	<!--submission modal-->
 	<dialog bind:this={submissionModal} id="submission-modal" class="modal overflow-hidden">
 		<div class="modal-box flex justify-center overflow-hidden">
-			<form class="flex w-full flex-col justify-center" {...addUpdatePrediction}>
+			<form
+				bind:this={submissionForm}
+				class="flex w-full flex-col justify-center"
+				{...addUpdatePrediction}
+			>
 				<div class="overflow-hidden rounded-box border border-base-content/5 bg-base-100">
 					<table class="table">
 						<!-- head -->
@@ -304,12 +362,26 @@
 						>
 					</div>
 					<div class="w-1/2">
-						<button disabled={!submissionsValid} type="submit" class="btn mt-4 w-full btn-success"
-							>Submit</button
+						<button
+							onclick={async () => {
+								wageringEnabled.current ? await sendToPot() : submissionForm.requestSubmit();
+								toastManager.addToast('Submission successful!', 'success');
+							}}
+							disabled={!submissionsValid}
+							type="button"
+							class="btn mt-4 w-full btn-success"
+							>{userHasSubmitted(predictionsQuery.current, pb.authStore.record?.id || '')
+								? 'Submit'
+								: 'Submit' + (wageringEnabled.current ? ' (£5.00)' : '')}</button
 						>
 					</div>
 				</div>
 			</form>
 		</div>
+		<TxSigConfirmDialog
+			hasFailed={confirmedTx.hasFailed}
+			signature={confirmedTx.signature}
+			{submissionForm}
+		/>
 	</dialog>
 {/if}

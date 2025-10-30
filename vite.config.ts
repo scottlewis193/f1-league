@@ -40,11 +40,14 @@ export default defineConfig({
 		__BUILD_TIMESTAMP__: JSON.stringify(Date.now())
 	},
 	server: {
-		https: {
-			key: fs.readFileSync(path.resolve('localhost-key.pem')),
-			cert: fs.readFileSync(path.resolve('localhost.pem'))
-		},
-		host: 'localhost',
-		port: 5173
+		allowedHosts: true
 	}
+	// server: {
+	// 	https: {
+	// 		key: fs.readFileSync(path.resolve('localhost-key.pem')),
+	// 		cert: fs.readFileSync(path.resolve('localhost.pem'))
+	// 	},
+	// 	host: 'localhost',
+	// 	port: 5173
+	// }
 });

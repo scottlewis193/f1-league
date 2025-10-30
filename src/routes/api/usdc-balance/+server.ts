@@ -1,7 +1,7 @@
 // src/routes/api/usdc-balance/+server.ts
 import { json } from '@sveltejs/kit';
-import { Connection, PublicKey } from '@solana/web3.js';
-import { connection } from '$lib/appkit.svelte.js';
+import { PublicKey } from '@solana/web3.js';
+import { connection } from '$lib/server/solana';
 
 const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
 
