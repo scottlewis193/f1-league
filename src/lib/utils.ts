@@ -193,6 +193,20 @@ export async function usdToGbp(usdAmount: number) {
 	return usdAmount * rate;
 }
 
+export async function gbpToUsd(gbpAmount: number) {
+	const res = await fetch('https://api.frankfurter.app/latest?from=GBP&to=USD');
+	const data = await res.json();
+	const rate = data.rates.USD; // e.g., 1.25
+	return gbpAmount * rate;
+}
+
 export function copyToClipboard(text: string) {
 	navigator.clipboard.writeText(text);
+}
+
+export function withTimeout(promise: Promise<any>, ms: number, message = 'Operation timed out') {
+	const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms));
+
+	// whichever settles first (resolves or rejects) wins
+	return Promise.race([promise, timeout]);
 }

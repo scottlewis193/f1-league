@@ -26,20 +26,41 @@
 				<span class="loading loading-md loading-spinner"></span>
 			</div>
 		{:else if query.ready}
-			<table class="table">
+			<table class="table not-md:table-sm">
 				<thead>
 					<tr>
 						<th>Player</th>
 						<th>Pl</th>
 						<th>Ex</th>
 						<th>Pts</th>
-						<th>History</th>
+						<th></th>
 					</tr>
 				</thead>
 				<tbody>
-					{#each query.current as player, index}
+					{#each query.current as player (player.id)}
 						<tr>
-							<td class="font-bold">{player.name}</td>
+							<td class="flex items-center gap-4 font-bold"
+								>{#if player.avatar}
+									{@const avatarUrl =
+										PUBLIC_PB_URL +
+										'/api/files/users/' +
+										player.id +
+										'/' +
+										player.avatar +
+										'?thumb=48x48'}
+									<div
+										style="background-image: url({avatarUrl}); background-size: cover;"
+										class="flex size-10 items-center justify-center rounded-box text-neutral-content"
+									></div>
+								{:else}
+									<div
+										class="flex size-10 items-center justify-center rounded-box bg-neutral text-neutral-content"
+									>
+										<span>{player.name.substring(0, 1).toUpperCase()}</span>
+									</div>
+								{/if}
+								{player.name}</td
+							>
 							<td>{player.place}</td>
 							<td>{player.exact}</td>
 							<td>{player.points}</td>
@@ -64,24 +85,25 @@
 	<div class="modal-box overflow-hidden">
 		<div class="max-h-[calc(100vh-6rem)] overflow-auto pb-16">
 			{#if historyPlayer}
-				{#each historyPlayer.historyEntries as entry}
+				{#each historyPlayer.historyEntries as entry (entry.location)}
 					<div class="flex flex-col gap-2">
 						<h3 class="mt-2 text-center text-lg">{titleCase(entry.location)}</h3>
 						<table class="table table-sm">
 							<thead>
 								<tr>
-									<th>Result</th>
 									<th>Predict</th>
+									<th>Result</th>
+
 									<th>Pl</th>
 									<th>Ex</th>
 									<th>Pts</th>
 								</tr>
 							</thead>
 							<tbody>
-								{#each entry.results as result, index}
+								{#each entry.results as result, index (index)}
 									<tr>
-										<td>{result}</td>
 										<td>{entry.predictions[index]}</td>
+										<td>{result}</td>
 
 										<td>{entry.place[index]}</td>
 										<td>{entry.exact[index]}</td>

@@ -8,7 +8,7 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit(),
 		SvelteKitPWA({
-			registerType: 'prompt',
+			registerType: 'autoUpdate',
 			strategies: 'injectManifest',
 			srcDir: 'src',
 			filename: 'service-worker.js', // output SW for browser
@@ -20,7 +20,7 @@ export default defineConfig({
 				name: 'F1 League',
 				short_name: 'F1 League',
 				start_url: '/',
-				display: 'standalone',
+				display: 'fullscreen',
 				background_color: '#000000',
 				theme_color: '#000000',
 				icons: [

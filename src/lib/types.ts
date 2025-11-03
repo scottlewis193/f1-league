@@ -6,7 +6,7 @@ export type Prediction = {
 };
 
 export type Player = {
-	[key: string]: any;
+	[key: string]: string | boolean | number | HistoryEntry[];
 	id: string;
 	name: string;
 	email: string;
@@ -17,14 +17,16 @@ export type Player = {
 	lastPointsEarned: number;
 	place: number;
 	exact: number;
-	historyEntries: {
-		location: string;
-		predictions: string[];
-		results: string[];
-		points: number[];
-		place: string[];
-		exact: string[];
-	}[];
+	historyEntries: HistoryEntry[];
+};
+
+export type HistoryEntry = {
+	location: string;
+	predictions: string[];
+	results: string[];
+	points: number[];
+	place: string[];
+	exact: string[];
 };
 
 export type Team = {

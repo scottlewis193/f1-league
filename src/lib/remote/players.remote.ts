@@ -14,7 +14,7 @@ const playerProfileSchema = v.intersect([
 		email: v.string(),
 		password: v.string(),
 		passwordConfirm: v.string(),
-		avatar: v.file()
+		avatar: v.optional(v.file())
 	}),
 	v.record(v.string(), v.any())
 ]);

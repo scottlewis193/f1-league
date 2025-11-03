@@ -11,7 +11,7 @@ export const sendNotifications = async (payload: {
 	icon?: string;
 	badge?: string;
 	tag?: string;
-	data?: any;
+	data?: { [key: string]: string | number | boolean };
 	actions?: { action: string; title: string; icon?: string }[];
 }) => {
 	let successCount = 0;

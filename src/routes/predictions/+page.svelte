@@ -100,8 +100,8 @@
 	}
 
 	function validateSelections() {
-		for (const [driver, values] of Object.entries(driverSelections)) {
-			if (values.value === 'Driver') {
+		for (const driverSelection of Object.values(driverSelections)) {
+			if (driverSelection.value === 'Driver') {
 				submissionsValid = false;
 				return;
 			}
@@ -119,7 +119,7 @@
 			});
 			return;
 		}
-		if ((await usdToGbp(wallet.balanceUSDC)) < 7) {
+		if ((await usdToGbp(wallet.balanceUSDC)) < 5) {
 			await showMessageDialog({
 				title: 'Insufficient funds',
 				message: 'You need to have at least 5 GBP in your wallet to make a submission',
@@ -132,7 +132,8 @@
 		const details = await sendUSDC(
 			wallet.publicKey?.toBase58() || '',
 			PUBLIC_POT_WALLET_ADDRESS,
-			1
+			5,
+			'F1 League: Sent 5 GBP in USDC to the pot'
 		);
 		confirmedTx.signature = details.signature || '';
 		confirmedTx.hasFailed = details.hasFailed;
@@ -140,7 +141,7 @@
 
 	onMount(async () => {
 		pb.authStore.loadFromCookie(document.cookie);
-		await restoreWallet();
+		if (wageringEnabled.current) await restoreWallet();
 	});
 
 	$effect(() => {
@@ -172,9 +173,12 @@
 				(oddsRecord) => oddsRecord.expand.driver.name === lastChangedDriverSelection.value
 			)?.pointsForExact || 0;
 
-		for (const [driver, values] of Object.entries(driverSelections)) {
-			if (values.value === lastChangedDriverSelection.value && !values.lastChanged) {
-				values.value = 'Driver';
+		for (const driverSelection of Object.values(driverSelections)) {
+			if (
+				driverSelection.value === lastChangedDriverSelection.value &&
+				!driverSelection.lastChanged
+			) {
+				driverSelection.value = 'Driver';
 			}
 		}
 
@@ -193,7 +197,7 @@
 {:else if predictionsQuery.ready && nextRaceQuery.ready && driversQuery.ready && oddsQuery.ready && wageringEnabled.ready}
 	<div in:fade class="card h-full w-full overflow-auto bg-base-100">
 		<div class="card-body">
-			<table class="table">
+			<table class="table not-md:table-sm">
 				<thead>
 					<tr>
 						<th class="w-1/4">Player</th>
@@ -203,7 +207,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each predictionsQuery.current as submission, index}
+					{#each predictionsQuery.current as submission (submission.id)}
 						{@const driver1stOddsPointsPotential = getDriverOddsPointsPotential(
 							submission.predictions[0]
 						)}
@@ -364,7 +368,11 @@
 					<div class="w-1/2">
 						<button
 							onclick={async () => {
-								wageringEnabled.current ? await sendToPot() : submissionForm.requestSubmit();
+								if (wageringEnabled.current) {
+									await sendToPot();
+								} else {
+									submissionForm.requestSubmit();
+								}
 								toastManager.addToast('Submission successful!', 'success');
 							}}
 							disabled={!submissionsValid}

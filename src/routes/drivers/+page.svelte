@@ -13,7 +13,7 @@
 				<span class="loading loading-md loading-spinner"></span>
 			</div>
 		{:else if query.ready}
-			<table class="table table-sm">
+			<table class="table not-md:table-sm">
 				<thead class="sticky top-0">
 					<tr class="">
 						<th>Pos</th>
@@ -23,7 +23,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each query.current as driver}
+					{#each query.current as driver (driver.id)}
 						<tr>
 							<td>{driver.position}</td>
 							<td>{driver.name}</td>

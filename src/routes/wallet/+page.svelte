@@ -1,23 +1,27 @@
 <script lang="ts">
-	import { pollTxs, restoreWallet, wallet } from '$lib/stores/wallet.svelte';
-	import { shortAddress } from '$lib/utils';
+	import { pollTxs, wallet } from '$lib/stores/wallet.svelte';
+	import { shortAddress, withTimeout } from '$lib/utils';
 	import { onDestroy, onMount } from 'svelte';
 	import { flip } from 'svelte/animate';
 	import { fade } from 'svelte/transition';
 	import WalletCard from './WalletCard.svelte';
 
-	onMount(async () => {
-		await restoreWallet();
+	onMount(() => {
+		// silent restore (no modal)
+		console.log('Restoring wallet...');
+		if (!wallet.adapter) return;
+		withTimeout(wallet.adapter.autoConnect(), 2000)
+			.then(() => {
+				wallet.connected = true;
+				console.log('Wallet restored');
+				pollTxs();
+			})
+			.catch((error) => {
+				console.error('Failed to restore wallet:', error);
+			});
 	});
 	onDestroy(() => {
 		clearInterval(wallet.txTimer);
-	});
-
-	$effect(() => {
-		//as soon as wallet is connected, we poll transactions
-		if (wallet.connected) {
-			pollTxs();
-		}
 	});
 </script>
 
@@ -27,16 +31,10 @@
 
 {#if !wallet.connected}
 	<div in:fade class="card h-full w-full overflow-auto bg-base-100">
-		<div class="card-body"></div>
+		<div class="card-body flex items-center justify-center">
+			<div class="loading loading-lg"></div>
+		</div>
 	</div>
-	<button
-		class="btn btn-primary"
-		onclick={() => {
-			pollTxs();
-			wallet.adapter.connect();
-			console.log('Wallet connected', wallet.connecting);
-		}}>Connect Wallet</button
-	>
 {:else}
 	<!-- Transactions -->
 	<ul in:fade class="list h-full overflow-auto rounded-box bg-base-100 p-3 shadow-md">

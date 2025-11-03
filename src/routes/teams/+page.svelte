@@ -13,7 +13,7 @@
 				<span class="loading loading-md loading-spinner"></span>
 			</div>
 		{:else if query.ready}
-			<table class="table table-sm">
+			<table class="table not-md:table-sm">
 				<thead>
 					<tr>
 						<th>Pos</th>
@@ -22,7 +22,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each query.current as team}
+					{#each query.current as team (team.id)}
 						<tr>
 							<td>{team.position}</td>
 							<td>{team.name}</td>

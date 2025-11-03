@@ -10,7 +10,6 @@
 	};
 
 	const formatRaceName = (raceName: string) => {
-		console.log();
 		raceName = raceName.substring(10); //remove Formula 1;
 		raceName = raceName.replace(new Date().getFullYear().toString(), '');
 		return titleCase(raceName);
@@ -26,7 +25,7 @@
 				<span class="loading loading-md loading-spinner"></span>
 			</div>
 		{:else if query.ready}
-			<table class="table">
+			<table class="table not-md:table-sm">
 				<thead>
 					<tr>
 						<th>Race Name</th>
@@ -35,7 +34,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each query.current.sort((a, b) => Date.parse(a.sessions[0].date) - Date.parse(b.sessions[0].date)) as race, index}
+					{#each query.current.sort((a, b) => Date.parse(a.sessions[0].date) - Date.parse(b.sessions[0].date)) as race, index (index)}
 						<tr>
 							<td>{formatRaceName(race.raceName)}</td>
 							<td>{formatLocation(race.location)}</td>

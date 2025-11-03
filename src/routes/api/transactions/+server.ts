@@ -6,7 +6,15 @@ const USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
 
 // Keep state in memory while the server stays warm
 let lastSignature: string | null = null;
-let cachedTxs: any[] = [];
+let cachedTxs: {
+	signature: string;
+	slot: number;
+	amount: number;
+	source: string;
+	authority: string;
+	destination: string;
+	transferIn: boolean;
+}[] = [];
 let cachedBalance: number | null = null;
 
 export async function GET({ url }) {
@@ -65,9 +73,9 @@ export async function GET({ url }) {
 			if (!tx) continue;
 			if (cachedTxs.some((t) => t.signature === tx.transaction.signatures[0])) continue;
 			for (const instr of tx.transaction.message.instructions) {
-				//@ts-ignore
+				//@ts-expect-error unknown
 				if (instr.program === 'spl-token') {
-					//@ts-ignore
+					//@ts-expect-error unknown
 					const info = instr.parsed.info;
 					newTransfers.push({
 						signature: tx.transaction.signatures[0],

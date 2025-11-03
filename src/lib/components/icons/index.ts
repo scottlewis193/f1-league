@@ -9,6 +9,8 @@ import StreamIcon from './xStreamIcon.svelte';
 import SubmissionsIcon from './xSubmissionsIcon.svelte';
 import TeamsIcon from './xTeamsIcon.svelte';
 import WalletIcon from './xWalletIcon.svelte';
+import HistoryIcon from './xHistoryIcon.svelte';
+import DashboardIcon from './xDashboardIcon.svelte';
 
 export {
 	PlayersIcon,
@@ -21,5 +23,7 @@ export {
 	StreamIcon,
 	SubmissionsIcon,
 	TeamsIcon,
-	WalletIcon
+	WalletIcon,
+	HistoryIcon,
+	DashboardIcon
 };

@@ -10,6 +10,18 @@
 		const url = `https://www.coinbase.com/advanced-trade/usdc-gbp`;
 		window.open(url, '_blank');
 	}
+
+	function disconnect() {
+		if (!wallet.adapter) return;
+		wallet.adapter.disconnect();
+		toastManager.addToast('Wallet disconnected', 'info');
+		window.location.reload();
+	}
+
+	function copyAddress() {
+		copyToClipboard(wallet?.publicKey?.toBase58() || '');
+		toastManager.addToast('Wallet address copied', 'info');
+	}
 </script>
 
 <div in:fade class="card w-full bg-primary">
@@ -23,17 +35,14 @@
 		<p>{shortAddress(wallet.publicKey?.toBase58() || '')}</p>
 		<div class="flex w-full">
 			<div class="card-actions flex w-full justify-start">
-				<button class="btn btn-sm btn-neutral" onclick={() => wallet.adapter.disconnect()}
-					>Disconnect</button
-				>
+				<button class="btn btn-sm btn-neutral" onclick={() => disconnect()}>Disconnect</button>
 				<button onclick={fund} class="btn btn-sm btn-neutral">Fund</button>
 			</div>
 			<div class="card-actions flex w-full justify-end">
 				<button
 					class="btn btn-sm btn-neutral"
 					onclick={() => {
-						copyToClipboard(wallet?.publicKey?.toBase58() || '');
-						toastManager.addToast('Wallet address copied', 'info');
+						copyAddress();
 					}}>Copy Address</button
 				>
 			</div>

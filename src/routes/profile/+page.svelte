@@ -1,27 +1,41 @@
 <script lang="ts">
 	import { getCurrentPlayerWithStats, updatePlayerProfile } from '$lib/remote/players.remote';
+	import { getToastManagerContext } from '$lib/stores/toastmanager.svelte';
 	import { fade } from 'svelte/transition';
 
-	let oldPassword: HTMLInputElement;
-	let password: HTMLInputElement;
-	let confirmPassword: HTMLInputElement;
-
+	let oldPasswordEl: HTMLInputElement;
+	let passwordEl: HTMLInputElement;
+	let confirmPasswordEl: HTMLInputElement;
+	let fileName: string = $state('');
 	const currentPlayerQuery = getCurrentPlayerWithStats();
+	const toastManager = getToastManagerContext();
 
 	function validateConfirmPassword() {
-		if (!password) {
-			confirmPassword.setCustomValidity('');
+		if (!passwordEl) {
+			confirmPasswordEl.setCustomValidity('');
 			return;
 		}
 
-		if (password.value != confirmPassword.value) {
-			confirmPassword.setCustomValidity("Passwords Don't Match");
+		if (passwordEl.value != confirmPasswordEl.value) {
+			confirmPasswordEl.setCustomValidity("Passwords Don't Match");
 		} else {
-			confirmPassword.setCustomValidity('');
+			confirmPasswordEl.setCustomValidity('');
 		}
 
-		if (password.value.length < 8) {
-			password.setCustomValidity('Password must be at least 8 characters');
+		if (passwordEl.value.length < 8) {
+			passwordEl.setCustomValidity('Password must be at least 8 characters');
+		}
+	}
+
+	function validateFileSize(event: Event) {
+		const fileInput = event.target as HTMLInputElement;
+		const file = fileInput.files?.[0];
+		if (!file) return;
+
+		if (file.size > 5 * 1024 * 1024) {
+			fileInput.setCustomValidity('File size must be less than 5MB');
+		} else {
+			fileInput.setCustomValidity('');
 		}
 	}
 </script>
@@ -33,17 +47,24 @@
 			<form
 				id="profile-form"
 				class="flex flex-col gap-4"
-				{...updatePlayerProfile}
+				{...updatePlayerProfile.enhance(async ({ submit }) => {
+					try {
+						await submit().updates(getCurrentPlayerWithStats());
+						toastManager.addToast('Profile updated successfully', 'success');
+					} catch (error) {
+						toastManager.addToast('Failed to update profile', 'error');
+					}
+				})}
 				enctype="multipart/form-data"
 			>
 				<div>Name</div>
 				<input
 					type="text"
-					placeholder="Name"
 					name="name"
+					value={player?.name}
+					placeholder="Name"
 					class="input w-full"
 					maxlength="25"
-					value={player?.name}
 				/>
 
 				<div>Email</div>
@@ -61,7 +82,7 @@
 					placeholder="Current Password"
 					name="oldPassword"
 					class="input w-full"
-					bind:this={oldPassword}
+					bind:this={oldPasswordEl}
 				/>
 
 				<div>Password</div>
@@ -70,7 +91,7 @@
 					placeholder="New Password"
 					name="password"
 					class="input w-full"
-					bind:this={password}
+					bind:this={passwordEl}
 				/>
 
 				<div>Password Confirm</div>
@@ -79,12 +100,31 @@
 					placeholder="Confirm Password"
 					name="passwordConfirm"
 					class="input w-full"
-					bind:this={confirmPassword}
+					bind:this={confirmPasswordEl}
 					onchange={validateConfirmPassword}
 					onkeyup={validateConfirmPassword}
 				/>
-				<div>Avatar</div>
-				<input class="file-input w-full" type="file" name="avatar" />
+				<div>Avatar (Max 5MB)</div>
+
+				<input
+					id="files"
+					class="file-input hidden w-full"
+					type="file"
+					accept="image/png, image/jpeg, image/webp"
+					name="avatar"
+					onchange={validateFileSize}
+					bind:value={fileName}
+				/>
+				<div class="join">
+					<label for="files" class="btn join-item">Choose image</label>
+
+					<input
+						type="text"
+						class="input join-item mt-px w-full"
+						value={fileName.split('\\').pop()}
+						placeholder="No image chosen"
+					/>
+				</div>
 			</form>
 		</div>
 	</div>

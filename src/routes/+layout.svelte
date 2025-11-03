@@ -15,7 +15,8 @@
 		LogOutIcon,
 		StreamIcon,
 		SubmissionsIcon,
-		RulesIcon
+		RulesIcon,
+		DashboardIcon
 	} from '$lib/components/icons';
 	import { getNextRace } from '$lib/remote/races.remote';
 	import { titleCase } from '$lib/utils';
@@ -27,6 +28,7 @@
 	import ToastManager from '$lib/components/ToastManager.svelte';
 	import MessageDialog from '$lib/components/MessageDialog.svelte';
 	import { setToastManagerContext } from '$lib/stores/toastmanager.svelte';
+	import { resolve } from '$app/paths';
 	let { children, data } = $props();
 	const url = $derived(page.url.pathname);
 	// svelte-ignore non_reactive_update
@@ -89,41 +91,43 @@
 			<div class="drawer-content flex flex-col">
 				<!-- Navbar -->
 				<div class="navbar w-full justify-between bg-base-300 p-4">
-					<div class="lg:hidden lg:min-w-[25%]">
+					<div class="lg:hidden lg:min-w-[15%]">
 						<label for="my-drawer-3" aria-label="open sidebar" class="btn btn-square btn-ghost">
 							<svg
+								width="20"
+								height="20"
 								xmlns="http://www.w3.org/2000/svg"
 								fill="none"
 								viewBox="0 0 24 24"
-								class="inline-block h-6 w-6 stroke-current"
-							>
-								<path
+								class="inline-block h-5 w-5 stroke-current md:h-6 md:w-6"
+								><path
 									stroke-linecap="round"
 									stroke-linejoin="round"
 									stroke-width="2"
 									d="M4 6h16M4 12h16M4 18h16"
-								></path>
-							</svg>
+								></path></svg
+							>
 						</label>
 					</div>
-					<div class="mx-2 px-2 text-lg lg:min-w-[25%] lg:text-left">
+					<div class="mx-2 px-2 text-lg lg:min-w-[15%] lg:text-left">
 						{url == '/predictions'
 							? 'Predictions (' + titleCase(nextRaceQuery.current?.location) + ' GP)'
 							: titleCase(url.replace('/', '') || 'Home')}
 					</div>
 					<div class="hidden lg:block">
-						<ul class="menu menu-horizontal">
+						<ul class="menu menu-horizontal justify-center">
 							<!-- Navbar menu content here -->
-							<li><a href="/players">Players</a></li>
-							<li><a href="/drivers">Drivers</a></li>
-							<li><a href="/teams">Teams</a></li>
-							<li><a href="/races">Races</a></li>
-							<li><a href="/rules">Rules</a></li>
-							<li><a href="/predictions">Predictions</a></li>
-							<li><a href="/stream">Stream</a></li>
+							<li><a href={resolve('/dashboard')}>Dashboard</a></li>
+							<li><a href={resolve('/players')}>Players</a></li>
+							<li><a href={resolve('/drivers')}>Drivers</a></li>
+							<li><a href={resolve('/teams')}>Teams</a></li>
+							<li><a href={resolve('/races')}>Races</a></li>
+							<li><a href={resolve('/rules')}>Rules</a></li>
+							<li><a href={resolve('/predictions')}>Predictions</a></li>
+							<li><a href={resolve('/stream')}>Stream</a></li>
 						</ul>
 					</div>
-					<div class="flex justify-end gap-4 lg:min-w-[25%]">
+					<div class="flex justify-end gap-4 lg:min-w-[15%]">
 						<div class="hidden flex-col items-end justify-center text-end lg:block">
 							<div class="text-xs">Next Race</div>
 							<div class="text-xs font-bold">{titleCase(nextRace.location)}</div>
@@ -134,26 +138,38 @@
 							</div>
 						</div>
 						<div class="avatar avatar-placeholder items-center">
-							<button
-								class="h-12 w-12 cursor-pointer rounded-full bg-neutral text-neutral-content"
-								popovertarget="popover-1"
-								style="anchor-name:--anchor-1"
-							>
-								{#if data.currentUser.avatar}
-									<img
-										src={PUBLIC_PB_URL +
-											'/api/files/users/' +
-											data.currentUser?.id +
-											'/' +
-											data.currentUser?.avatar +
-											'?thumb=48x48'}
-										alt="User Avatar"
-										class="h-full w-full rounded-full object-cover"
-									/>
-								{:else}
-									<span>{data.currentUser?.name.substring(0, 1).toUpperCase()}</span>
-								{/if}
-							</button>
+							{#if data.currentUser.avatar}
+								{@const avatarUrl = data.currentUser.avatar
+									? PUBLIC_PB_URL +
+										'/api/files/users/' +
+										data.currentUser?.id +
+										'/' +
+										data.currentUser?.avatar +
+										'?thumb=48x48'
+									: ''}
+								<button
+									style="background-image: url({avatarUrl}); background-size: cover; anchor-name:--anchor-1"
+									class="h-12 w-12 cursor-pointer rounded-box text-neutral-content"
+									popovertarget="popover-1"
+								></button>
+							{:else}
+								<button
+									class="h-12 w-12 cursor-pointer rounded-box bg-neutral text-neutral-content"
+									popovertarget="popover-1"
+									style="anchor-name:--anchor-1"
+									><span>{data.currentUser?.name.substring(0, 1).toUpperCase()}</span></button
+								>
+							{/if}
+							<!-- <img
+								src={PUBLIC_PB_URL +
+									'/api/files/users/' +
+									data.currentUser?.id +
+									'/' +
+									data.currentUser?.avatar +
+									'?thumb=48x48'}
+								alt="User Avatar"
+								class="h-full w-full rounded-box object-cover"
+							/> -->
 						</div>
 					</div>
 				</div>
@@ -180,14 +196,21 @@
 					<li>
 						<a
 							class="flex h-16 items-center"
-							href="/players"
+							href={resolve('/dashboard')}
+							onclick={() => (drawerToggle.checked = false)}><DashboardIcon /> Dashboard</a
+						>
+					</li>
+					<li>
+						<a
+							class="flex h-16 items-center"
+							href={resolve('/players')}
 							onclick={() => (drawerToggle.checked = false)}><PlayersIcon /> Players</a
 						>
 					</li>
 					<li>
 						<a
 							class="flex h-16 items-center"
-							href="/drivers"
+							href={resolve('/drivers')}
 							onclick={() => (drawerToggle.checked = false)}><DriversIcon /> Drivers</a
 						>
 					</li>
@@ -195,35 +218,35 @@
 					<li>
 						<a
 							class="flex h-16 items-center"
-							href="/teams"
+							href={resolve('/teams')}
 							onclick={() => (drawerToggle.checked = false)}><TeamsIcon /> Teams</a
 						>
 					</li>
 					<li>
 						<a
 							class="flex h-16 items-center"
-							href="/races"
+							href={resolve('/races')}
 							onclick={() => (drawerToggle.checked = false)}><RacesIcon /> Races</a
 						>
 					</li>
 					<li>
 						<a
 							class="flex h-16 items-center"
-							href="/rules"
+							href={resolve('/rules')}
 							onclick={() => (drawerToggle.checked = false)}><RulesIcon /> Rules</a
 						>
 					</li>
 					<li>
 						<a
 							class="flex h-16 items-center"
-							href="/predictions"
+							href={resolve('/predictions')}
 							onclick={() => (drawerToggle.checked = false)}><SubmissionsIcon /> Predictions</a
 						>
 					</li>
 					<li>
 						<a
 							class="flex h-16 items-center"
-							href="/stream"
+							href={resolve('/stream')}
 							onclick={() => (drawerToggle.checked = false)}><StreamIcon /> Stream</a
 						>
 					</li>
@@ -250,18 +273,24 @@
 			bind:this={userPopover}
 		>
 			<li>
-				<a href="/profile" class="flex h-16 items-center" onclick={() => userPopover.hidePopover()}
-					><ProfileIcon /> Profile</a
+				<a
+					href={resolve('/profile')}
+					class="flex h-16 items-center"
+					onclick={() => userPopover.hidePopover()}><ProfileIcon /> Profile</a
 				>
 			</li>
 			<li>
-				<a href="/settings" class="flex h-16 items-center" onclick={() => userPopover.hidePopover()}
-					><SettingsIcon /> Settings</a
+				<a
+					href={resolve('/settings')}
+					class="flex h-16 items-center"
+					onclick={() => userPopover.hidePopover()}><SettingsIcon /> Settings</a
 				>
 			</li>
 			<li>
-				<a href="/wallet" class="flex h-16 items-center" onclick={() => userPopover.hidePopover()}
-					><WalletIcon /> Wallet</a
+				<a
+					href={resolve('/wallet')}
+					class="flex h-16 items-center"
+					onclick={() => userPopover.hidePopover()}><WalletIcon /> Wallet</a
 				>
 			</li>
 			<li>
@@ -295,12 +324,38 @@
 		<div class="modal-box">
 			<h3 class="text-lg font-bold">Prediction Results</h3>
 			<div class="flex flex-col items-center justify-center gap-4 py-4">
-				{#each data?.users.sort((a, b) => b.lastPointsEarned - a.lastPointsEarned) as user, index}
-					<div style={'font-size: ' + (data?.users.length - (index - 1)) * 12 + 'px'}>
-						{user.name}
-						{user.lastPointsEarned} pts
-					</div>
-				{/each}
+				<table class="table">
+					<tbody>
+						{#each data?.users.sort((a, b) => b.lastPointsEarned - a.lastPointsEarned) as user (user.id)}
+							<tr>
+								<td class="flex items-center gap-4 font-bold">
+									<div
+										class="flex size-10 items-center justify-center rounded-box bg-neutral text-neutral-content"
+									>
+										{#if user.avatar}
+											<img
+												class="size-10 rounded-box"
+												src={PUBLIC_PB_URL +
+													'/api/files/users/' +
+													user.id +
+													'/' +
+													user.avatar +
+													'?thumb=48x48'}
+												alt="player avatar"
+											/>
+										{:else}
+											<span>{user.name.substring(0, 1).toUpperCase()}</span>
+										{/if}
+									</div>
+									{user.name}
+								</td>
+								<td>
+									{user.lastPointsEarned} pts
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
 			</div>
 			<div class="modal-action"></div>
 			<button
@@ -328,7 +383,7 @@
 <!-- Snow confetti effect for christmas -->
 {#if isDecember}
 	<ConfettiContainer toggleOnce relative={false} activeOnMount>
-		<div class="fixed top-[-50px] left-0 flex h-[100vh] w-[100vw] justify-center overflow-hidden">
+		<div class="fixed top-[-50px] left-0 flex h-screen w-screen justify-center overflow-hidden">
 			<Confetti
 				colorArray={['#ffffff']}
 				x={[-5, 5]}
