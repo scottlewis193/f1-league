@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { getNews } from '$lib/remote/dashboard.remote';
 	import { getNextRace } from '$lib/remote/races.remote';
-	import { onMount } from 'svelte';
 
 	const nextRaceQuery = getNextRace();
+	const newsQuery = getNews();
 
 	function initCountdown() {
 		if (!nextRaceQuery.current) return;
@@ -50,19 +51,9 @@
 		}, 1000);
 	}
 
-	function fetchNews() {
-		const RSS_URL = `http://feeds.feedburner.com/totalf1-recent`;
-
-		fetch(RSS_URL, { mode: 'cors', headers: { 'Access-Control-Allow-Origin': '*' } })
-			.then((response) => response.text())
-			.then((str) => new window.DOMParser().parseFromString(str, 'text/xml'))
-			.then((data) => console.log(data));
-	}
-
 	$effect(() => {
-		if (nextRaceQuery.current) {
+		if (nextRaceQuery.current && newsQuery.current) {
 			initCountdown();
-			fetchNews();
 		}
 	});
 </script>
@@ -99,6 +90,24 @@
 	</div>
 </div>
 <h1 class="text-3xl font-bold">News</h1>
-<div class="card bg-base-100">
-	<div class="card-body"></div>
+<div class="card overflow-auto bg-base-100">
+	<div class="card-body">
+		{#if newsQuery.error}
+			<p>Error fetching news</p>
+		{:else if newsQuery.loading}
+			<p>Loading news...</p>
+		{:else}
+			<p>Coming Soon</p>
+			<!-- <table class="table">
+				<tbody>
+					{#each newsQuery.current?.items as item, index (index)}
+						<tr>
+							<td>{item.title}</td>
+							<td>{item.description}</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table> -->
+		{/if}
+	</div>
 </div>

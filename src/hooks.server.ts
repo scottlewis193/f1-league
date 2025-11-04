@@ -25,11 +25,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 
 		const url = new URL(event.request.url);
-		const isLoginPage = url.pathname === '/login';
-		const allowedUnauthed = isLoginPage;
+		const isLoginPage = url.pathname.startsWith('/login');
 
-		// --- Only redirect normal browsers without auth ---
-		if (!event.locals.user && !allowedUnauthed) {
+		if (!event.locals.user && !isLoginPage) {
+			console.log(url.pathname);
 			console.log('Redirecting unauthenticated user to /login');
 			throw redirect(303, '/login');
 		}
@@ -46,7 +45,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		);
 
 		return response;
-	} catch (err: any) {
+	} catch (err: unknown) {
 		if ('status' in err && 'location' in err && err.status >= 300 && err.status < 400) {
 			throw err;
 		}

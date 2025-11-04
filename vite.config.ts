@@ -8,10 +8,10 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit(),
 		SvelteKitPWA({
-			registerType: 'autoUpdate',
+			srcDir: './src',
 			strategies: 'injectManifest',
-			srcDir: 'src',
-			filename: 'service-worker.js', // output SW for browser
+			registerType: 'autoUpdate',
+			filename: 'service-worker.js',
 			devOptions: { enabled: true },
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,png,svg}']
@@ -20,7 +20,7 @@ export default defineConfig({
 				name: 'F1 League',
 				short_name: 'F1 League',
 				start_url: '/',
-				display: 'fullscreen',
+				display: 'standalone',
 				background_color: '#000000',
 				theme_color: '#000000',
 				icons: [
@@ -36,10 +36,8 @@ export default defineConfig({
 	define: {
 		// Inject a global build timestamp
 		__BUILD_TIMESTAMP__: JSON.stringify(Date.now())
-	},
-	server: {
-		allowedHosts: true
 	}
+
 	// server: {
 	// 	https: {
 	// 		key: fs.readFileSync(path.resolve('localhost-key.pem')),

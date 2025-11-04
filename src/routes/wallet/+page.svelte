@@ -9,6 +9,7 @@
 	onMount(() => {
 		// silent restore (no modal)
 		console.log('Restoring wallet...');
+		wallet.connecting = true;
 		if (!wallet.adapter) return;
 		withTimeout(wallet.adapter.autoConnect(), 2000)
 			.then(() => {
@@ -17,9 +18,18 @@
 				pollTxs();
 			})
 			.catch((error) => {
+				wallet.connecting = false;
 				console.error('Failed to restore wallet:', error);
 			});
 	});
+
+	$effect(() => {
+		if (wallet.connected) {
+			pollTxs();
+			wallet.connecting = false;
+		}
+	});
+
 	onDestroy(() => {
 		clearInterval(wallet.txTimer);
 	});
@@ -29,10 +39,20 @@
 	<WalletCard />
 {/if}
 
-{#if !wallet.connected}
+{#if wallet.connecting}
 	<div in:fade class="card h-full w-full overflow-auto bg-base-100">
 		<div class="card-body flex items-center justify-center">
-			<div class="loading loading-lg"></div>
+			{#if wallet.connecting}
+				Connecting Wallet...
+				<div class="loading loading-lg"></div>
+			{:else if !wallet.connected}
+				<button
+					class="btn btn-primary"
+					onclick={() => {
+						wallet.adapter?.autoConnect();
+					}}>Connect Wallet</button
+				>
+			{/if}
 		</div>
 	</div>
 {:else}

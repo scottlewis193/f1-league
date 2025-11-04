@@ -42,6 +42,7 @@ if (browser && WalletConnectWalletAdapter) {
 export const wallet: {
 	adapter: typeof adapter;
 	connected: boolean;
+	connecting: boolean;
 	publicKey: PublicKey | null;
 	balanceUSDC: number;
 	balanceSOL: number;
@@ -58,6 +59,7 @@ export const wallet: {
 } = $state({
 	adapter,
 	connected: false,
+	connecting: false,
 	publicKey: null,
 	balanceUSDC: 0,
 	balanceSOL: 0,
@@ -70,12 +72,14 @@ if (browser && adapter) {
 	adapter.on('connect', () => {
 		console.log('Wallet connected');
 		wallet.connected = true;
+		wallet.connecting = false;
 		wallet.publicKey = adapter!.publicKey;
 		getWalletBalanceUSDC();
 	});
 
 	adapter.on('disconnect', () => {
 		wallet.connected = false;
+		wallet.connecting = false;
 		wallet.publicKey = null;
 	});
 

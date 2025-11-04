@@ -17,6 +17,7 @@
 <script>
 	//ensure theme is loaded before page to avoid flash
 	const theme = localStorage.getItem('theme');
+	if (!theme) theme = 'dark';
 	document.documentElement.setAttribute('data-theme', theme);
 
 	//set theme color (status bar on mobile devices) from base color variable
