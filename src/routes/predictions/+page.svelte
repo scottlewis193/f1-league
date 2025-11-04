@@ -17,6 +17,9 @@
 	import { restoreWallet, sendUSDC, wallet } from '$lib/stores/wallet.svelte';
 	import { MessageButtons, showMessageDialog } from '$lib/stores/messagedialog.svelte';
 	import { getToastManagerContext } from '$lib/stores/toastmanager.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
+	import EmptyState from '$lib/components/EmptyState.svelte';
+	import ErrorState from '$lib/components/ErrorState.svelte';
 
 	const wageringEnabled = isWageringEnabled();
 	const driversQuery = getDrivers();
@@ -32,6 +35,7 @@
 	// svelte-ignore non_reactive_update
 	let submissionForm: HTMLFormElement;
 	let submissionsValid = $state(false);
+	let hasUnsavedChanges = $state(false);
 
 	let driverSelections = $state({
 		Driver1st: { value: 'Driver', lastChanged: false, place: 0, exact: 0 },
@@ -74,6 +78,20 @@
 		}
 
 		validateSelections();
+		hasUnsavedChanges = false;
+	}
+
+	async function closeModalWithConfirmation() {
+		if (hasUnsavedChanges) {
+			const confirmed = await showMessageDialog({
+				title: 'Unsaved Changes',
+				message: 'You have unsaved predictions. Are you sure you want to close?',
+				buttons: MessageButtons.YesNo
+			});
+			if (!confirmed) return;
+		}
+		hasUnsavedChanges = false;
+		submissionModal.close();
 	}
 
 	function isSubmissionWindowOpen() {
@@ -183,18 +201,20 @@
 		}
 
 		validateSelections();
+		hasUnsavedChanges = true;
 
 		lastChangedDriverSelection.lastChanged = false;
 	});
 </script>
 
 {#if predictionsQuery.error}
-	<p>{predictionsQuery.error}</p>
+	<ErrorState
+		title="Failed to load predictions"
+		message="We couldn't load the predictions data. Please check your connection and try again."
+		error={predictionsQuery.error}
+		onRetry={() => predictionsQuery.refresh?.()}
+	/>
 {:else if predictionsQuery.loading}
-	<div class="flex h-full w-full items-center justify-center">
-		<span class="loading loading-md loading-spinner"></span>
-	</div>
-{:else if predictionsQuery.ready && nextRaceQuery.ready && driversQuery.ready && oddsQuery.ready && wageringEnabled.ready}
 	<div in:fade class="card h-full w-full overflow-auto bg-base-100">
 		<div class="card-body">
 			<table class="table not-md:table-sm">
@@ -207,56 +227,25 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each predictionsQuery.current as submission (submission.id)}
-						{@const driver1stOddsPointsPotential = getDriverOddsPointsPotential(
-							submission.predictions[0]
-						)}
-						{@const driver2ndOddsPointsPotential = getDriverOddsPointsPotential(
-							submission.predictions[1]
-						)}
-						{@const driver3rdOddsPointsPotential = getDriverOddsPointsPotential(
-							submission.predictions[2]
-						)}
+					{#each Array(5) as _, i (i)}
 						<tr>
-							<td class="font-bold">{submission.expand.user.name}</td>
+							<td><Skeleton type="text" width="70%" /></td>
 							<td>
-								<div class="flex flex-col">
-									<div>{submission.predictions[0]}</div>
-									<div class="flex opacity-50">
-										<div class="w-1/2">Pl</div>
-										<div class="w-1/2 text-right">{driver1stOddsPointsPotential.place}</div>
-									</div>
-									<div class="flex opacity-50">
-										<div class="w-1/2">Ex</div>
-										<div class="w-1/2 text-right">{driver1stOddsPointsPotential.exact}</div>
-									</div>
+								<div class="flex flex-col gap-1">
+									<Skeleton type="text" width="80%" />
+									<Skeleton type="text" width="40%" />
 								</div>
 							</td>
 							<td>
-								<div class="flex flex-col">
-									<div>{submission.predictions[1]}</div>
-									<div class="flex opacity-50">
-										<div class="w-1/2">Pl</div>
-										<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.place}</div>
-									</div>
-									<div class="flex opacity-50">
-										<div class="w-1/2">Ex</div>
-										<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.exact}</div>
-									</div>
+								<div class="flex flex-col gap-1">
+									<Skeleton type="text" width="80%" />
+									<Skeleton type="text" width="40%" />
 								</div>
 							</td>
 							<td>
-								<div class="flex flex-col">
-									<div>{submission.predictions[2]}</div>
-
-									<div class="flex opacity-50">
-										<div class="w-1/2">Pl</div>
-										<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.place}</div>
-									</div>
-									<div class="flex opacity-50">
-										<div class="w-1/2">Ex</div>
-										<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.exact}</div>
-									</div>
+								<div class="flex flex-col gap-1">
+									<Skeleton type="text" width="80%" />
+									<Skeleton type="text" width="40%" />
 								</div>
 							</td>
 						</tr>
@@ -265,6 +254,107 @@
 			</table>
 		</div>
 	</div>
+	<Skeleton type="button" width="100%" height="3rem" />
+{:else if predictionsQuery.ready && nextRaceQuery.ready && driversQuery.ready && oddsQuery.ready && wageringEnabled.ready}
+	{#if predictionsQuery.current.length === 0}
+		<EmptyState
+			title="No predictions yet"
+			description="Be the first to submit your predictions for the next race!"
+			actionText="Submit Predictions"
+			onAction={() => {
+				loadUserSelections();
+				submissionModal.showModal();
+			}}
+		>
+			{#snippet icon()}
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-24 w-24"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="1.5"
+						d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+					/>
+				</svg>
+			{/snippet}
+		</EmptyState>
+	{:else}
+		<div in:fade class="card h-full w-full overflow-auto bg-base-100">
+			<div class="card-body">
+				<table class="table not-md:table-sm">
+					<thead>
+						<tr>
+							<th class="w-1/4">Player</th>
+							<th class="w-1/4">1st</th>
+							<th class="w-1/4">2nd</th>
+							<th class="w-1/4">3rd</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each predictionsQuery.current as submission (submission.id)}
+							{@const driver1stOddsPointsPotential = getDriverOddsPointsPotential(
+								submission.predictions[0]
+							)}
+							{@const driver2ndOddsPointsPotential = getDriverOddsPointsPotential(
+								submission.predictions[1]
+							)}
+							{@const driver3rdOddsPointsPotential = getDriverOddsPointsPotential(
+								submission.predictions[2]
+							)}
+							<tr>
+								<td class="font-bold">{submission.expand.user.name}</td>
+								<td>
+									<div class="flex flex-col">
+										<div>{submission.predictions[0]}</div>
+										<div class="flex opacity-50">
+											<div class="w-1/2">Pl</div>
+											<div class="w-1/2 text-right">{driver1stOddsPointsPotential.place}</div>
+										</div>
+										<div class="flex opacity-50">
+											<div class="w-1/2">Ex</div>
+											<div class="w-1/2 text-right">{driver1stOddsPointsPotential.exact}</div>
+										</div>
+									</div>
+								</td>
+								<td>
+									<div class="flex flex-col">
+										<div>{submission.predictions[1]}</div>
+										<div class="flex opacity-50">
+											<div class="w-1/2">Pl</div>
+											<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.place}</div>
+										</div>
+										<div class="flex opacity-50">
+											<div class="w-1/2">Ex</div>
+											<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.exact}</div>
+										</div>
+									</div>
+								</td>
+								<td>
+									<div class="flex flex-col">
+										<div>{submission.predictions[2]}</div>
+
+										<div class="flex opacity-50">
+											<div class="w-1/2">Pl</div>
+											<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.place}</div>
+										</div>
+										<div class="flex opacity-50">
+											<div class="w-1/2">Ex</div>
+											<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.exact}</div>
+										</div>
+									</div>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	{/if}
 	<button
 		disabled={!isSubmissionWindowOpen()}
 		onclick={() => {
@@ -362,7 +452,7 @@
 						<button
 							type="reset"
 							class="btn mt-4 w-full btn-error"
-							onclick={() => submissionModal.close()}>Cancel</button
+							onclick={closeModalWithConfirmation}>Cancel</button
 						>
 					</div>
 					<div class="w-1/2">
@@ -373,6 +463,7 @@
 								} else {
 									submissionForm.requestSubmit();
 								}
+								hasUnsavedChanges = false;
 								toastManager.addToast('Submission successful!', 'success');
 							}}
 							disabled={!submissionsValid}

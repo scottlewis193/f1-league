@@ -1,9 +1,11 @@
 import { getContext, setContext } from 'svelte';
 
 class Toast {
+	id: string = '';
 	type: 'success' | 'error' | 'info' | 'warning' = 'info';
 	message: string = '';
 	constructor(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') {
+		this.id = crypto.randomUUID();
 		this.message = message;
 		this.type = type;
 	}

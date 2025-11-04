@@ -27,8 +27,10 @@
 	import ConfettiContainer from '$lib/components/ConfettiContainer.svelte';
 	import ToastManager from '$lib/components/ToastManager.svelte';
 	import MessageDialog from '$lib/components/MessageDialog.svelte';
+	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import { setToastManagerContext } from '$lib/stores/toastmanager.svelte';
 	import { resolve } from '$app/paths';
+
 	let { children, data } = $props();
 	const url = $derived(page.url.pathname);
 	// svelte-ignore non_reactive_update
@@ -117,14 +119,20 @@
 					<div class="hidden lg:block">
 						<ul class="menu menu-horizontal justify-center">
 							<!-- Navbar menu content here -->
-							<li><a href={resolve('/dashboard')}>Dashboard</a></li>
-							<li><a href={resolve('/players')}>Players</a></li>
-							<li><a href={resolve('/drivers')}>Drivers</a></li>
-							<li><a href={resolve('/teams')}>Teams</a></li>
-							<li><a href={resolve('/races')}>Races</a></li>
-							<li><a href={resolve('/rules')}>Rules</a></li>
-							<li><a href={resolve('/predictions')}>Predictions</a></li>
-							<li><a href={resolve('/stream')}>Stream</a></li>
+							<li>
+								<a href={resolve('/dashboard')} class:active={url === '/dashboard'}>Dashboard</a>
+							</li>
+							<li><a href={resolve('/players')} class:active={url === '/players'}>Players</a></li>
+							<li><a href={resolve('/drivers')} class:active={url === '/drivers'}>Drivers</a></li>
+							<li><a href={resolve('/teams')} class:active={url === '/teams'}>Teams</a></li>
+							<li><a href={resolve('/races')} class:active={url === '/races'}>Races</a></li>
+							<li><a href={resolve('/rules')} class:active={url === '/rules'}>Rules</a></li>
+							<li>
+								<a href={resolve('/predictions')} class:active={url === '/predictions'}
+									>Predictions</a
+								>
+							</li>
+							<li><a href={resolve('/stream')} class:active={url === '/stream'}>Stream</a></li>
 						</ul>
 					</div>
 					<div class="flex justify-end gap-4 lg:min-w-[15%]">
@@ -196,6 +204,7 @@
 					<li>
 						<a
 							class="flex h-16 items-center"
+							class:active={url === '/dashboard'}
 							href={resolve('/dashboard')}
 							onclick={() => (drawerToggle.checked = false)}><DashboardIcon /> Dashboard</a
 						>
@@ -203,6 +212,7 @@
 					<li>
 						<a
 							class="flex h-16 items-center"
+							class:active={url === '/players'}
 							href={resolve('/players')}
 							onclick={() => (drawerToggle.checked = false)}><PlayersIcon /> Players</a
 						>
@@ -210,6 +220,7 @@
 					<li>
 						<a
 							class="flex h-16 items-center"
+							class:active={url === '/drivers'}
 							href={resolve('/drivers')}
 							onclick={() => (drawerToggle.checked = false)}><DriversIcon /> Drivers</a
 						>
@@ -218,6 +229,7 @@
 					<li>
 						<a
 							class="flex h-16 items-center"
+							class:active={url === '/teams'}
 							href={resolve('/teams')}
 							onclick={() => (drawerToggle.checked = false)}><TeamsIcon /> Teams</a
 						>
@@ -225,6 +237,7 @@
 					<li>
 						<a
 							class="flex h-16 items-center"
+							class:active={url === '/races'}
 							href={resolve('/races')}
 							onclick={() => (drawerToggle.checked = false)}><RacesIcon /> Races</a
 						>
@@ -232,6 +245,7 @@
 					<li>
 						<a
 							class="flex h-16 items-center"
+							class:active={url === '/rules'}
 							href={resolve('/rules')}
 							onclick={() => (drawerToggle.checked = false)}><RulesIcon /> Rules</a
 						>
@@ -239,6 +253,7 @@
 					<li>
 						<a
 							class="flex h-16 items-center"
+							class:active={url === '/predictions'}
 							href={resolve('/predictions')}
 							onclick={() => (drawerToggle.checked = false)}><SubmissionsIcon /> Predictions</a
 						>
@@ -246,6 +261,7 @@
 					<li>
 						<a
 							class="flex h-16 items-center"
+							class:active={url === '/stream'}
 							href={resolve('/stream')}
 							onclick={() => (drawerToggle.checked = false)}><StreamIcon /> Stream</a
 						>
@@ -400,3 +416,4 @@
 
 <MessageDialog />
 <ToastManager />
+<PWAInstallPrompt />
