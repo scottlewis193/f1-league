@@ -18,7 +18,7 @@
 	import { MessageButtons, showMessageDialog } from '$lib/stores/messagedialog.svelte';
 	import { getToastManagerContext } from '$lib/stores/toastmanager.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
-	import EmptyState from '$lib/components/EmptyState.svelte';
+
 	import ErrorState from '$lib/components/ErrorState.svelte';
 
 	const wageringEnabled = isWageringEnabled();
@@ -257,7 +257,7 @@
 	<Skeleton type="button" width="100%" height="3rem" />
 {:else if predictionsQuery.ready && nextRaceQuery.ready && driversQuery.ready && oddsQuery.ready && wageringEnabled.ready}
 	{#if predictionsQuery.current.length === 0}
-		<EmptyState
+		<!-- <EmptyState
 			title="No predictions yet"
 			description="Be the first to submit your predictions for the next race!"
 			actionText="Submit Predictions"
@@ -265,24 +265,24 @@
 				loadUserSelections();
 				submissionModal.showModal();
 			}}
-		>
-			{#snippet icon()}
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-24 w-24"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="1.5"
-						d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-					/>
-				</svg>
-			{/snippet}
-		</EmptyState>
+		> -->
+		{#snippet icon()}
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-24 w-24"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="1.5"
+					d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+				/>
+			</svg>
+		{/snippet}
+		<!-- </EmptyState> -->
 	{:else}
 		<div in:fade class="card h-full w-full overflow-auto bg-base-100">
 			<div class="card-body">

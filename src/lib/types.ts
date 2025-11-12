@@ -49,6 +49,7 @@ export type Race = {
 	id: string;
 	raceNo: number;
 	raceName: string;
+	city: string;
 	location: string;
 	sessions: {
 		date: string;

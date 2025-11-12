@@ -102,7 +102,60 @@ export async function scrapeTeams(season = 2025) {
 	}
 }
 
+export async function scrapeRaceLocations(season = '2025') {
+	const browser = await puppeteer.launch({ headless: true });
+	const page = await browser.newPage();
+
+	// Step 1: Go to races page
+	await page.goto('https://pitwall.app/races', { waitUntil: 'networkidle2' });
+
+	// Step 2: Get all race links
+	const raceLinks = await page.$$eval(
+		"a[href*='/races/']",
+		(links) => links.map((a) => a.href).filter((href) => href.match(/\/races\/\d{4}-/)) // ensures proper race links
+	);
+
+	const results = [];
+
+	// Step 3: Loop over each race page
+	for (const link of raceLinks) {
+		await page.goto(link);
+
+		await page.waitForSelector('h1');
+
+		// Step 4: Extract Round + Location
+		const data = await page.evaluate(() => {
+			const roundEl = [...document.querySelectorAll('p, div, li, span')].find((el) =>
+				/Round/i.test(el.textContent)
+			);
+			const locationEl = [...document.querySelectorAll('p, div, li, span')].find((el) =>
+				/Location/i.test(el.textContent)
+			);
+
+			const roundMatch = roundEl?.textContent.match(/Round\s*([\d/]+)/i);
+			const round = roundMatch ? roundMatch[1] : null;
+
+			// Extract something like "Melbourne, Australia"
+			const locMatch = locationEl?.textContent.match(/Location\.?\s*(.+)/i);
+			const location = locMatch ? locMatch[1].trim() : null;
+
+			const raceName = document.querySelector('h1')?.textContent?.trim();
+
+			return { raceName, round, location };
+		});
+
+		results.push({ url: link, ...data });
+	}
+
+	await browser.close();
+
+	return results;
+}
+
 export async function scrapeF1Races(season = '2025') {
+	//first we grab location data from pitwall.app
+	const raceLocations = await scrapeRaceLocations();
+
 	const baseUrl = `https://www.formula1.com/en/racing/${season}`;
 	const browser = await puppeteer.launch({
 		headless: true,
@@ -202,13 +255,24 @@ export async function scrapeF1Races(season = '2025') {
 			const raceNameAry = raceDetails.raceName.split(' ');
 			const year = Number(raceNameAry[raceNameAry.length - 1]);
 
-			allRaces.push({ ...raceDetails, location: _location, year, id: '', raceNo: 0 });
+			allRaces.push({ ...raceDetails, location: _location, year, id: '', raceNo: 0, city: '' });
 
 			await racePage.close();
 		}
 
 		await browser.close();
+
+		//sort by date
 		allRaces.sort((a, b) => Date.parse(a.sessions[0].date) - Date.parse(b.sessions[0].date));
+
+		//get city name from location data
+		for (let i = 0; i < allRaces.length; i++) {
+			allRaces[i].city =
+				raceLocations
+					.find((data) => Number(data.round?.split('/')[0]) == i + 1)
+					?.location?.split(',')[0] || '';
+		}
+
 		return allRaces;
 	} catch (e) {
 		await browser.close();

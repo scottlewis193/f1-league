@@ -75,14 +75,14 @@
 </script>
 
 {#if showPrompt && !isInstalled}
-	<div class="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-96">
-		<div class="alert shadow-lg bg-base-100 border border-base-content/10">
+	<div class="fixed right-4 bottom-4 left-4 z-50 md:right-4 md:left-auto md:w-96">
+		<div class="alert border border-base-content/10 bg-base-100 shadow-lg">
 			<div class="flex w-full flex-col gap-2">
 				<div class="flex items-start justify-between gap-2">
 					<div class="flex items-center gap-3">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
-							class="h-6 w-6 flex-shrink-0 text-primary"
+							class="h-6 w-6 shrink-0 text-primary"
 							fill="none"
 							viewBox="0 0 24 24"
 							stroke="currentColor"
@@ -96,7 +96,7 @@
 						</svg>
 						<div>
 							<h3 class="font-bold">Install F1 League</h3>
-							<p class="text-sm opacity-70">Get quick access and offline support</p>
+							<p class="text-sm opacity-70">Get quick access</p>
 						</div>
 					</div>
 					<button
@@ -121,7 +121,7 @@
 					</button>
 				</div>
 				<div class="flex gap-2">
-					<button class="btn btn-primary btn-sm flex-1" onclick={handleInstall}>Install</button>
+					<button class="btn flex-1 btn-sm btn-primary" onclick={handleInstall}>Install</button>
 					<button class="btn btn-ghost btn-sm" onclick={handleDismiss}>Not Now</button>
 				</div>
 			</div>
@@ -132,13 +132,9 @@
 {#if showIOSInstructions}
 	<div class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 backdrop-blur-sm">
 		<div class="w-full max-w-md rounded-t-3xl bg-base-100 p-6">
-			<div class="flex items-center justify-between mb-4">
+			<div class="mb-4 flex items-center justify-between">
 				<h3 class="text-lg font-bold">Install F1 League</h3>
-				<button
-					class="btn btn-circle btn-ghost btn-sm"
-					onclick={handleDismiss}
-					aria-label="Close"
-				>
+				<button class="btn btn-circle btn-ghost btn-sm" onclick={handleDismiss} aria-label="Close">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						class="h-5 w-5"
@@ -160,7 +156,9 @@
 				<p class="opacity-70">To install this app on your iOS device:</p>
 
 				<div class="flex items-start gap-3">
-					<div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary">
+					<div
+						class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary"
+					>
 						1
 					</div>
 					<div class="flex-1">
@@ -186,7 +184,9 @@
 				</div>
 
 				<div class="flex items-start gap-3">
-					<div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary">
+					<div
+						class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary"
+					>
 						2
 					</div>
 					<div class="flex-1">
@@ -195,7 +195,9 @@
 				</div>
 
 				<div class="flex items-start gap-3">
-					<div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary">
+					<div
+						class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary"
+					>
 						3
 					</div>
 					<div class="flex-1">
@@ -204,7 +206,7 @@
 				</div>
 			</div>
 
-			<button class="btn btn-primary btn-block mt-6" onclick={handleDismiss}>Got it!</button>
+			<button class="btn mt-6 btn-block btn-primary" onclick={handleDismiss}>Got it!</button>
 		</div>
 	</div>
 {/if}

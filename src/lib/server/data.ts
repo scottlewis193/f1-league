@@ -227,6 +227,7 @@ export async function updateRacesDb(
 				raceNo: raceNo,
 				raceName: race.raceName,
 				location: race.location,
+				city: race.city,
 				sessions: race.sessions,
 				raceResults: race.raceResults,
 				year: race.year
@@ -236,6 +237,7 @@ export async function updateRacesDb(
 				raceNo: raceNo,
 				raceName: race.raceName,
 				location: race.location,
+				city: race.city,
 				sessions: race.sessions,
 				raceResults: race.raceResults,
 				year: race.year

@@ -25,6 +25,7 @@
 
 	$effect(() => {
 		if (wallet.connected) {
+			console.log('Wallet connected');
 			pollTxs();
 			wallet.connecting = false;
 		}
@@ -66,27 +67,27 @@
 				onclick={() => {
 					window.open('https://solscan.io/tx/' + transaction.signature, '_blank');
 				}}
-				class="list-row items-center hover:cursor-pointer hover:bg-base-content/10"
+				class="list-row w-full items-center hover:cursor-pointer hover:bg-base-content/10"
 			>
-				<div>{shortAddress(transaction.signature)}</div>
+				<div class="w-22">{shortAddress(transaction.signature)}</div>
 				{#if transaction.transferIn}
-					<div>
+					<div class="w-22">
 						<div>{shortAddress(transaction.source)}</div>
 						<div class="text-xs font-semibold opacity-60">
 							{shortAddress(transaction.authority)}
 						</div>
 					</div>
-					<div class="text-2xl text-success">
+					<div class="w-auto text-left text-2xl text-success">
 						{'+' + transaction.amount}
 					</div>
 				{:else}
-					<div>
+					<div class="w-22">
 						<div>{shortAddress(transaction.destination)}</div>
 						<div class="text-xs font-semibold opacity-60">
 							{shortAddress(transaction.authority)}
 						</div>
 					</div>
-					<div class="text-2xl">
+					<div class="w-auto text-left text-2xl">
 						{transaction.amount}
 					</div>
 				{/if}
