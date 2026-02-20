@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { PUBLIC_PB_URL, PUBLIC_POT_WALLET_ADDRESS } from '$env/static/public';
 	import SubmissionSelect from '$lib/components/submissions/SubmissionSelect.svelte';
 	import { getDrivers } from '$lib/remote/drivers.remote.js';
 	import { getNextRace } from '$lib/remote/races.remote';
@@ -10,16 +9,12 @@
 	} from '$lib/remote/predictions.remote.js';
 	import { usdToGbp, userHasSubmitted } from '$lib/utils';
 	import { fade } from 'svelte/transition';
-	import PocketBase from 'pocketbase';
-	import { onMount } from 'svelte';
 	import { getNextRaceOdds } from '$lib/remote/odds.remote';
-	import TxSigConfirmDialog from '$lib/components/txconfirm/TxSigConfirmDialog.svelte';
-	import { restoreWallet, sendUSDC, wallet } from '$lib/stores/wallet.svelte';
 	import { MessageButtons, showMessageDialog } from '$lib/stores/messagedialog.svelte';
 	import { getToastManagerContext } from '$lib/stores/toastmanager.svelte';
-	import Skeleton from '$lib/components/Skeleton.svelte';
-
-	import ErrorState from '$lib/components/ErrorState.svelte';
+	import { getPlayerWallet } from '$lib/remote/players.remote';
+	import { transferToPredictionWallet } from '$lib/remote/transfers.remote';
+	import pb from '$lib/pocketbase';
 
 	const wageringEnabled = isWageringEnabled();
 	const driversQuery = getDrivers();
@@ -27,8 +22,7 @@
 	const nextRaceQuery = getNextRace();
 	const oddsQuery = getNextRaceOdds();
 	const toastManager = getToastManagerContext();
-
-	const pb = new PocketBase(PUBLIC_PB_URL);
+	let wallet = await getPlayerWallet();
 
 	// svelte-ignore non_reactive_update
 	let submissionModal: HTMLDialogElement;
@@ -44,9 +38,6 @@
 	});
 
 	let userSubmissionId: string = $state('');
-
-	//last confirmed transaction
-	let confirmedTx = $state({ signature: '', hasFailed: false });
 
 	function loadUserSelections() {
 		if (!predictionsQuery.ready) return;
@@ -118,6 +109,7 @@
 	}
 
 	function validateSelections() {
+		console.log('validatingSelections');
 		for (const driverSelection of Object.values(driverSelections)) {
 			if (driverSelection.value === 'Driver') {
 				submissionsValid = false;
@@ -128,16 +120,8 @@
 		submissionsValid = true;
 	}
 
-	async function sendToPot() {
-		if (!wallet.connected) {
-			await showMessageDialog({
-				title: 'Wallet not connected',
-				message: 'Please connect your wallet to make a submission',
-				buttons: MessageButtons.Ok
-			});
-			return;
-		}
-		if ((await usdToGbp(wallet.balanceUSDC)) < 5) {
+	async function sendToPredictionWallet() {
+		if (wallet.balance < 5) {
 			await showMessageDialog({
 				title: 'Insufficient funds',
 				message: 'You need to have at least 5 GBP in your wallet to make a submission',
@@ -145,33 +129,11 @@
 			});
 			return;
 		}
-		const confirmDialog = document.getElementById('txSigConfirmDialog') as HTMLDialogElement;
-		confirmDialog.showModal();
-		const details = await sendUSDC(
-			wallet.publicKey?.toBase58() || '',
-			PUBLIC_POT_WALLET_ADDRESS,
-			5,
-			'F1 League: Sent 5 GBP in USDC to the pot'
-		);
-		confirmedTx.signature = details.signature || '';
-		confirmedTx.hasFailed = details.hasFailed;
+
+		await transferToPredictionWallet({ amount: 5 });
 	}
 
-	onMount(async () => {
-		pb.authStore.loadFromCookie(document.cookie);
-		if (wageringEnabled.current) await restoreWallet();
-	});
-
 	$effect(() => {
-		// if (
-		// 	predictionsQuery.current &&
-		// 	nextRaceQuery.current &&
-		// 	driversQuery.current &&
-		// 	oddsQuery.current
-		// ) {
-		// 	submissionModal.showModal();
-		// }
-
 		//this is to check if the user has selected the same driver for more than one position
 		//if they have, we will reset the one that isn't the last changed one
 		const lastChangedDriverSelection = Object.values(driverSelections).find(
@@ -181,14 +143,17 @@
 			return;
 		}
 
+		console.log(oddsQuery.current);
+
 		//update place and exact based on selection
 		lastChangedDriverSelection.place =
 			oddsQuery.current?.find(
-				(oddsRecord) => oddsRecord.expand.driver.name === lastChangedDriverSelection.value
-			)?.pointsForPlace || 0;
+				(oddsRecord) => (oddsRecord.expand.driver?.name ?? '') === lastChangedDriverSelection.value
+			)?.pointsForPlace ?? 0;
+
 		lastChangedDriverSelection.exact =
 			oddsQuery.current?.find(
-				(oddsRecord) => oddsRecord.expand.driver.name === lastChangedDriverSelection.value
+				(oddsRecord) => (oddsRecord.expand.driver?.name ?? '') === lastChangedDriverSelection.value
 			)?.pointsForExact || 0;
 
 		for (const driverSelection of Object.values(driverSelections)) {
@@ -207,14 +172,7 @@
 	});
 </script>
 
-{#if predictionsQuery.error}
-	<ErrorState
-		title="Failed to load predictions"
-		message="We couldn't load the predictions data. Please check your connection and try again."
-		error={predictionsQuery.error}
-		onRetry={() => predictionsQuery.refresh?.()}
-	/>
-{:else if predictionsQuery.loading}
+{#if predictionsQuery.current && driversQuery.current && nextRaceQuery.current}
 	<div in:fade class="card h-full w-full overflow-auto bg-base-100">
 		<div class="card-body">
 			<table class="table not-md:table-sm">
@@ -227,25 +185,56 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each Array(5) as _, i (i)}
+					{#each predictionsQuery.current as submission (submission.id)}
+						{@const driver1stOddsPointsPotential = getDriverOddsPointsPotential(
+							submission.predictions[0]
+						)}
+						{@const driver2ndOddsPointsPotential = getDriverOddsPointsPotential(
+							submission.predictions[1]
+						)}
+						{@const driver3rdOddsPointsPotential = getDriverOddsPointsPotential(
+							submission.predictions[2]
+						)}
 						<tr>
-							<td><Skeleton type="text" width="70%" /></td>
+							<td class="font-bold">{submission.expand.user.name}</td>
 							<td>
-								<div class="flex flex-col gap-1">
-									<Skeleton type="text" width="80%" />
-									<Skeleton type="text" width="40%" />
+								<div class="flex flex-col">
+									<div>{submission.predictions[0]}</div>
+									<div class="flex opacity-50">
+										<div class="w-1/2">Pl</div>
+										<div class="w-1/2 text-right">{driver1stOddsPointsPotential.place}</div>
+									</div>
+									<div class="flex opacity-50">
+										<div class="w-1/2">Ex</div>
+										<div class="w-1/2 text-right">{driver1stOddsPointsPotential.exact}</div>
+									</div>
 								</div>
 							</td>
 							<td>
-								<div class="flex flex-col gap-1">
-									<Skeleton type="text" width="80%" />
-									<Skeleton type="text" width="40%" />
+								<div class="flex flex-col">
+									<div>{submission.predictions[1]}</div>
+									<div class="flex opacity-50">
+										<div class="w-1/2">Pl</div>
+										<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.place}</div>
+									</div>
+									<div class="flex opacity-50">
+										<div class="w-1/2">Ex</div>
+										<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.exact}</div>
+									</div>
 								</div>
 							</td>
 							<td>
-								<div class="flex flex-col gap-1">
-									<Skeleton type="text" width="80%" />
-									<Skeleton type="text" width="40%" />
+								<div class="flex flex-col">
+									<div>{submission.predictions[2]}</div>
+
+									<div class="flex opacity-50">
+										<div class="w-1/2">Pl</div>
+										<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.place}</div>
+									</div>
+									<div class="flex opacity-50">
+										<div class="w-1/2">Ex</div>
+										<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.exact}</div>
+									</div>
 								</div>
 							</td>
 						</tr>
@@ -254,107 +243,7 @@
 			</table>
 		</div>
 	</div>
-	<Skeleton type="button" width="100%" height="3rem" />
-{:else if predictionsQuery.ready && nextRaceQuery.ready && driversQuery.ready && oddsQuery.ready && wageringEnabled.ready}
-	{#if predictionsQuery.current.length === 0}
-		<!-- <EmptyState
-			title="No predictions yet"
-			description="Be the first to submit your predictions for the next race!"
-			actionText="Submit Predictions"
-			onAction={() => {
-				loadUserSelections();
-				submissionModal.showModal();
-			}}
-		> -->
-		{#snippet icon()}
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="h-24 w-24"
-				fill="none"
-				viewBox="0 0 24 24"
-				stroke="currentColor"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="1.5"
-					d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
-				/>
-			</svg>
-		{/snippet}
-		<!-- </EmptyState> -->
-	{:else}
-		<div in:fade class="card h-full w-full overflow-auto bg-base-100">
-			<div class="card-body">
-				<table class="table not-md:table-sm">
-					<thead>
-						<tr>
-							<th class="w-1/4">Player</th>
-							<th class="w-1/4">1st</th>
-							<th class="w-1/4">2nd</th>
-							<th class="w-1/4">3rd</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each predictionsQuery.current as submission (submission.id)}
-							{@const driver1stOddsPointsPotential = getDriverOddsPointsPotential(
-								submission.predictions[0]
-							)}
-							{@const driver2ndOddsPointsPotential = getDriverOddsPointsPotential(
-								submission.predictions[1]
-							)}
-							{@const driver3rdOddsPointsPotential = getDriverOddsPointsPotential(
-								submission.predictions[2]
-							)}
-							<tr>
-								<td class="font-bold">{submission.expand.user.name}</td>
-								<td>
-									<div class="flex flex-col">
-										<div>{submission.predictions[0]}</div>
-										<div class="flex opacity-50">
-											<div class="w-1/2">Pl</div>
-											<div class="w-1/2 text-right">{driver1stOddsPointsPotential.place}</div>
-										</div>
-										<div class="flex opacity-50">
-											<div class="w-1/2">Ex</div>
-											<div class="w-1/2 text-right">{driver1stOddsPointsPotential.exact}</div>
-										</div>
-									</div>
-								</td>
-								<td>
-									<div class="flex flex-col">
-										<div>{submission.predictions[1]}</div>
-										<div class="flex opacity-50">
-											<div class="w-1/2">Pl</div>
-											<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.place}</div>
-										</div>
-										<div class="flex opacity-50">
-											<div class="w-1/2">Ex</div>
-											<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.exact}</div>
-										</div>
-									</div>
-								</td>
-								<td>
-									<div class="flex flex-col">
-										<div>{submission.predictions[2]}</div>
 
-										<div class="flex opacity-50">
-											<div class="w-1/2">Pl</div>
-											<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.place}</div>
-										</div>
-										<div class="flex opacity-50">
-											<div class="w-1/2">Ex</div>
-											<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.exact}</div>
-										</div>
-									</div>
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		</div>
-	{/if}
 	<button
 		disabled={!isSubmissionWindowOpen()}
 		onclick={() => {
@@ -373,7 +262,16 @@
 			<form
 				bind:this={submissionForm}
 				class="flex w-full flex-col justify-center"
-				{...addUpdatePrediction}
+				{...addUpdatePrediction.enhance(async ({ form, data, submit }) => {
+					try {
+						await submit();
+						form.reset();
+						toastManager.addToast('Submission successful', 'success');
+					} catch (error) {
+						toastManager.addToast('Submission failed', 'error');
+					}
+					submissionModal?.close();
+				})}
 			>
 				<div class="overflow-hidden rounded-box border border-base-content/5 bg-base-100">
 					<table class="table">
@@ -459,12 +357,11 @@
 						<button
 							onclick={async () => {
 								if (wageringEnabled.current) {
-									await sendToPot();
-								} else {
-									submissionForm.requestSubmit();
+									await sendToPredictionWallet();
 								}
+								submissionForm.requestSubmit();
+
 								hasUnsavedChanges = false;
-								toastManager.addToast('Submission successful!', 'success');
 							}}
 							disabled={!submissionsValid}
 							type="button"
@@ -477,10 +374,5 @@
 				</div>
 			</form>
 		</div>
-		<TxSigConfirmDialog
-			hasFailed={confirmedTx.hasFailed}
-			signature={confirmedTx.signature}
-			{submissionForm}
-		/>
 	</dialog>
 {/if}

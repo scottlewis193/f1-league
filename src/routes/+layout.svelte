@@ -16,7 +16,8 @@
 		StreamIcon,
 		SubmissionsIcon,
 		RulesIcon,
-		DashboardIcon
+		DashboardIcon,
+		StandingsIcon
 	} from '$lib/components/icons';
 	import { getNextRace } from '$lib/remote/races.remote';
 	import { titleCase } from '$lib/utils';
@@ -27,7 +28,6 @@
 	import ConfettiContainer from '$lib/components/ConfettiContainer.svelte';
 	import ToastManager from '$lib/components/ToastManager.svelte';
 	import MessageDialog from '$lib/components/MessageDialog.svelte';
-	import PWAInstallPrompt from '$lib/components/PWAInstallPrompt.svelte';
 	import { setToastManagerContext } from '$lib/stores/toastmanager.svelte';
 	import { resolve } from '$app/paths';
 
@@ -61,7 +61,7 @@
 		}
 	});
 
-	let isDecember = new Date().getMonth() === 12;
+	let isDecember = new Date().getMonth() === 11; //months are zero indexed
 
 	//client init
 	onMount(async () => {
@@ -122,17 +122,26 @@
 							<li>
 								<a href={resolve('/dashboard')} class:active={url === '/dashboard'}>Dashboard</a>
 							</li>
-							<li><a href={resolve('/players')} class:active={url === '/players'}>Players</a></li>
-							<li><a href={resolve('/drivers')} class:active={url === '/drivers'}>Drivers</a></li>
-							<li><a href={resolve('/teams')} class:active={url === '/teams'}>Teams</a></li>
-							<li><a href={resolve('/races')} class:active={url === '/races'}>Races</a></li>
-							<li><a href={resolve('/rules')} class:active={url === '/rules'}>Rules</a></li>
+							<li>
+								<a href={resolve('/players')} class:active={url === '/players'}>Players</a>
+							</li>
+							<li>
+								<a href={resolve('/standings')} class:active={url === '/standings'}>Standings</a>
+							</li>
+							<li>
+								<a href={resolve('/races')} class:active={url === '/races'}>Races</a>
+							</li>
+							<li>
+								<a href={resolve('/rules')} class:active={url === '/rules'}>Rules</a>
+							</li>
 							<li>
 								<a href={resolve('/predictions')} class:active={url === '/predictions'}
 									>Predictions</a
 								>
 							</li>
-							<li><a href={resolve('/stream')} class:active={url === '/stream'}>Stream</a></li>
+							<li>
+								<a href={resolve('/stream')} class:active={url === '/stream'}>Stream</a>
+							</li>
 						</ul>
 					</div>
 					<div class="flex justify-end gap-4 lg:min-w-[15%]">
@@ -182,18 +191,21 @@
 					</div>
 				</div>
 				<!-- Page content here -->
-				<div class="flex h-full w-full flex-col items-center justify-center">
-					{#if url !== '/stream'}
-						<div
-							class=" flex h-[calc(100svh-5rem)] min-h-[calc(100svh-5rem)] w-full max-w-2xl flex-col gap-4 p-4"
-						>
+				{#key url}
+					<div class="flex h-full w-full flex-col items-center justify-center">
+						{#if url !== '/stream'}
+							<div
+								class=" flex h-[calc(100svh-5rem)] min-h-[calc(100svh-5rem)] w-full max-w-2xl flex-col gap-4 p-4"
+							>
+								{@render children?.()}
+							</div>
+						{:else}
 							{@render children?.()}
-						</div>
-					{:else}
-						{@render children?.()}
-					{/if}
-				</div>
+						{/if}
+					</div>
+				{/key}
 			</div>
+
 			<!-- Side Drawer -->
 			<div class="drawer-side">
 				<label for="my-drawer-3" aria-label="close sidebar" class="drawer-overlay"></label>
@@ -220,20 +232,12 @@
 					<li>
 						<a
 							class="flex h-16 items-center"
-							class:active={url === '/drivers'}
-							href={resolve('/drivers')}
-							onclick={() => (drawerToggle.checked = false)}><DriversIcon /> Drivers</a
+							class:active={url === '/standings'}
+							href={resolve('/standings')}
+							onclick={() => (drawerToggle.checked = false)}><StandingsIcon /> Standings</a
 						>
 					</li>
 
-					<li>
-						<a
-							class="flex h-16 items-center"
-							class:active={url === '/teams'}
-							href={resolve('/teams')}
-							onclick={() => (drawerToggle.checked = false)}><TeamsIcon /> Teams</a
-						>
-					</li>
 					<li>
 						<a
 							class="flex h-16 items-center"
@@ -336,7 +340,7 @@
 		</div>
 	</dialog>
 
-	<dialog bind:this={raceResultsDialog} class="modal w-[100vw]">
+	<dialog bind:this={raceResultsDialog} class="modal w-screen">
 		<div class="modal-box">
 			<h3 class="text-lg font-bold">Prediction Results</h3>
 			<div class="flex flex-col items-center justify-center gap-4 py-4">
@@ -397,7 +401,7 @@
 {/if}
 
 <!-- Snow confetti effect for christmas -->
-{#if isDecember}
+{#if isDecember && url !== '/stream'}
 	<ConfettiContainer toggleOnce relative={false} activeOnMount>
 		<div class="fixed top-[-50px] left-0 flex h-screen w-screen justify-center overflow-hidden">
 			<Confetti
@@ -416,4 +420,3 @@
 
 <MessageDialog />
 <ToastManager />
-<PWAInstallPrompt />

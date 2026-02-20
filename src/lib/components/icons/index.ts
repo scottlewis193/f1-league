@@ -11,6 +11,8 @@ import TeamsIcon from './xTeamsIcon.svelte';
 import WalletIcon from './xWalletIcon.svelte';
 import HistoryIcon from './xHistoryIcon.svelte';
 import DashboardIcon from './xDashboardIcon.svelte';
+import StandingsIcon from './xStandingsIcon.svelte';
+import CopyIcon from './xCopyIcon.svelte';
 
 export {
 	PlayersIcon,
@@ -25,5 +27,7 @@ export {
 	TeamsIcon,
 	WalletIcon,
 	HistoryIcon,
-	DashboardIcon
+	DashboardIcon,
+	StandingsIcon,
+	CopyIcon
 };

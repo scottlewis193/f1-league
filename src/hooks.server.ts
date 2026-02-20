@@ -1,10 +1,12 @@
 import PocketBase from 'pocketbase';
 import { PUBLIC_PB_URL } from '$env/static/public';
 import { redirect, type Handle, type ServerInit } from '@sveltejs/kit';
-import { refreshF1DataHourly } from '$lib/server/data';
+import { checkForNewDeposits, refreshF1DataHourly } from '$lib/server/data';
+import { dev } from '$app/environment';
 
 export const init: ServerInit = async () => {
 	refreshF1DataHourly();
+	checkForNewDeposits();
 };
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -38,17 +40,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 		// --- Persist cookie ---
 		response.headers.append(
 			'set-cookie',
-			event.locals.pb.authStore.exportToCookie({
-				sameSite: 'Lax',
-				httpOnly: false
-			})
+			event.locals.pb.authStore.exportToCookie({ httpOnly: false })
 		);
 
 		return response;
 	} catch (err: unknown) {
-		if ('status' in err && 'location' in err && err.status >= 300 && err.status < 400) {
-			throw err;
-		}
+		// if ('status' in err && 'location' in err && err.status >= 300 && err.status < 400) {
+		// 	throw err;
+		// }
 
 		console.error('Top-level handle() error:', err);
 		return new Response('Internal server error', { status: 500 });

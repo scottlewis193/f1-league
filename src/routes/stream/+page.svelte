@@ -1,99 +1,102 @@
 <script lang="ts">
-	import Hls from 'hls.js/dist/hls.js';
 	import { onMount } from 'svelte';
 
-	let streamNo = $state(1);
+	let stream = $state('DAD');
+	let provider = $state('dlhd');
+	let src = $state('');
+
+	let dlhdStreams = ['stream', 'cast', 'watch', 'plus', 'casting', 'player'];
+	let ihatestreamsStreams = [
+		'1a0edc01-8363-11f0-b385-bc2411b21e0d',
+		'33a602e1-bbdc-11f0-93c8-bc2411e5e61b',
+		'5fbdbab5-3cda-11f0-afb1-ecf4bbdafde4',
+		'731265e4-7ff0-11f0-b385-bc2411b21e0d',
+		'cb3927ff-80e1-11f0-b385-bc2411b21e0d'
+	];
 
 	onMount(() => {
-		streamNo = localStorage.getItem('streamNo')
-			? (streamNo = parseInt(localStorage.getItem('streamNo')!))
-			: 1;
+		stream = localStorage.getItem('stream') ? (stream = localStorage.getItem('stream')!) : 'stream';
+		provider = localStorage.getItem('provider')
+			? (provider = localStorage.getItem('provider')!)
+			: 'dlhd';
 	});
 
 	$effect(() => {
-		if (streamNo == 3) {
-			const video = document.getElementById('video') as HTMLVideoElement;
-			if (!video) return;
-			if (Hls.isSupported()) {
-				const hls = new Hls();
-				hls.loadSource('http://192.168.0.2:8083/hls/stream.m3u8');
-				hls.attachMedia(video);
-				hls.on(Hls.Events.MANIFEST_PARSED, function () {
-					video?.play();
-				});
-			} else {
-				video.src = 'http://192.168.0.2:8083/hls/stream.m3u8';
-			}
+		if (provider == 'dlhd') {
+			src = `https://dlhd.dad/${stream}/stream-60.php`;
+		} else if (provider == 'ihatestreams') {
+			src = `https://ihatestreams.xyz/embed/${stream}`;
 		}
 	});
 </script>
 
-<div class="box-border flex min-h-[calc(100vh-5rem)] w-full flex-col items-center gap-4 p-4">
-	<!-- Video Card -->
-	<div
-		class="card flex w-full max-w-6xl flex-1 flex-col items-center justify-center bg-base-100 p-4"
-	>
-		<!-- Responsive 16:9 Iframe -->
-		<div
-			class="aspect-video h-auto w-full overflow-hidden rounded-lg"
-			style="max-height: calc(100vh - 160px);"
-		>
-			{#if streamNo == 3}
-				<video id="video" controls autoplay></video>
-			{:else}
-				<iframe
-					id="video"
-					title="Stream"
-					class="h-full w-full border-0"
-					src={streamNo == 1
-						? 'https://dlhd.dad/player/stream-60.php'
-						: 'https://dlhd.dad/plus/stream-60.php'}
-					scrolling="no"
-					frameborder="0"
-					marginwidth="0"
-					marginheight="0"
-					allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-				></iframe>
-			{/if}
-
-			<!-- <video
-				data-html5-video=""
-				preload="metadata"
-				src="blob:https://ppv.to/5f786dd3-e6c1-4946-8fac-a6c35dab2714"
-				><style class="clappr-style">
-					[data-html5-video] {
-						position: absolute;
-						height: 100%;
-						width: 100%;
-						display: block;
-					}
-				</style></video
-			> -->
-
-			<!-- <iframe
-				class="video"
-				src="https://vod.rerace.io/live/mgjgghfgncfgngcgfgeg?id=cgfgjgog"
-				width="100%"
-				height="100%"
-				frameborder="0"
-				allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-				allowfullscreen=""
-			></iframe> -->
+<div class="box-border flex h-[calc(100vh-5rem)] w-full flex-col items-center gap-4 p-4">
+	<div class="h-[calc(100vh-18rem)] w-[min(100vw,100vh)]">
+		<div class="card aspect-video w-full bg-base-100 p-2">
+			{#key stream}
+				{#if stream == 'player' || stream == 'plus'}
+					<iframe
+						id="video"
+						title="Stream"
+						class="h-full w-full border-0"
+						{src}
+						frameborder="0"
+						marginwidth="0"
+						marginheight="0"
+						allowfullscreen
+						loading="lazy"
+						sandbox="allow-scripts"
+					></iframe>
+				{:else}
+					<iframe
+						id="video"
+						title="Stream"
+						class="h-full w-full border-0"
+						{src}
+						frameborder="0"
+						marginwidth="0"
+						marginheight="0"
+						allowfullscreen
+						loading="lazy"
+					></iframe>
+				{/if}
+			{/key}
 		</div>
 	</div>
-
+	<select class="select" bind:value={provider}>
+		<option value="dlhd">DLHD</option>
+		<!-- <option value="ihatestreams">iHateStreams</option> -->
+	</select>
 	<!-- Buttons -->
 	<div class="flex w-full max-w-6xl flex-wrap items-center justify-center gap-4">
-		{#each [1, 2, 3] as n, index (index)}
-			<button
-				class="btn btn-primary"
-				onclick={() => {
-					streamNo = n;
-					localStorage.setItem('streamNo', n.toString());
-				}}
-			>
-				{n}
-			</button>
-		{/each}
+		{#if provider == 'dlhd'}
+			{#each dlhdStreams as _stream, index (index)}
+				<button
+					class="btn btn-primary"
+					onclick={() => {
+						stream = _stream;
+						localStorage.setItem('stream', _stream.toString());
+					}}
+				>
+					{_stream}
+				</button>
+			{/each}
+		{/if}
+		{#if provider == 'ihatestreams'}
+			{#each ihatestreamsStreams as _stream, index (index)}
+				<button
+					class="btn btn-primary"
+					onclick={() => {
+						stream = _stream;
+						localStorage.setItem('stream', _stream.toString());
+					}}
+				>
+					{_stream}
+				</button>
+			{/each}
+		{/if}
 	</div>
+	<p class="text-center">
+		uBlock Origin recommended. Plus and player streams are ad-free so those use those on mobile.
+	</p>
 </div>

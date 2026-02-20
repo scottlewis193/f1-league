@@ -9,9 +9,7 @@ export const getF1Schedule = query(async () => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
 
-	const races: Race[] = await pb.collection('races').getFullList();
-
-	return races;
+	return getRacesDb(pb);
 });
 
 export const getNextRace = query(async () => {

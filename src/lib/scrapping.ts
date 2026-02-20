@@ -1,8 +1,10 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import type { Race, Team } from './types';
+import type { Driver, Race, Team } from './types';
 
 puppeteer.use(StealthPlugin());
+
+const SEASON = new Date().getFullYear().toString();
 
 export async function scrapeAll() {
 	let races;
@@ -30,8 +32,8 @@ export async function scrapeAll() {
 	return { races, drivers, teams, odds };
 }
 
-export async function scrapeDrivers(season = '2025') {
-	const url = `https://www.formula1.com/en/results.html/${season}/drivers.html`;
+export async function scrapeDrivers() {
+	const url = `https://www.formula1.com/en/results.html/${SEASON}/drivers.html`;
 	const browser = await puppeteer.launch({
 		headless: true,
 		args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -45,19 +47,21 @@ export async function scrapeDrivers(season = '2025') {
 		// Wait for the standings table to load
 		await page.waitForSelector('#results-table');
 
-		const standings = await page.evaluate(() => {
+		const standings = (await page.evaluate(() => {
 			const rows = Array.from(document.querySelectorAll('#results-table > div > table tbody tr'));
 			return rows.map((row) => {
 				const cols = row.querySelectorAll('td');
+				if (cols.length < 5) return undefined;
 				return {
 					position: Number(cols[0]?.innerText.trim()),
 					name: cols[1]?.innerText.trim().replace(/\n/g, ' '),
 					nationality: cols[2]?.innerText.trim(),
 					team: cols[3]?.innerText.trim(),
-					points: Number(cols[4]?.innerText.trim())
+					points: Number(cols[4]?.innerText.trim()),
+					year: SEASON
 				};
 			});
-		});
+		})) as unknown as Driver[];
 
 		return standings;
 	} catch (e) {
@@ -67,8 +71,8 @@ export async function scrapeDrivers(season = '2025') {
 	}
 }
 
-export async function scrapeTeams(season = 2025) {
-	const url = `https://www.formula1.com/en/results.html/${season}/team.html`;
+export async function scrapeTeams() {
+	const url = `https://www.formula1.com/en/results.html/${SEASON}/team.html`;
 	const browser = await puppeteer.launch({
 		headless: true,
 		args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -86,6 +90,7 @@ export async function scrapeTeams(season = 2025) {
 			const rows = Array.from(document.querySelectorAll('#results-table > div > table tbody tr'));
 			return rows.map((row) => {
 				const cols = row.querySelectorAll('td');
+				if (cols.length < 3) return null;
 				return {
 					position: cols[0]?.innerText.trim(),
 					name: cols[1]?.innerText.trim().replace(/\n/g, ' '),
@@ -102,8 +107,11 @@ export async function scrapeTeams(season = 2025) {
 	}
 }
 
-export async function scrapeRaceLocations(season = '2025') {
-	const browser = await puppeteer.launch({ headless: true });
+export async function scrapeRaceLocations() {
+	const browser = await puppeteer.launch({
+		headless: true,
+		args: ['--no-sandbox', '--disable-setuid-sandbox']
+	});
 	const page = await browser.newPage();
 
 	// Step 1: Go to races page
@@ -152,11 +160,11 @@ export async function scrapeRaceLocations(season = '2025') {
 	return results;
 }
 
-export async function scrapeF1Races(season = '2025') {
+export async function scrapeF1Races() {
 	//first we grab location data from pitwall.app
 	const raceLocations = await scrapeRaceLocations();
 
-	const baseUrl = `https://www.formula1.com/en/racing/${season}`;
+	const baseUrl = `https://www.formula1.com/en/racing/${SEASON}`;
 	const browser = await puppeteer.launch({
 		headless: true,
 		args: ['--no-sandbox', '--disable-setuid-sandbox']

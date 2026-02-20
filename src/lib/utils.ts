@@ -1,5 +1,4 @@
 import type { Race, Prediction, OddsRecord } from './types';
-import { Transaction, SystemProgram, PublicKey } from '@solana/web3.js';
 
 export function titleCase(str: string) {
 	return str.replace(/\w\S*/g, function (txt) {
@@ -87,7 +86,7 @@ export function getPlayerStats(
 
 		for (let i = 0; i < submission.predictions.length; i++) {
 			const driverName = submission.predictions[i];
-			const raceDriverOdds = raceOdds.find((odd) => odd.expand.driver.name == driverName);
+			const raceDriverOdds = raceOdds.find((odd) => (odd.expand.driver?.name || '') == driverName);
 			if (!raceDriverOdds) continue;
 
 			//if driver is in top 3

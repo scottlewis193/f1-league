@@ -14,10 +14,14 @@ class Toast {
 class ToastManager {
 	toasts: Toast[] = $state([]);
 	timeout: number = 5000;
-	addToast(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') {
+	addToast(
+		message: string,
+		type: 'success' | 'error' | 'info' | 'warning' = 'info',
+		timeout: number = this.timeout
+	) {
 		const toast = new Toast(message, type);
 		this.toasts.push(toast);
-		setTimeout(() => this.removeToast(toast), this.timeout);
+		setTimeout(() => this.removeToast(toast), timeout);
 	}
 
 	removeToast(toast: Toast) {

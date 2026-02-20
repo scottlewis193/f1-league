@@ -1,9 +1,20 @@
 import { sendNotifications } from '$lib/notifications';
 import PocketBase from 'pocketbase';
 import { scrapeAll } from '$lib/scrapping';
-import type { Driver, OddsRecord, Player, Prediction, Race, Team } from '$lib/types';
+import type {
+	Driver,
+	OddsRecord,
+	Player,
+	Prediction,
+	Race,
+	Team,
+	Wallet,
+	WiseTransfer
+} from '$lib/types';
 import { getPlayerStats, oddsToPoints } from '$lib/utils';
 import _pb from './pocketbase';
+import { wiseFetch } from './wise';
+import { WISE_ACCOUNT_ID } from '$env/static/private';
 
 const ONE_HOUR = 60 * 60 * 1000;
 
@@ -66,6 +77,42 @@ export async function refreshF1DataHourly() {
 	setTimeout(refreshF1DataHourly, ONE_HOUR);
 }
 
+export async function checkForNewDeposits() {
+	const data: WiseTransfer[] = await wiseFetch('transfers?status=COMPLETED', 'v1', {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json'
+		}
+	});
+
+	const deposits = data.filter((transfer) => transfer.targetAccount === Number(WISE_ACCOUNT_ID));
+
+	//get all wallet ids and then filter data so we only have transfers where the reference equals one of the wallet ids
+	const walletIds = (await getAllWalletsDb()).map((wallet) => wallet.id);
+	const filteredDeposits = deposits.filter((transfer) => walletIds.includes(transfer.reference));
+
+	for (const deposit of filteredDeposits) {
+		//check if deposit has log already, if not add it and update wallet balance
+		const transferLog = await getTransferLogByIdDb(String(deposit.id));
+		if (transferLog) continue;
+
+		const wallet = await getWalletByIdDb(deposit.reference);
+		if (!wallet) continue;
+
+		await createTransferLog(
+			String(deposit.id),
+			wallet.user,
+			wallet.id,
+			deposit.targetValue,
+			'deposit'
+		);
+		await updateWalletBalance(deposit.reference, wallet.balance + deposit.targetValue);
+	}
+
+	// Schedule the next run
+	setTimeout(checkForNewDeposits, 10000);
+}
+
 export async function getPlayersDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
 	const players: Player[] = await pb.collection('users').getFullList();
@@ -91,7 +138,10 @@ export async function getPlayersWithStatsDb(pbInstance: PocketBase | undefined =
 			avatar: player.avatar || '',
 			displayLatestResultsDialog: player.displayLatestResultsDialog || false,
 			walletAddress: player.walletAddress || '',
-			...getPlayerStats(id, submissions, races, odds)
+			...getPlayerStats(id, submissions, races, odds),
+			userPointsBalance: player.userPointsBalance || 0,
+			userPointsEarned: player.userPointsEarned || 0,
+			wiseRecipientId: player.wiseRecipientId || 0
 		});
 	});
 
@@ -100,7 +150,7 @@ export async function getPlayersWithStatsDb(pbInstance: PocketBase | undefined =
 	return playersWithStats;
 }
 
-export async function getCurrentPlayerWithStatsDb(
+export async function getPlayerWithStatsDb(
 	playerId: string,
 	pbInstance: PocketBase | undefined = undefined
 ): Promise<Player | null> {
@@ -120,10 +170,22 @@ export async function getCurrentPlayerWithStatsDb(
 		avatar: player.avatar,
 		displayLatestResultsDialog: player.displayLatestResultsDialog || false,
 		walletAddress: player.walletAddress || '',
-		...getPlayerStats(player.id, submissions, races, odds)
+		...getPlayerStats(player.id, submissions, races, odds),
+		userPointsBalance: player.userPointsBalance || 0,
+		userPointsEarned: player.userPointsEarned || 0,
+		wiseRecipientId: player.wiseRecipientId || 0
 	};
 
 	return playerWithStats;
+}
+
+export async function getPlayerDb(
+	playerId: string,
+	pbInstance: PocketBase | undefined = undefined
+) {
+	const pb = pbInstance || _pb;
+	const player: Player = await pb.collection('users').getOne(playerId);
+	return player;
 }
 
 export async function updateAllPlayersDb(
@@ -136,9 +198,9 @@ export async function updateAllPlayersDb(
 	});
 }
 
-export async function updateCurrentPlayerDb(
+export async function updatePlayerDb(
 	playerId: string,
-	player: Player,
+	player: Partial<Player>,
 	pbInstance: PocketBase | undefined = undefined
 ) {
 	const pb = pbInstance || _pb;
@@ -147,9 +209,15 @@ export async function updateCurrentPlayerDb(
 
 export async function getCurrentDataDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
-	const drivers: Driver[] = await pb.collection('drivers').getFullList({ sort: '-points' });
-	const teams: Team[] = await pb.collection('teams').getFullList({ sort: '-points' });
-	const races: Race[] = await pb.collection('races').getFullList();
+	const drivers: Driver[] = await pb
+		.collection('drivers')
+		.getFullList({ sort: '-points', filter: `year='${new Date().getFullYear()}'` });
+	const teams: Team[] = await pb
+		.collection('teams')
+		.getFullList({ sort: '-points', filter: `year='${new Date().getFullYear()}'` });
+	const races: Race[] = await pb
+		.collection('races')
+		.getFullList({ filter: `year='${new Date().getFullYear()}'` });
 	return { currentDrivers: drivers, currentTeams: teams, currentRaces: races };
 }
 
@@ -168,27 +236,31 @@ export async function isOddsUpdateWindowOpen() {
 
 export async function getRacesDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
-	const races: Race[] = await pb.collection('races').getFullList();
+	const races: Race[] = await pb
+		.collection('races')
+		.getFullList({ filter: `year='${new Date().getFullYear()}'` });
 	return races;
 }
 
 export async function getNextRaceDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
-	let races: Race[] = await pb.collection('races').getFullList();
 	const currentDate = Date.now();
+	let races: Race[] = await pb
+		.collection('races')
+		.getFullList({ filter: `year='${new Date().getFullYear()}'` });
 	races = races.sort(
 		(a, b) =>
 			Date.parse(
 				a.sessions[a.sessions.length - 1].date +
 					' ' +
-					new Date(currentDate).getFullYear() +
+					new Date().getFullYear() +
 					' ' +
 					a.sessions[a.sessions.length - 1].time
 			) -
 			Date.parse(
 				b.sessions[a.sessions.length - 1].date +
 					' ' +
-					new Date(currentDate).getFullYear() +
+					new Date().getFullYear() +
 					' ' +
 					b.sessions[b.sessions.length - 1].time
 			)
@@ -256,7 +328,9 @@ export async function updateDriversDb(
 
 	for (const driver of drivers) {
 		if (!driver) return;
-		const currentDriver = currentDrivers.find((d) => d.name === driver.name);
+		const currentDriver = currentDrivers.find(
+			(d) => d.name === driver.name && d.year === driver.year
+		);
 
 		if (currentDriver) {
 			await pb.collection('drivers').update(currentDriver.id, {
@@ -264,7 +338,8 @@ export async function updateDriversDb(
 				position: driver.position,
 				nationality: driver.nationality,
 				team: driver.team,
-				points: driver.points
+				points: driver.points,
+				year: driver.year
 			});
 		} else {
 			await pb.collection('drivers').create({
@@ -272,7 +347,8 @@ export async function updateDriversDb(
 				position: driver.position,
 				nationality: driver.nationality,
 				team: driver.team,
-				points: driver.points
+				points: driver.points,
+				year: driver.year
 			});
 		}
 	}
@@ -280,7 +356,9 @@ export async function updateDriversDb(
 
 export async function getTeamsDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
-	const teams: Team[] = await pb.collection('teams').getFullList({ sort: '-points' });
+	const teams: Team[] = await pb
+		.collection('teams')
+		.getFullList({ sort: '-points', filter: `year='${new Date().getFullYear()}'` });
 	return teams;
 }
 
@@ -293,19 +371,21 @@ export async function updateTeamsDb(
 
 	for (const team of teams) {
 		if (!team) return;
-		const currentTeam = currentTeams.find((d) => d.name === team.name);
+		const currentTeam = currentTeams.find((d) => d.name === team.name && d.year === team.year);
 
 		if (currentTeam) {
 			await pb.collection('teams').update(currentTeam.id, {
 				name: team.name,
 				position: team.position,
-				points: team.points
+				points: team.points,
+				year: team.year
 			});
 		} else {
 			await pb.collection('teams').create({
 				name: team.name,
 				position: team.position,
-				points: team.points
+				points: team.points,
+				year: team.year
 			});
 		}
 	}
@@ -319,10 +399,14 @@ export async function getOddsDb(pbInstance: PocketBase | undefined = undefined) 
 
 export async function getNextRaceOddsDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
+
 	const race = (await getNextRaceDb()).id;
-	const odds: OddsRecord[] = await pb
-		.collection('odds')
-		.getFullList({ expand: 'driver,race', filter: `race='${race}'` });
+
+	const odds: OddsRecord[] = await pb.collection('odds').getFullList({
+		expand: 'driver,race',
+		filter: `race='${race}'`
+	});
+
 	return odds;
 }
 
@@ -417,6 +501,74 @@ export async function getUserPredictionsDb(
 
 export async function getDriversDb(pbInstance: PocketBase | undefined = undefined) {
 	const pb = pbInstance || _pb;
-	const drivers: Driver[] = await pb.collection('drivers').getFullList({ sort: '-points' });
+	const drivers: Driver[] = await pb
+		.collection('drivers')
+		.getFullList({ sort: '-points', filter: `year='${new Date().getFullYear()}'` });
 	return drivers;
+}
+
+export async function getWalletByIdDb(
+	walletId: string,
+	pbInstance: PocketBase | undefined = undefined
+) {
+	const pb = pbInstance || _pb;
+	const wallet: Wallet = await pb.collection('wallets').getFirstListItem(`id='${walletId}'`);
+	return wallet;
+}
+
+export async function getWalletByUserIdDb(
+	userId: string,
+	pbInstance: PocketBase | undefined = undefined
+) {
+	const pb = pbInstance || _pb;
+	const wallet: Wallet = await pb.collection('wallets').getFirstListItem(`user='${userId}'`);
+	return wallet;
+}
+
+export async function getAllWalletsDb(pbInstance: PocketBase | undefined = undefined) {
+	const pb = pbInstance || _pb;
+	const wallets: Wallet[] = await pb.collection('wallets').getFullList();
+	return wallets;
+}
+
+export async function updateWalletBalance(
+	walletId: string,
+	newBalance: number,
+	pbInstance: PocketBase | undefined = undefined
+) {
+	const pb = pbInstance || _pb;
+	await pb.collection('wallets').update(walletId, { balance: newBalance });
+}
+
+export async function getTransferLogByIdDb(
+	id: string,
+	pbInstance: PocketBase | undefined = undefined
+) {
+	const pb = pbInstance || _pb;
+	try {
+		const transferLog = await pb.collection('transfer_logs').getFirstListItem(`id='${id}'`);
+		return transferLog;
+	} catch {
+		return null;
+	}
+}
+
+export async function createTransferLog(
+	id: string = '',
+	userId: string,
+	walletId: string,
+	amount: number,
+	type: 'deposit' | 'withdraw' | 'transfer',
+	targetWalletId: string = '',
+	pbInstance: PocketBase | undefined = undefined
+) {
+	const pb = pbInstance || _pb;
+	await pb.collection('transfer_logs').create({
+		id: id,
+		user: userId,
+		wallet: walletId,
+		amount,
+		target_wallet: targetWalletId,
+		type
+	});
 }

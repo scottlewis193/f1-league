@@ -12,7 +12,6 @@ export type Player = {
 	email: string;
 	avatar: string;
 	displayLatestResultsDialog: boolean;
-	walletAddress: string;
 	points: number;
 	lastPointsEarned: number;
 	place: number;
@@ -34,6 +33,7 @@ export type Team = {
 	position: number;
 	name: string;
 	points: number;
+	year: number;
 };
 
 export type Driver = {
@@ -43,6 +43,7 @@ export type Driver = {
 	nationality: string;
 	team: string;
 	points: number;
+	year: number;
 };
 
 export type Race = {
@@ -68,4 +69,49 @@ export type OddsRecord = {
 	pointsForPlace: number;
 	pointsForExact: number;
 	expand: { driver: Driver; race: Race };
+};
+
+export type Wallet = {
+	id: string;
+	user: string;
+	type: 'user' | 'prediction' | 'season';
+	balance: number;
+	profit: number;
+	wiseRecipientId: number;
+	expand: { user: Player };
+};
+
+export type WiseTransfer = {
+	id: number;
+	user: number;
+	targetAccount: number;
+	sourceAccount: number;
+	quote: number;
+	quoteUuid: string;
+	status: string;
+	reference: string;
+	rate: number;
+	created: string;
+	business: number;
+	transferRequest: number;
+	details: {
+		reference: string;
+	};
+	hasActiveIssues: boolean;
+	sourceCurrency: string;
+	sourceValue: number;
+	targetCurrency: string;
+	targetValue: number;
+	customerTransactionId: string;
+	payinSessionId: string;
+};
+
+export type TransferLog = {
+	created: string;
+	id: string;
+	user: string;
+	wallet: string;
+	amount: number;
+	type: 'deposit' | 'withdraw' | 'transfer';
+	targetWallet: string;
 };
