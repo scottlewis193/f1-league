@@ -1,6 +1,6 @@
 import PocketBase from 'pocketbase';
 import { PUBLIC_PB_URL } from '$env/static/public';
-import { redirect, type Handle, type ServerInit } from '@sveltejs/kit';
+import { type Handle, type ServerInit } from '@sveltejs/kit';
 import { checkForNewDeposits, refreshF1DataHourly } from '$lib/server/data';
 import { dev } from '$app/environment';
 

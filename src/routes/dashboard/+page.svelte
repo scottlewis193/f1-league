@@ -4,10 +4,15 @@
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import ErrorState from '$lib/components/ErrorState.svelte';
 	import { onDestroy } from 'svelte';
+	import DonateDialog from './DonateDialog.svelte';
+	import { getSeasonWallet, getWalletById } from '$lib/remote/wallets.remote';
 
 	const nextRaceQuery = getNextRace();
 	const newsQuery = getNews();
+	const seasonWallet = getSeasonWallet();
 	let interval: NodeJS.Timeout;
+
+	let donateDialog: ReturnType<typeof DonateDialog>;
 
 	function initCountdown() {
 		if (!nextRaceQuery.current) return;
@@ -62,7 +67,67 @@
 	});
 </script>
 
+<DonateDialog bind:this={donateDialog} />
+
 <div class="flex flex-col gap-2 overflow-y-auto">
+	<div class="hero bg-base-200">
+		<div class="hero-content text-center">
+			<div class="max-w-xl">
+				<h1 class="text-5xl font-bold">Welcome To Season 2</h1>
+			</div>
+		</div>
+	</div>
+
+	<h1 class="text-lg">What's New</h1>
+	<div class="card bg-base-100">
+		<div class="card-body items-center justify-center">
+			<div class="flex flex-col gap-2">
+				<h2 class="text text-left font-bold">Prediction Wagering</h2>
+				<p>
+					Predictions now cost £5 to enter. Player who earns the most points after the race will
+					will win the pot. If there is a tie, it is split amonst the each winner
+				</p>
+			</div>
+		</div>
+	</div>
+
+	{#if seasonWallet.current}
+		<div class="card bg-base-100">
+			<div class="card-body items-center justify-center">
+				<div class="flex flex-col items-center gap-2">
+					<div class="flex flex-col gap-2">
+						<h2 class="text text-left font-bold">Season Pot</h2>
+						<p>
+							Donate to the season pot. The player with the most points at the end of the season
+							will win the pot.
+						</p>
+					</div>
+					<div class="flex flex-col gap-2 text-center">
+						<button onclick={() => donateDialog.showModal()} class="btn btn-sm"
+							>Donate To Season Pot</button
+						>
+						<p>Pot Value: {seasonWallet.current?.balance} GBP</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
+
+	<div class="card bg-base-100">
+		<div class="card-body items-center justify-center">
+			<div class="flex flex-col items-center gap-2">
+				<div class="flex flex-col gap-2">
+					<h2 class="text text-left font-bold">Wild Prediction</h2>
+					<p>
+						On every race weekend, players can enter in a wild prediction along side their normal
+						prediction for a chance to get bonus points. If a wild prediction happens, all players
+						will have to mutally agree on the amount of points awarded.
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<h1 class="text-lg">Countdown To Lights Out</h1>
 	{#if nextRaceQuery.loading}
 		<div class="card bg-base-100">
@@ -133,7 +198,7 @@
 		</div>
 	{/if}
 
-	<h1 class="text-lg">News</h1>
+	<!-- <h1 class="text-lg">News</h1>
 	<div class="card bg-base-100">
 		<div class="card-body h-max">
 			{#if newsQuery.error}
@@ -181,7 +246,7 @@
 					{/each}
 				</tbody>
 			</table> -->
-			{/if}
-		</div>
-	</div>
+	<!-- {/if} -->
+	<!-- </div> -->
+	<!-- </div> -->
 </div>

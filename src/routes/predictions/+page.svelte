@@ -343,6 +343,17 @@
 						</tbody>
 					</table>
 				</div>
+
+				<div class="flex flex-col gap-2 rounded-box border border-base-content/5 p-2">
+					<textarea
+						class="textarea w-full"
+						id="wildPrediction"
+						name="wildPrediction"
+						rows="5"
+						cols="30"
+						placeholder="Type your wild prediction here (optional)"
+					></textarea>
+				</div>
 				<!-- submit raceNo with hidden input -->
 				<input type="hidden" name="raceId" value={nextRaceQuery.current.id} />
 				<input type="hidden" name="id" value={userSubmissionId} />

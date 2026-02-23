@@ -37,7 +37,8 @@ export const addUpdatePrediction = form(
 		driver2nd: v.string(),
 		driver3rd: v.string(),
 		raceId: v.string(),
-		id: v.optional(v.string())
+		id: v.optional(v.string()),
+		wildPrediction: v.optional(v.string())
 	}),
 	async (data) => {
 		const event = getRequestEvent();
@@ -48,11 +49,12 @@ export const addUpdatePrediction = form(
 		const year = new Date().getFullYear();
 		const race = data.raceId;
 		const id: string = data.id?.toString() || '';
+		const wildPrediction = data.wildPrediction;
 
 		if (id !== '') {
-			pb.collection('predictions').update(id, { predictions });
+			pb.collection('predictions').update(id, { predictions, wildPrediction });
 		} else {
-			pb.collection('predictions').create({ predictions, user, year, race });
+			pb.collection('predictions').create({ predictions, user, year, race, wildPrediction });
 		}
 
 		redirect(303, `/predictions`);
