@@ -60,7 +60,7 @@ export function getPlayerStats(
 	}[] = [];
 
 	for (const submission of userSubmissions) {
-		const race = races.find((race) => race.id === submission.expand.race.id);
+		const race = races.find((race) => race.id === (submission.expand?.race?.id ?? ''));
 		if (!race) continue;
 		if (!race.raceResults) continue;
 		const raceOdds = odds.filter((odd) => odd.race === race.id);
@@ -134,46 +134,6 @@ export function oddsToPoints(odds: number) {
 	const a = Math.round((odds - 0.01) * 2);
 	const b = a > 10 ? Math.floor(a / 10) * 10 : a;
 	return b;
-}
-
-export function shortAddress(address: string, start = 4, end = 4): string {
-	if (!address) return '';
-	if (address.length <= start + end) return address;
-	return `${address.slice(0, start)}...${address.slice(-end)}`;
-}
-
-import nacl from 'tweetnacl';
-import bs58 from 'bs58';
-
-/**
- * Verify a Solana signature
- * @param message - original message as Uint8Array
- * @param signature - signature from wallet (Uint8Array)
- * @param publicKey - wallet public key as base58 string
- */
-export function verifySolanaSignature(
-	message: Uint8Array,
-	signature: Uint8Array,
-	publicKey: string
-) {
-	const pkBytes = bs58.decode(publicKey);
-	return nacl.sign.detached.verify(message, signature, pkBytes);
-}
-
-/**
- * Create a simple SOL transfer transaction
- * @param fromPubKey - sender public key
- * @param toPubKey - recipient public key
- * @param lamports - amount in lamports
- */
-export function createTransferTx(fromPubKey: PublicKey, toPubKey: PublicKey, lamports: number) {
-	return new Transaction().add(
-		SystemProgram.transfer({
-			fromPubkey: fromPubKey,
-			toPubkey: toPubKey,
-			lamports
-		})
-	);
 }
 
 export function getCSSVarValue(varName: string) {

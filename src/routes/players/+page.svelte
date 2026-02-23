@@ -16,9 +16,6 @@
 	let historyDialog: HTMLDialogElement;
 
 	let historyPlayer: Player | null = $state(null);
-	onMount(() => {
-		pb.authStore.loadFromCookie(document.cookie);
-	});
 </script>
 
 <div in:fade class="card h-full w-full overflow-auto bg-base-100">

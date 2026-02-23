@@ -1,12 +1,12 @@
 import { form, getRequestEvent, query } from '$app/server';
 import { redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
+import { getFeatureFlagStatus } from '$lib/server/data';
 import {
-	getFeatureFlagStatus,
-	getNextRacePredictionsDb,
-	getPredictionsDb,
-	getUserPredictionsDb
-} from '$lib/server/data';
+	getNextRacePredictionsQuery,
+	getPredictionsQuery,
+	getUserPredictionsQuery
+} from '$lib/server/predictions';
 
 export const isWageringEnabled = query(async () => {
 	const event = getRequestEvent();
@@ -16,22 +16,19 @@ export const isWageringEnabled = query(async () => {
 
 export const getPredictions = query(async () => {
 	const event = getRequestEvent();
-	const pb = event.locals.pb;
-
-	return getPredictionsDb(pb);
+	return getPredictionsQuery();
 });
 
 export const getNextRacePredictions = query(async () => {
 	const event = getRequestEvent();
-	const pb = event.locals.pb;
-	return getNextRacePredictionsDb(pb);
+	return getNextRacePredictionsQuery();
 });
 
 export const getUserPredictions = query(async (raceId: string = '') => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
 	const user = pb.authStore.record?.id;
-	return getUserPredictionsDb(user || '', pb);
+	return getUserPredictionsQuery(user || '');
 });
 
 export const addUpdatePrediction = form(

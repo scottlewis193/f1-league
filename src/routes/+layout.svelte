@@ -86,7 +86,7 @@
 </svelte:head>
 
 {#if url !== '/login'}
-	{#if nextRaceQuery.ready}
+	{#if nextRaceQuery.current}
 		{@const nextRace = nextRaceQuery.current}
 		<div class="drawer">
 			<input bind:this={drawerToggle} id="my-drawer-3" type="checkbox" class="drawer-toggle" />
@@ -324,7 +324,7 @@
 	<dialog
 		bind:this={updateModal}
 		id="updateModal"
-		class="modal modal-bottom w-[100vw] sm:modal-middle"
+		class="modal modal-bottom w-screen sm:modal-middle"
 	>
 		<div class="modal-box">
 			<h3 class="text-lg font-bold">New Update Available!</h3>
@@ -403,7 +403,7 @@
 <!-- Snow confetti effect for christmas -->
 {#if isDecember && url !== '/stream'}
 	<ConfettiContainer toggleOnce relative={false} activeOnMount>
-		<div class="fixed top-[-50px] left-0 flex h-screen w-screen justify-center overflow-hidden">
+		<div class="fixed top-12.5 left-0 flex h-screen w-screen justify-center overflow-hidden">
 			<Confetti
 				colorArray={['#ffffff']}
 				x={[-5, 5]}

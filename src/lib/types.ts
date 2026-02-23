@@ -1,6 +1,7 @@
 export type Prediction = {
+	race: string;
 	id: string;
-	player: string;
+	user: string;
 	predictions: string[];
 	expand: { user: Player; race: Race };
 };

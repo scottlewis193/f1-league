@@ -1,8 +1,6 @@
-import { getRequestEvent, query } from '$app/server';
-import { getDriversDb } from '$lib/server/data';
+import { query } from '$app/server';
+import { getDriversQuery } from '$lib/server/drivers';
 
 export const getDrivers = query(async () => {
-	const event = getRequestEvent();
-	const pb = event.locals.pb;
-	return getDriversDb(pb);
+	return getDriversQuery();
 });

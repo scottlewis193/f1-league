@@ -13,6 +13,7 @@
 		activeOnMount?: boolean;
 	} = $props();
 
+	//svelte-ignore state_referenced_locally
 	let active = $state(activeOnMount);
 
 	async function click() {

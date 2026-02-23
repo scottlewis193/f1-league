@@ -24,7 +24,7 @@
 		if (!player) return;
 
 		userTransferLogs = await pb.collection('transfer_logs').getFullList<TransferLog>({
-			filter: `wallet = "${wallet?.id}"`,
+			filter: `wallet = "${wallet?.id}" || targetWallet = "${wallet?.id}"`,
 			sort: '-created'
 		});
 
@@ -72,14 +72,14 @@
 			class="list-row w-full items-center hover:cursor-pointer hover:bg-base-content/10"
 		>
 			<div class="w-22">{date}</div>
-			<div class="w-22">
+			<div class="">
 				<div>{transferLog.id}</div>
 			</div>
-			{#if transferLog.type == 'deposit'}
+			{#if transferLog.type == 'deposit' || (transferLog.type == 'transfer' && transferLog.targetWallet == (wallet?.id ?? 0))}
 				<div class="w-auto text-left text-2xl text-success">
 					{'+' + transferLog.amount}
 				</div>
-			{:else}
+			{:else if transferLog.type == 'withdraw' || (transferLog.type == 'transfer' && transferLog.wallet == (wallet?.id ?? 0))}
 				<div class="w-auto text-left text-2xl">
 					{transferLog.amount}
 				</div>

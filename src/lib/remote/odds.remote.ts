@@ -1,14 +1,10 @@
-import { getRequestEvent, query } from '$app/server';
-import { getNextRaceOddsDb, getOddsDb } from '$lib/server/data';
+import { query } from '$app/server';
+import { getNextRaceOddsQuery, getOddsQuery } from '$lib/server/odds';
 
 export const getOdds = query(async () => {
-	const event = getRequestEvent();
-	const pb = event.locals.pb;
-	return getOddsDb(pb);
+	return getOddsQuery();
 });
 
 export const getNextRaceOdds = query(async () => {
-	const event = getRequestEvent();
-	const pb = event.locals.pb;
-	return getNextRaceOddsDb(pb);
+	return getNextRaceOddsQuery();
 });

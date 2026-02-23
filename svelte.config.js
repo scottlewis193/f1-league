@@ -17,6 +17,9 @@ const config = {
 		},
 		experimental: {
 			remoteFunctions: true
+		},
+		files: {
+			serviceWorker: 'src/service-worker.js'
 		}
 	},
 	compilerOptions: {

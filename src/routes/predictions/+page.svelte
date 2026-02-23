@@ -7,13 +7,16 @@
 		getNextRacePredictions,
 		isWageringEnabled
 	} from '$lib/remote/predictions.remote.js';
-	import { usdToGbp, userHasSubmitted } from '$lib/utils';
+	import { userHasSubmitted } from '$lib/utils';
 	import { fade } from 'svelte/transition';
 	import { getNextRaceOdds } from '$lib/remote/odds.remote';
 	import { MessageButtons, showMessageDialog } from '$lib/stores/messagedialog.svelte';
 	import { getToastManagerContext } from '$lib/stores/toastmanager.svelte';
 	import { getPlayerWallet } from '$lib/remote/players.remote';
-	import { transferToPredictionWallet } from '$lib/remote/transfers.remote';
+	import {
+		playerWalletHasEnoughBalance,
+		transferToPredictionWallet
+	} from '$lib/remote/transfers.remote';
 	import pb from '$lib/pocketbase';
 
 	const wageringEnabled = isWageringEnabled();
@@ -121,16 +124,16 @@
 	}
 
 	async function sendToPredictionWallet() {
-		if (wallet.balance < 5) {
+		if (!(await playerWalletHasEnoughBalance())) {
 			await showMessageDialog({
 				title: 'Insufficient funds',
 				message: 'You need to have at least 5 GBP in your wallet to make a submission',
 				buttons: MessageButtons.Ok
 			});
-			return;
+			return false;
 		}
 
-		await transferToPredictionWallet({ amount: 5 });
+		return await transferToPredictionWallet();
 	}
 
 	$effect(() => {
@@ -356,8 +359,12 @@
 					<div class="w-1/2">
 						<button
 							onclick={async () => {
-								if (wageringEnabled.current) {
-									await sendToPredictionWallet();
+								if (
+									wageringEnabled.current &&
+									!userHasSubmitted(predictionsQuery.current, pb.authStore.record?.id || '')
+								) {
+									const result = await sendToPredictionWallet();
+									if (!result) return;
 								}
 								submissionForm.requestSubmit();
 

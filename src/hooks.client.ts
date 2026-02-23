@@ -1,3 +1,4 @@
+import { dev } from '$app/environment';
 import pb from '$lib/pocketbase';
 import { Buffer } from 'buffer';
 if (typeof window !== 'undefined') {
@@ -5,5 +6,5 @@ if (typeof window !== 'undefined') {
 }
 pb.authStore.loadFromCookie(document.cookie);
 pb.authStore.onChange(() => {
-	document.cookie = pb.authStore.exportToCookie({ httpOnly: false });
+	document.cookie = pb.authStore.exportToCookie({ httpOnly: false, sameSite: 'lax', secure: !dev });
 }, true);

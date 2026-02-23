@@ -1,25 +1,14 @@
-import { getRequestEvent, query } from '$app/server';
-import { getNextRaceDb, getRacesDb } from '$lib/server/data';
-import type { Race } from '$lib/types';
-
-const lastFetch = 0;
-const ONE_HOUR = 60 * 60 * 1000;
+import { query } from '$app/server';
+import { getNextRaceQuery, getRacesQuery } from '$lib/server/races';
 
 export const getF1Schedule = query(async () => {
-	const event = getRequestEvent();
-	const pb = event.locals.pb;
-
-	return getRacesDb(pb);
+	return getRacesQuery();
 });
 
 export const getNextRace = query(async () => {
-	const event = getRequestEvent();
-	const pb = event.locals.pb;
-	return getNextRaceDb(pb);
+	return getNextRaceQuery();
 });
 
 export const getRaces = query(async () => {
-	const event = getRequestEvent();
-	const pb = event.locals.pb;
-	return getRacesDb(pb);
+	return getRacesQuery();
 });

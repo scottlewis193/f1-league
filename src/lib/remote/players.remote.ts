@@ -2,16 +2,15 @@ import { command, form, getRequestEvent, query } from '$app/server';
 import type { Player, Wallet } from '$lib/types';
 import { fail, redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
-import {
-	createTransferLog,
-	getPlayerDb,
-	getPlayerWithStatsDb,
-	getPlayersWithStatsDb,
-	getWalletByUserIdDb,
-	updatePlayerDb
-} from '$lib/server/data';
-import { wiseFetch } from '$lib/server/wise';
 import { createQuote, createTransfer, fundTransfer } from './wise.remote';
+import {
+	getPlayerQuery,
+	getPlayersWithStatsQuery,
+	getPlayerWithStatsQuery,
+	updatePlayerQuery
+} from '$lib/server/players';
+import { getWalletByUserIdQuery } from '$lib/server/wallets';
+import { createTransferLog } from '$lib/server/transfers';
 
 const playerProfileSchema = v.intersect([
 	v.object({
@@ -37,17 +36,14 @@ const playerRegisterSchema = v.object({
 });
 
 export const getPlayersWithStats = query(async () => {
-	const event = getRequestEvent();
-	const pb = event.locals.pb;
-	return getPlayersWithStatsDb(pb);
+	return getPlayersWithStatsQuery();
 });
 
 export const getPlayer = query(async () => {
 	const event = getRequestEvent();
-	const pb = event.locals.pb;
 	const player = event.locals.user;
 	if (!player) throw new Error('Unauthorized');
-	return getPlayerDb(player.id, pb);
+	return getPlayerQuery(player.id);
 });
 
 export const getPlayerLocal = query(async () => {
@@ -57,33 +53,29 @@ export const getPlayerLocal = query(async () => {
 
 export const getPlayerWallet = query(async () => {
 	const event = getRequestEvent();
-	const pb = event.locals.pb;
 	const player = event.locals.user;
 	if (!player) throw new Error('Unauthorized');
-	const wallet = await getWalletByUserIdDb(player.id, pb);
+	const wallet = await getWalletByUserIdQuery(player.id);
 	return wallet;
 });
 
 export const getCurrentPlayerWithStats = query(async () => {
 	const event = getRequestEvent();
-	const pb = event.locals.pb;
 	if (!event.locals.user?.id) return;
-	const playerWithStats = await getPlayerWithStatsDb(event.locals.user?.id, pb);
+	const playerWithStats = await getPlayerWithStatsQuery(event.locals.user?.id);
 	return playerWithStats;
 });
 
 export const updateCurrentPlayer = command('unchecked', async (playerData: Player) => {
 	const event = getRequestEvent();
-	const pb = event.locals.pb;
-	await updatePlayerDb(event.locals.user?.id || '', playerData, pb);
+	await updatePlayerQuery(event.locals.user?.id || '', playerData);
 });
 
 export const updatePlayerBalance = command(
 	'unchecked',
 	async (playerData: Pick<Player, 'id' | 'balance'>) => {
 		const event = getRequestEvent();
-		const pb = event.locals.pb;
-		await updatePlayerDb(playerData.id, { balance: playerData.balance }, pb);
+		await updatePlayerQuery(playerData.id, { balance: playerData.balance });
 	}
 );
 
@@ -158,7 +150,7 @@ export const withdraw = form(v.object({ amount: v.number() }), async ({ amount }
 		return fail(400, { error: 'Not logged in' });
 	}
 
-	const userWallet: Wallet = await getWalletByUserIdDb(pb.authStore.record.id, pb);
+	const userWallet: Wallet = await getWalletByUserIdQuery(pb.authStore.record.id);
 
 	if (amount > userWallet.balance) {
 		return fail(400, { error: 'Amount exceeds balance' });
@@ -183,14 +175,7 @@ export const withdraw = form(v.object({ amount: v.number() }), async ({ amount }
 	await pb.collection('wallets').update(userWallet.id, { balance: userWallet.balance - amount });
 
 	//create transfer log
-	await createTransferLog(
-		transfer.id,
-		pb.authStore.record.id,
-		userWallet.id,
-		amount,
-		'withdraw',
-		pb
-	);
+	await createTransferLog(transfer.id, pb.authStore.record.id, userWallet.id, amount, 'withdraw');
 
 	redirect(303, `/wallet`);
 });
