@@ -40,9 +40,16 @@
 				dialog?.close();
 			})}
 		>
-			<input class="input" min="0.01" {...transferToSeasonWallet.fields.amount.as('number')} />
+			<input
+				class="input"
+				step="0.01"
+				min="0.01"
+				maxlength="4"
+				{...transferToSeasonWallet.fields.amount.as('number')}
+			/>
 			<div class="modal-action">
 				<button class="btn" type="submit">Donate</button>
+				<button class="btn" type="button" onclick={toggleModal}>Cancel</button>
 			</div>
 		</form>
 	</div>

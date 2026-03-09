@@ -1,10 +1,10 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import type { Driver, Race, Team } from './types';
+import type { Driver, Race, Team } from '../types';
 
 puppeteer.use(StealthPlugin());
 
-const SEASON = new Date().getFullYear().toString();
+const SEASON = new Date().getFullYear();
 
 export async function scrapeAll() {
 	let races;
@@ -58,10 +58,14 @@ export async function scrapeDrivers() {
 					nationality: cols[2]?.innerText.trim(),
 					team: cols[3]?.innerText.trim(),
 					points: Number(cols[4]?.innerText.trim()),
-					year: SEASON
+					year: 1900
 				};
 			});
 		})) as unknown as Driver[];
+
+		standings.forEach((driver) => {
+			driver.year = SEASON;
+		});
 
 		return standings;
 	} catch (e) {
@@ -98,6 +102,10 @@ export async function scrapeTeams() {
 				};
 			});
 		})) as unknown as Team[];
+
+		standings.forEach((team) => {
+			team.year = SEASON;
+		});
 
 		return standings;
 	} catch (e) {
@@ -263,7 +271,15 @@ export async function scrapeF1Races() {
 			const raceNameAry = raceDetails.raceName.split(' ');
 			const year = Number(raceNameAry[raceNameAry.length - 1]);
 
-			allRaces.push({ ...raceDetails, location: _location, year, id: '', raceNo: 0, city: '' });
+			allRaces.push({
+				...raceDetails,
+				location: _location,
+				year,
+				id: '',
+				raceNo: 0,
+				city: '',
+				paidOut: false
+			});
 
 			await racePage.close();
 		}

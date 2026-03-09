@@ -4,7 +4,7 @@ import pb from './pocketbase';
 export async function getDriversQuery() {
 	const drivers: Driver[] = await pb
 		.collection('drivers')
-		.getFullList({ sort: '-points', filter: `year='${new Date().getFullYear()}'` });
+		.getFullList({ sort: '-points,position', filter: `year='${new Date().getFullYear()}'` });
 	return drivers;
 }
 

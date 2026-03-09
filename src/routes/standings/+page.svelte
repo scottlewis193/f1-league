@@ -2,7 +2,7 @@
 	import { getDrivers } from '$lib/remote/drivers.remote';
 	import { getTeams } from '$lib/remote/teams.remote.js';
 	import { fade } from 'svelte/transition';
-	import Skeleton from '$lib/components/Skeleton.svelte';
+
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import ErrorState from '$lib/components/ErrorState.svelte';
 
@@ -66,9 +66,9 @@
 						{/snippet}
 					</EmptyState>
 				{:else}
-					<table class="table not-md:table-sm">
-						<thead class="sticky top-0">
-							<tr>
+					<table class="table-pin-rows table not-md:table-sm">
+						<thead>
+							<tr class="h-15">
 								<th>Pos</th>
 								<th>Driver</th>
 								<th>Team</th>

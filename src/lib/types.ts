@@ -3,6 +3,7 @@ export type Prediction = {
 	id: string;
 	user: string;
 	predictions: string[];
+	wildPrediction: string;
 	expand: { user: Player; race: Race };
 };
 
@@ -59,6 +60,7 @@ export type Race = {
 		title: string;
 	}[];
 	raceResults: string[];
+	paidOut: boolean;
 	year: number;
 };
 

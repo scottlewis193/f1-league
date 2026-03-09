@@ -6,6 +6,7 @@
 	import { onDestroy } from 'svelte';
 	import DonateDialog from './DonateDialog.svelte';
 	import { getSeasonWallet, getWalletById } from '$lib/remote/wallets.remote';
+	import { fade } from 'svelte/transition';
 
 	const nextRaceQuery = getNextRace();
 	const newsQuery = getNews();
@@ -69,7 +70,7 @@
 
 <DonateDialog bind:this={donateDialog} />
 
-<div class="flex flex-col gap-2 overflow-y-auto">
+<div in:fade class="flex flex-col gap-2 overflow-y-auto">
 	<div class="hero bg-base-200">
 		<div class="hero-content text-center">
 			<div class="max-w-xl">
@@ -79,20 +80,20 @@
 	</div>
 
 	<h1 class="text-lg">What's New</h1>
-	<div class="card bg-base-100">
+	<div in:fade class="card bg-base-100">
 		<div class="card-body items-center justify-center">
 			<div class="flex flex-col gap-2">
 				<h2 class="text text-left font-bold">Prediction Wagering</h2>
 				<p>
-					Predictions now cost £5 to enter. Player who earns the most points after the race will
-					will win the pot. If there is a tie, it is split amonst the each winner
+					Predictions now cost £5 to enter. The player who earns the most points after the race will
+					will win the pot. If there is a tie, it will be split amonst the winners.
 				</p>
 			</div>
 		</div>
 	</div>
 
 	{#if seasonWallet.current}
-		<div class="card bg-base-100">
+		<div in:fade class="card bg-base-100">
 			<div class="card-body items-center justify-center">
 				<div class="flex flex-col items-center gap-2">
 					<div class="flex flex-col gap-2">
@@ -106,22 +107,22 @@
 						<button onclick={() => donateDialog.showModal()} class="btn btn-sm"
 							>Donate To Season Pot</button
 						>
-						<p>Pot Value: {seasonWallet.current?.balance} GBP</p>
+						<p>Current Pot Value: {seasonWallet.current?.balance.toFixed(2)} GBP</p>
 					</div>
 				</div>
 			</div>
 		</div>
 	{/if}
 
-	<div class="card bg-base-100">
+	<div in:fade class="card bg-base-100">
 		<div class="card-body items-center justify-center">
 			<div class="flex flex-col items-center gap-2">
 				<div class="flex flex-col gap-2">
 					<h2 class="text text-left font-bold">Wild Prediction</h2>
 					<p>
 						On every race weekend, players can enter in a wild prediction along side their normal
-						prediction for a chance to get bonus points. If a wild prediction happens, all players
-						will have to mutally agree on the amount of points awarded.
+						prediction for a chance to win bonus points. If a wild prediction happens, all players
+						will have to mutually agree on the amount of points awarded.
 					</p>
 				</div>
 			</div>
@@ -154,7 +155,7 @@
 			</div>
 		</div>
 	{:else}
-		<div class="card bg-base-100">
+		<div in:fade class="card bg-base-100">
 			<div class="card-body items-center justify-center">
 				<div class="grid auto-cols-max grid-flow-col gap-5 text-center">
 					<div class="flex flex-col">

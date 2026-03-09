@@ -95,7 +95,7 @@ export function getPlayerStats(
 
 				lastPointsEarned +=
 					submission ===
-					userSubmissions.find((submission) => submission.expand.race.id == lastRaceWithResults.id)
+					userSubmissions.find((submission) => submission.expand.race?.id == lastRaceWithResults.id)
 						? raceDriverOdds.pointsForPlace
 						: 0;
 				place += 1;
@@ -110,7 +110,7 @@ export function getPlayerStats(
 				points += raceDriverOdds.pointsForExact;
 				lastPointsEarned +=
 					submission ===
-					userSubmissions.find((submission) => submission.expand.race.id == lastRaceWithResults.id)
+					userSubmissions.find((submission) => submission.expand.race?.id == lastRaceWithResults.id)
 						? raceDriverOdds.pointsForExact
 						: 0;
 				exact += 1;

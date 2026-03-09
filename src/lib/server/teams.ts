@@ -2,9 +2,11 @@ import type { Team } from '$lib/types';
 import pb from './pocketbase';
 
 export async function getTeamsQuery() {
+	const SEASON = new Date().getFullYear();
 	const teams: Team[] = await pb
 		.collection('teams')
-		.getFullList({ sort: '-points', filter: `year='${new Date().getFullYear()}'` });
+		.getFullList({ sort: '-points', filter: `year=${SEASON}` });
+
 	return teams;
 }
 

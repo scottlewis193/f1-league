@@ -77,11 +77,11 @@
 			</div>
 			{#if transferLog.type == 'deposit' || (transferLog.type == 'transfer' && transferLog.targetWallet == (wallet?.id ?? 0))}
 				<div class="w-auto text-left text-2xl text-success">
-					{'+' + transferLog.amount}
+					{'+' + transferLog.amount.toFixed(2)}
 				</div>
 			{:else if transferLog.type == 'withdraw' || (transferLog.type == 'transfer' && transferLog.wallet == (wallet?.id ?? 0))}
 				<div class="w-auto text-left text-2xl">
-					{transferLog.amount}
+					{transferLog.amount.toFixed(2)}
 				</div>
 			{/if}
 		</li>

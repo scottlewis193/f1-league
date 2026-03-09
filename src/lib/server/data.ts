@@ -1,6 +1,6 @@
 import { sendNotifications } from '$lib/notifications';
 import PocketBase from 'pocketbase';
-import { scrapeAll } from '$lib/scrapping';
+import { scrapeAll } from '$lib/server/scrapping';
 import type {
 	Driver,
 	OddsRecord,
@@ -79,14 +79,16 @@ export async function refreshF1DataHourly() {
 
 	//if race results have come in, we will notify users/players and pay out the winnings
 	if (currentRacesWithResults.length !== newRacesWithResults.length) {
-		let newRaceWithResults: Race | undefined = undefined;
+		let latestRaceWithResults: Race | undefined = undefined;
 
 		for (const race of newRacesWithResults) {
 			const currentRaceNames = currentRacesWithResults.map((cr) => cr.raceName);
 			if (!currentRaceNames.includes(race.raceName)) {
-				newRaceWithResults = race;
+				latestRaceWithResults = race;
 			}
 		}
+
+		if (!latestRaceWithResults) return;
 
 		console.log('notifications sent');
 
@@ -116,14 +118,15 @@ export async function refreshF1DataHourly() {
 		await updateAllPlayersQuery(players);
 
 		//latest race predictions
-		const latestRacePredictions = submissions.filter((s) => s.race == newRaceWithResults?.id);
+		const latestRacePredictions = submissions.filter((s) => s.race == latestRaceWithResults?.id);
 
 		//the players with prediction for that race
 		const playersWithPredictions = players.filter((p) =>
 			latestRacePredictions.map((p) => p.user).includes(p.id)
 		);
+
 		//pay out winnings
-		await payOutWinnings(playersWithPredictions);
+		await payOutWinnings(playersWithPredictions, latestRaceWithResults);
 	}
 
 	await updateDriversQuery(drivers);

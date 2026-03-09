@@ -43,8 +43,10 @@
 	"dependencies": {
 		"@types/web-push": "^3.6.4",
 		"@types/xml2js": "^0.4.14",
+		"baseline-browser-mapping": "^2.10.0",
 		"bs58": "^6.0.0",
 		"buffer": "^6.0.3",
+		"caniuse-lite": "^1.0.30001774",
 		"cheerio": "^1.2.0",
 		"hls.js": "^1.6.15",
 		"nodemon": "^3.1.11",

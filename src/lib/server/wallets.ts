@@ -1,6 +1,7 @@
 import { PREDICTION_ENTRY_FEE, PREDICTION_WALLET_ID } from '$env/static/private';
-import type { Player, Wallet } from '$lib/types';
+import type { Player, Wallet, Race } from '$lib/types';
 import pb from './pocketbase';
+import { updateRaceQuery } from './races';
 import { createTransferLog } from './transfers';
 
 export async function getWalletByIdQuery(walletId: string) {
@@ -22,7 +23,10 @@ export async function updateWalletBalance(walletId: string, newBalance: number) 
 	await pb.collection('wallets').update(walletId, { balance: newBalance });
 }
 
-export async function payOutWinnings(players: Player[]) {
+export async function payOutWinnings(players: Player[], race: Race) {
+	//if race is already paid out, return early
+	if (race.paidOut) return;
+
 	//this assumes lastPointsEarned has been updated
 
 	//determine winning amount
@@ -36,13 +40,20 @@ export async function payOutWinnings(players: Player[]) {
 	//determine winners
 	const winners = players.filter((player) => player.lastPointsEarned == winningPointsAmount);
 
-	const playerPayoutAmount = Number(PREDICTION_ENTRY_FEE) / winners.length;
+	//determine payout amount per winner
+	const playerPayoutAmount =
+		Number((Number(PREDICTION_ENTRY_FEE) * players.length).toFixed(2)) / winners.length;
 
+	//transfer winnings to winners
 	for (const winner of winners) {
 		const winnerWallet = await getWalletByUserIdQuery(winner.id);
-
 		await transferFromPredictionWallet(playerPayoutAmount, winnerWallet.id);
 	}
+
+	//mark race as paid out
+	race.paidOut = true;
+	await updateRaceQuery(race);
+	console.log('Payout complete for race', race.id);
 }
 
 async function transferFromPredictionWallet(amount: number, targetWalletId: string) {

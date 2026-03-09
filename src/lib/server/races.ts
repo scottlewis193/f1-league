@@ -80,6 +80,11 @@ export async function updateRacesQuery(races: Partial<Race>[]) {
 	}
 }
 
+export async function updateRaceQuery(race: Partial<Race>) {
+	if (!race.id) return;
+	await pb.collection('races').update(race.id, race);
+}
+
 async function getLastRaceWithResultsQuery() {
 	const currentYear = new Date().getFullYear();
 	const races = await pb

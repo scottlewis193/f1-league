@@ -41,6 +41,7 @@
 	});
 
 	let userSubmissionId: string = $state('');
+	let wildPrediction: string = $state('');
 
 	function loadUserSelections() {
 		if (!predictionsQuery.ready) return;
@@ -52,6 +53,7 @@
 			driverSelections.Driver2nd.value = userPredictions.predictions[1];
 			driverSelections.Driver3rd.value = userPredictions.predictions[2];
 			userSubmissionId = userPredictions.id;
+			wildPrediction = userPredictions.wildPrediction;
 
 			const driver1stOddsPointsPotential = getDriverOddsPointsPotential(
 				driverSelections.Driver1st.value
@@ -199,7 +201,9 @@
 							submission.predictions[2]
 						)}
 						<tr>
-							<td class="font-bold">{submission.expand.user.name}</td>
+							<td rowspan="2" class="text-lg font-bold">
+								{submission.expand.user.name}
+							</td>
 							<td>
 								<div class="flex flex-col">
 									<div>{submission.predictions[0]}</div>
@@ -213,6 +217,7 @@
 									</div>
 								</div>
 							</td>
+
 							<td>
 								<div class="flex flex-col">
 									<div>{submission.predictions[1]}</div>
@@ -240,6 +245,9 @@
 									</div>
 								</div>
 							</td>
+						</tr>
+						<tr>
+							<td colspan="3">{submission.wildPrediction}</td>
 						</tr>
 					{/each}
 				</tbody>
@@ -351,8 +359,8 @@
 						name="wildPrediction"
 						rows="5"
 						cols="30"
-						placeholder="Type your wild prediction here (optional)"
-					></textarea>
+						placeholder="Type your wild prediction here (optional)">{wildPrediction}</textarea
+					>
 				</div>
 				<!-- submit raceNo with hidden input -->
 				<input type="hidden" name="raceId" value={nextRaceQuery.current.id} />
