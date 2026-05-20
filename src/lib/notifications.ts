@@ -17,7 +17,7 @@ export const sendNotifications = async (payload: {
 	let successCount = 0;
 	let failCount = 0;
 
-	webpush.setVapidDetails('mailto:you@example.com', PUBLIC_VAPID_PUBLIC_KEY!, VAPID_PRIVATE_KEY!);
+	webpush.setVapidDetails('mailto:sl193@pm.me', PUBLIC_VAPID_PUBLIC_KEY!, VAPID_PRIVATE_KEY!);
 
 	const notificationPayload = JSON.stringify(payload);
 
