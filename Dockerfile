@@ -1,13 +1,4 @@
-# --- STAGE 1: Build (Using Node for stability) ---
-FROM node:20-slim AS builder
-WORKDIR /app
-ENV NODE_TLS_REJECT_UNAUTHORIZED=0
-COPY package*.json ./
-RUN npm install
-COPY . .
-ENV POCKETBASE_URL=http://localhost:8090
-RUN npm run build
-
+# --- STAGE 1: Build (Using Node for stability) ---\nFROM node:20-slim AS builder\nWORKDIR /app\n\n# Build-time arguments for SvelteKit public env vars\nARG PUBLIC_PB_URL\nENV PUBLIC_PB_URL=$PUBLIC_PB_URL\nENV NODE_TLS_REJECT_UNAUTHORIZED=0\n\nCOPY package*.json ./\nRUN npm install\nCOPY . .\nRUN npm run build\n
 # --- STAGE 2: Runtime (Using Bun for performance) ---
 FROM oven/bun:latest AS runner
 WORKDIR /app
