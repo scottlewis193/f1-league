@@ -33,112 +33,116 @@ import { getPredictionsQuery } from './predictions';
 const ONE_HOUR = 60 * 60 * 1000;
 
 export async function refreshF1DataHourly() {
-	//scrape all data and update db every hour
+	try {
+		//scrape all data and update db every hour
 
-	//get current data so we can compare to see if anything has changed
-	const { currentDrivers, currentTeams, currentRaces } = await getCurrentDataDb();
+		//get current data so we can compare to see if anything has changed
+		const { currentDrivers, currentTeams, currentRaces } = await getCurrentDataDb();
 
-	console.log('Refreshing F1 data...', new Date());
-	const { drivers, teams, races, odds, error } = await scrapeAll();
+		console.log('Refreshing F1 data...', new Date());
+		const { drivers, teams, races, odds, error } = await scrapeAll();
 
-	if (error) {
-		console.log('F1 data failed to refresh', error, new Date());
-		return;
-	}
-
-	if (!races || !drivers || !teams || !odds) {
-		console.log('F1 data failed to refresh', new Date());
-		return;
-	}
-
-	//testing
-	// races.push({
-	// 	raceName: 'FORMULA 1 QATAR AIRWAYS AUSTRALIAN GRAND PRIX 2026',
-	// 	city: 'Melbourne',
-	// 	location: 'australia',
-	// 	raceResults: ['Verstappen', 'Piastri', 'Norris', 'Leclerc', 'Russell'],
-	// 	year: 2026,
-	// 	raceNo: 1,
-	// 	id: '',
-	// 	sessions: []
-	// });
-
-	//assign existing race id based on race name
-	for (const race of races) {
-		const currentRaceNames = currentRaces.map((cr) => cr.raceName);
-		if (currentRaceNames.includes(race.raceName)) {
-			race.id = currentRaces.find((cr) => cr.raceName === race.raceName)?.id || '';
+		if (error) {
+			console.log('F1 data failed to refresh', error, new Date());
+			return;
 		}
-	}
 
-	//here we will check if race results have come in by comparing the current race data to the newly scrapped race data
+		if (!races || !drivers || !teams || !odds) {
+			console.log('F1 data failed to refresh', new Date());
+			return;
+		}
 
-	//filter out empty race results
-	const currentRacesWithResults = currentRaces.filter((r) => r.raceResults.length > 0);
-	const newRacesWithResults = races.filter((r) => r.raceResults.length > 0);
+		//testing
+		// races.push({
+		// 	raceName: 'FORMULA 1 QATAR AIRWAYS AUSTRALIAN GRAND PRIX 2026',
+		// 	city: 'Melbourne',
+		// 	location: 'australia',
+		// 	raceResults: ['Verstappen', 'Piastri', 'Norris', 'Leclerc', 'Russell'],
+		// 	year: 2026,
+		// 	raceNo: 1,
+		// 	id: '',
+		// 	sessions: []
+		// });
 
-	//if race results have come in, we will notify users/players and pay out the winnings
-	if (currentRacesWithResults.length !== newRacesWithResults.length) {
-		let latestRaceWithResults: Race | undefined = undefined;
-
-		for (const race of newRacesWithResults) {
-			const currentRaceNames = currentRacesWithResults.map((cr) => cr.raceName);
-			if (!currentRaceNames.includes(race.raceName)) {
-				latestRaceWithResults = race;
+		//assign existing race id based on race name
+		for (const race of races) {
+			const currentRaceNames = currentRaces.map((cr) => cr.raceName);
+			if (currentRaceNames.includes(race.raceName)) {
+				race.id = currentRaces.find((cr) => cr.raceName === race.raceName)?.id || '';
 			}
 		}
 
-		if (!latestRaceWithResults) return;
+		//here we will check if race results have come in by comparing the current race data to the newly scrapped race data
 
-		console.log('notifications sent');
+		//filter out empty race results
+		const currentRacesWithResults = currentRaces.filter((r) => r.raceResults.length > 0);
+		const newRacesWithResults = races.filter((r) => r.raceResults.length > 0);
 
-		sendNotifications({
-			title: 'New Race Results',
-			body: 'Check out the latest race results.',
-			icon: 'https://f1-league.hades.ws/logo.png',
-			badge: 'https://f1-league.hades.ws/logo.png',
-			data: {
-				url: 'https://f1-league.hades.ws/players'
-			},
-			tag: 'message-notification'
-		});
+		//if race results have come in, we will notify users/players and pay out the winnings
+		if (currentRacesWithResults.length !== newRacesWithResults.length) {
+			let latestRaceWithResults: Race | undefined = undefined;
 
-		const players = await getPlayersQuery();
-		const oddsRecords = await getOddsQuery();
-		const submissions = await getPredictionsQuery();
+			for (const race of newRacesWithResults) {
+				const currentRaceNames = currentRacesWithResults.map((cr) => cr.raceName);
+				if (!currentRaceNames.includes(race.raceName)) {
+					latestRaceWithResults = race;
+				}
+			}
 
-		for (let i = 0; i < players.length; i++) {
-			players[i] = {
-				...players[i],
-				...getPlayerStats(players[i].id, submissions, newRacesWithResults, oddsRecords)
-			};
-			players[i].displayLatestResultsDialog = true;
+			if (!latestRaceWithResults) return;
+
+			console.log('notifications sent');
+
+			sendNotifications({
+				title: 'New Race Results',
+				body: 'Check out the latest race results.',
+				icon: 'https://f1-league.hades.ws/logo.png',
+				badge: 'https://f1-league.hades.ws/logo.png',
+				data: {
+					url: 'https://f1-league.hades.ws/players'
+				},
+				tag: 'message-notification'
+			});
+
+			const players = await getPlayersQuery();
+			const oddsRecords = await getOddsQuery();
+			const submissions = await getPredictionsQuery();
+
+			for (let i = 0; i < players.length; i++) {
+				players[i] = {
+					...players[i],
+					...getPlayerStats(players[i].id, submissions, newRacesWithResults, oddsRecords)
+				};
+				players[i].displayLatestResultsDialog = true;
+			}
+
+			await updateAllPlayersQuery(players);
+
+			//latest race predictions
+			const latestRacePredictions = submissions.filter((s) => s.race == latestRaceWithResults?.id);
+
+			//the players with prediction for that race
+			const playersWithPredictions = players.filter((p) =>
+				latestRacePredictions.map((p) => p.user).includes(p.id)
+			);
+
+			//pay out winnings
+			await payOutWinnings(playersWithPredictions, latestRaceWithResults);
 		}
 
-		await updateAllPlayersQuery(players);
-
-		//latest race predictions
-		const latestRacePredictions = submissions.filter((s) => s.race == latestRaceWithResults?.id);
-
-		//the players with prediction for that race
-		const playersWithPredictions = players.filter((p) =>
-			latestRacePredictions.map((p) => p.user).includes(p.id)
-		);
-
-		//pay out winnings
-		await payOutWinnings(playersWithPredictions, latestRaceWithResults);
+		await updateDriversQuery(drivers);
+		await updateTeamsQuery(teams);
+		await updateRacesQuery(races);
+		if (await isOddsUpdateWindowOpen()) {
+			await updateOddsQuery(odds, currentDrivers);
+		}
+		console.log('F1 data refreshed', new Date());
+	} catch (error) {
+		console.error('F1 data refresh failed:', error);
+	} finally {
+		// Schedule the next run
+		setTimeout(refreshF1DataHourly, ONE_HOUR);
 	}
-
-	await updateDriversQuery(drivers);
-	await updateTeamsQuery(teams);
-	await updateRacesQuery(races);
-	if (await isOddsUpdateWindowOpen()) {
-		await updateOddsQuery(odds, currentDrivers);
-	}
-	console.log('F1 data refreshed', new Date());
-
-	// Schedule the next run
-	setTimeout(refreshF1DataHourly, ONE_HOUR);
 }
 
 export async function checkForNewDeposits() {

@@ -9,7 +9,11 @@ let authenticated = false;
 
 export async function getServerPb() {
 	if (!authenticated) {
-		await pb.collection('users').authWithPassword(env.PB_USER!, env.PB_PASS!);
+		if (!env.PB_USER || !env.PB_PASS) {
+			throw new Error('PocketBase server auth is not configured. Set PB_USER and PB_PASS runtime environment variables.');
+		}
+
+		await pb.collection('users').authWithPassword(env.PB_USER, env.PB_PASS);
 		authenticated = true;
 		console.log('server auth');
 	}
