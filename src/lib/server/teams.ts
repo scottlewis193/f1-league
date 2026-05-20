@@ -1,7 +1,8 @@
 import type { Team } from '$lib/types';
-import pb from './pocketbase';
+import pb, { getServerPb } from './pocketbase';
 
 export async function getTeamsQuery() {
+	const pb = await getServerPb();
 	const SEASON = new Date().getFullYear();
 	const teams: Team[] = await pb
 		.collection('teams')
@@ -11,6 +12,7 @@ export async function getTeamsQuery() {
 }
 
 export async function updateTeamsQuery(teams: Partial<Team>[]) {
+	const pb = await getServerPb();
 	const currentTeams = await pb.collection('teams').getFullList({ sort: '-points' });
 
 	for (const team of teams) {

@@ -23,7 +23,7 @@ export async function scrapeAll() {
 			scrapeSuccess = true;
 		} catch (e) {
 			if (scrapeAttempt === 3) {
-				return { error: e };
+				return { error: e, races, drivers, teams, odds };
 			}
 			scrapeAttempt++;
 		}
@@ -176,6 +176,10 @@ export async function scrapeF1Races() {
 	const browser = await puppeteer.launch({
 		headless: true,
 		args: ['--no-sandbox', '--disable-setuid-sandbox']
+		// defaultViewport: {
+		// 	width: 1920,
+		// 	height: 1080
+		// }
 	});
 	const page = await browser.newPage();
 
@@ -209,9 +213,14 @@ export async function scrapeF1Races() {
 			await racePage.goto(raceUrl);
 
 			// Wait for the session table
-			await racePage.waitForSelector(
-				'#maincontent > div > div:nth-child(2) > div > div > div:nth-child(1) > div.flex.flex-col.px-px-8.md\\:px-px-16.lg\\:px-px-24.py-px-8.md\\:py-px-16.lg\\:py-px-24.bg-surface-neutral-1.rounded-m > ul'
-			);
+			try {
+				await racePage.waitForSelector(
+					'#maincontent > div > div:nth-child(2) > div > div > div:nth-child(1) > div.flex.flex-col.px-px-8.md\\:px-px-16.lg\\:px-px-24.py-px-8.md\\:py-px-16.lg\\:py-px-24.bg-surface-neutral-1.rounded-m > ul',
+					{ timeout: 3000 }
+				);
+			} catch (e) {
+				continue;
+			}
 
 			const raceDetails = await racePage.evaluate(() => {
 				const raceName = document.querySelector('h1')?.innerText.trim() || '';
@@ -289,12 +298,13 @@ export async function scrapeF1Races() {
 		//sort by date
 		allRaces.sort((a, b) => Date.parse(a.sessions[0].date) - Date.parse(b.sessions[0].date));
 
-		//get city name from location data
+		//get city name from location data and set raceNo
 		for (let i = 0; i < allRaces.length; i++) {
 			allRaces[i].city =
 				raceLocations
 					.find((data) => Number(data.round?.split('/')[0]) == i + 1)
 					?.location?.split(',')[0] || '';
+			allRaces[i].raceNo = i + 1;
 		}
 
 		return allRaces;

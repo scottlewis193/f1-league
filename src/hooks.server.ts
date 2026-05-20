@@ -1,15 +1,18 @@
 import PocketBase from 'pocketbase';
 import { PUBLIC_PB_URL } from '$env/static/public';
-import { type Handle, type ServerInit } from '@sveltejs/kit';
+import { redirect, type Handle, type ServerInit } from '@sveltejs/kit';
 import { checkForNewDeposits, refreshF1DataHourly } from '$lib/server/data';
-import { dev } from '$app/environment';
+import { dev, building } from '$app/environment';
 
 export const init: ServerInit = async () => {
+	if (building) return; // ← skip entirely during `vite build`
 	refreshF1DataHourly();
 	checkForNewDeposits();
 };
 
 export const handle: Handle = async ({ event, resolve }) => {
+	if (building) return resolve(event); // ← skip during `vite build`
+
 	console.log('Incoming request:', event.request.method, event.request.url);
 
 	// --- Setup PocketBase ---
@@ -24,14 +27,17 @@ export const handle: Handle = async ({ event, resolve }) => {
 			event.locals.user = structuredClone(event.locals.pb.authStore.record);
 		} else {
 			event.locals.user = null;
+			if (!event.request.url.includes('/login')) redirect(308, '/login');
 		}
 	} catch (err) {
 		console.error('Error refreshing auth:', err);
 		event.locals.pb.authStore.clear();
 		event.locals.user = null;
+		if (!event.request.url.includes('/login')) redirect(308, '/login');
 	}
 
 	const response = await resolve(event);
+
 	// --- Persist cookie ---
 	response.headers.set(
 		'set-cookie',

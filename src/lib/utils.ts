@@ -36,14 +36,16 @@ export function getPlayerStats(
 	races: Race[],
 	odds: OddsRecord[]
 ) {
-	let lastRaceWithResults: Race = races.sort((a, b) => b.raceNo - a.raceNo)[0];
-	//we iterate through races in descending order of race no
-	for (const race of races.sort((a, b) => b.raceNo - a.raceNo)) {
-		if (race.raceResults.length > 0) {
-			lastRaceWithResults = race;
-			break;
-		}
-	}
+	let lastRaceWithResults: Race = races
+		.filter((race) => race.raceResults.length > 0)
+		.sort((a, b) => b.raceNo - a.raceNo)[0];
+	// //we iterate through races in descending order of race no
+	// for (const race of races.sort((a, b) => b.raceNo - a.raceNo)) {
+	// 	if (race.raceResults.length > 0) {
+	// 		lastRaceWithResults = race;
+	// 		break;
+	// 	}
+	// }
 
 	let points = 0;
 	let place = 0;

@@ -12,7 +12,7 @@ import type {
 	WiseTransfer
 } from '$lib/types';
 import { getPlayerStats, oddsToPoints } from '$lib/utils';
-import _pb from './pocketbase';
+import _pb, { getServerPb } from './pocketbase';
 import { wiseFetch } from './wise';
 import { PREDICTION_ENTRY_FEE, PREDICTION_WALLET_ID, WISE_ACCOUNT_ID } from '$env/static/private';
 import {
@@ -110,7 +110,7 @@ export async function refreshF1DataHourly() {
 		for (let i = 0; i < players.length; i++) {
 			players[i] = {
 				...players[i],
-				...getPlayerStats(players[i].id, submissions, races, oddsRecords)
+				...getPlayerStats(players[i].id, submissions, newRacesWithResults, oddsRecords)
 			};
 			players[i].displayLatestResultsDialog = true;
 		}
@@ -184,7 +184,7 @@ export async function checkForNewDeposits() {
 }
 
 export async function getCurrentDataDb(pbInstance: PocketBase | undefined = undefined) {
-	const pb = pbInstance || _pb;
+	const pb = pbInstance || (await getServerPb());
 	const drivers: Driver[] = await pb
 		.collection('drivers')
 		.getFullList({ sort: '-points', filter: `year='${new Date().getFullYear()}'` });
@@ -214,7 +214,7 @@ export async function getFeatureFlagStatus(
 	pbInstance: PocketBase | undefined = undefined,
 	name: string
 ) {
-	const pb = pbInstance || _pb;
+	const pb = pbInstance || (await getServerPb());
 	const result = await pb.collection('feature_flags').getFirstListItem(`name="${name}"`);
 	return result.enabled;
 }

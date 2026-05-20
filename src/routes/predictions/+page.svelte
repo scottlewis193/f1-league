@@ -148,8 +148,6 @@
 			return;
 		}
 
-		console.log(oddsQuery.current);
-
 		//update place and exact based on selection
 		lastChangedDriverSelection.place =
 			oddsQuery.current?.find(

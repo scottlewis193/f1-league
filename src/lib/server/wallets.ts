@@ -1,25 +1,29 @@
 import { PREDICTION_ENTRY_FEE, PREDICTION_WALLET_ID } from '$env/static/private';
 import type { Player, Wallet, Race } from '$lib/types';
-import pb from './pocketbase';
+import pb, { getServerPb } from './pocketbase';
 import { updateRaceQuery } from './races';
 import { createTransferLog } from './transfers';
 
 export async function getWalletByIdQuery(walletId: string) {
+	const pb = await getServerPb();
 	const wallet: Wallet = await pb.collection('wallets').getFirstListItem(`id='${walletId}'`);
 	return wallet;
 }
 
 export async function getWalletByUserIdQuery(userId: string) {
+	const pb = await getServerPb();
 	const wallet: Wallet = await pb.collection('wallets').getFirstListItem(`user='${userId}'`);
 	return wallet;
 }
 
 export async function getAllWalletsQuery() {
+	const pb = await getServerPb();
 	const wallets: Wallet[] = await pb.collection('wallets').getFullList();
 	return wallets;
 }
 
 export async function updateWalletBalance(walletId: string, newBalance: number) {
+	const pb = await getServerPb();
 	await pb.collection('wallets').update(walletId, { balance: newBalance });
 }
 
@@ -58,6 +62,7 @@ export async function payOutWinnings(players: Player[], race: Race) {
 
 async function transferFromPredictionWallet(amount: number, targetWalletId: string) {
 	try {
+		const pb = await getServerPb();
 		const targetWallet = await getWalletByIdQuery(targetWalletId);
 		const predictionWallet = await getWalletByIdQuery(PREDICTION_WALLET_ID);
 

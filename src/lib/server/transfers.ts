@@ -1,6 +1,7 @@
-import pb from './pocketbase';
+import pb, { getServerPb } from './pocketbase';
 
 export async function getTransferLogByIdQuery(id: string) {
+	const pb = await getServerPb();
 	try {
 		const transferLog = await pb.collection('transfer_logs').getFirstListItem(`id='${id}'`);
 		return transferLog;
@@ -17,6 +18,7 @@ export async function createTransferLog(
 	type: 'deposit' | 'withdraw' | 'transfer',
 	targetWalletId: string = ''
 ) {
+	const pb = await getServerPb();
 	await pb.collection('transfer_logs').create({
 		id: id,
 		user: userId,

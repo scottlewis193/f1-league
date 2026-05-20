@@ -1,12 +1,12 @@
 /// <reference lib="webworker" />
-// import { precacheAndRoute } from 'workbox-precaching';
-// import { clientsClaim } from 'workbox-core';
+import { precacheAndRoute } from 'workbox-precaching';
+import { clientsClaim } from 'workbox-core';
 
 // Required for injectManifest
-// precacheAndRoute(self.__WB_MANIFEST);
+precacheAndRoute(self.__WB_MANIFEST);
 
 self.skipWaiting();
-// clientsClaim();
+clientsClaim();
 
 self.addEventListener('install', () => {
 	console.log('[SW] installed');

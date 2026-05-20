@@ -14,12 +14,12 @@ export const transferToPredictionWallet = query(async () => {
 		//remove from player wallet
 		await pb
 			.collection('wallets')
-			.update(wallet.id, { balance: wallet.balance - Number(PREDICTION_ENTRY_FEE) });
+			.update(wallet.id, { balance: Number(wallet.balance) - Number(PREDICTION_ENTRY_FEE) });
 
 		//add to prediction wallet
-		await pb
-			.collection('wallets')
-			.update(PREDICTION_WALLET_ID, { balance: predictionWallet.balance + PREDICTION_ENTRY_FEE });
+		await pb.collection('wallets').update(PREDICTION_WALLET_ID, {
+			balance: Number(predictionWallet.balance) + Number(PREDICTION_ENTRY_FEE)
+		});
 
 		//log transfer
 		await createTransferLog(

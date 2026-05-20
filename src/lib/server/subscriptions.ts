@@ -1,7 +1,8 @@
 import type { PushSubscription } from 'web-push';
-import pb from './pocketbase';
+import pb, { getServerPb } from './pocketbase';
 
 export async function addSubscription(subscription: PushSubscription) {
+	const pb = await getServerPb();
 	const endpoint = subscription.endpoint;
 
 	// Check if a record already exists with this endpoint
@@ -20,6 +21,7 @@ export async function addSubscription(subscription: PushSubscription) {
 }
 
 export async function getSubscriptions(): Promise<PushSubscription[]> {
+	const pb = await getServerPb();
 	const records = await pb.collection('subscriptions').getFullList();
 	return records.map((record) => ({
 		endpoint: record.endpoint,

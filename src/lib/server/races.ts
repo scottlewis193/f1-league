@@ -1,7 +1,8 @@
 import type { Race } from '$lib/types';
-import pb from './pocketbase';
+import pb, { getServerPb } from './pocketbase';
 
 export async function getRacesQuery() {
+	const pb = await getServerPb();
 	const races: Race[] = await pb
 		.collection('races')
 		.getFullList({ filter: `year='${new Date().getFullYear()}'` });
@@ -9,6 +10,7 @@ export async function getRacesQuery() {
 }
 
 export async function getNextRaceQuery() {
+	const pb = await getServerPb();
 	const currentDate = Date.now();
 	let races: Race[] = await pb
 		.collection('races')
@@ -48,6 +50,7 @@ export async function getNextRaceQuery() {
 }
 
 export async function updateRacesQuery(races: Partial<Race>[]) {
+	const pb = await getServerPb();
 	const currentRaces = await pb.collection('races').getFullList({ sort: '-raceNo' });
 
 	let raceNo = 1;
@@ -81,11 +84,13 @@ export async function updateRacesQuery(races: Partial<Race>[]) {
 }
 
 export async function updateRaceQuery(race: Partial<Race>) {
+	const pb = await getServerPb();
 	if (!race.id) return;
 	await pb.collection('races').update(race.id, race);
 }
 
 async function getLastRaceWithResultsQuery() {
+	const pb = await getServerPb();
 	const currentYear = new Date().getFullYear();
 	const races = await pb
 		.collection('races')
