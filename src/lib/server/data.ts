@@ -142,45 +142,54 @@ export async function refreshF1DataHourly() {
 }
 
 export async function checkForNewDeposits() {
-	const today = new Date();
-	const data: WiseTransfer[] = await wiseFetch(
-		'transfers?status=COMPLETED&createdDateStart=' + today.toISOString().split('T')[0],
-		'v1',
-		{
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json'
-			}
+	try {
+		if (!env.WISE_API_KEY || !env.WISE_API_BASE || !env.WISE_ACCOUNT_ID) {
+			console.warn('Wise deposit polling skipped: Wise environment variables are not configured');
+			return;
 		}
-	);
 
-	const deposits = data.filter((transfer) => transfer.targetAccount === Number(env.WISE_ACCOUNT_ID));
-
-	//get all wallet ids and then filter data so we only have transfers where the reference equals one of the wallet ids
-	const walletIds = (await getAllWalletsQuery()).map((wallet) => wallet.id);
-
-	const filteredDeposits = deposits.filter((transfer) => walletIds.includes(transfer.reference));
-
-	for (const deposit of filteredDeposits) {
-		//check if deposit has log already, if not add it and update wallet balance
-		const transferLog = await getTransferLogByIdQuery(String(deposit.id));
-		if (transferLog) continue;
-
-		const wallet = await getWalletByIdQuery(deposit.reference);
-		if (!wallet) continue;
-
-		await createTransferLog(
-			String(deposit.id),
-			wallet.user,
-			wallet.id,
-			deposit.targetValue,
-			'deposit'
+		const today = new Date();
+		const data: WiseTransfer[] = await wiseFetch(
+			'transfers?status=COMPLETED&createdDateStart=' + today.toISOString().split('T')[0],
+			'v1',
+			{
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			}
 		);
-		await updateWalletBalance(deposit.reference, wallet.balance + deposit.targetValue);
-	}
 
-	// Schedule the next run
-	setTimeout(checkForNewDeposits, 10000);
+		const deposits = data.filter((transfer) => transfer.targetAccount === Number(env.WISE_ACCOUNT_ID));
+
+		//get all wallet ids and then filter data so we only have transfers where the reference equals one of the wallet ids
+		const walletIds = (await getAllWalletsQuery()).map((wallet) => wallet.id);
+
+		const filteredDeposits = deposits.filter((transfer) => walletIds.includes(transfer.reference));
+
+		for (const deposit of filteredDeposits) {
+			//check if deposit has log already, if not add it and update wallet balance
+			const transferLog = await getTransferLogByIdQuery(String(deposit.id));
+			if (transferLog) continue;
+
+			const wallet = await getWalletByIdQuery(deposit.reference);
+			if (!wallet) continue;
+
+			await createTransferLog(
+				String(deposit.id),
+				wallet.user,
+				wallet.id,
+				deposit.targetValue,
+				'deposit'
+			);
+			await updateWalletBalance(deposit.reference, wallet.balance + deposit.targetValue);
+		}
+	} catch (error) {
+		console.error('Wise deposit polling failed:', error);
+	} finally {
+		// Schedule the next run
+		setTimeout(checkForNewDeposits, 10000);
+	}
 }
 
 export async function getCurrentDataDb(pbInstance: PocketBase | undefined = undefined) {
