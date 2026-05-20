@@ -1,26 +1,48 @@
 /// <reference lib="webworker" />
-import { precacheAndRoute } from 'workbox-precaching';
-import { clientsClaim } from 'workbox-core';
+import { build, files, version } from '$service-worker';
 
-// Required for injectManifest
-precacheAndRoute(self.__WB_MANIFEST);
+const worker = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (self));
+const CACHE = `f1-league-${version}`;
+const ASSETS = [...build, ...files];
 
-self.skipWaiting();
-clientsClaim();
-
-self.addEventListener('install', () => {
+worker.addEventListener('install', (event) => {
 	console.log('[SW] installed');
+	event.waitUntil(
+		caches
+			.open(CACHE)
+			.then((cache) => cache.addAll(ASSETS))
+			.then(() => worker.skipWaiting())
+	);
+});
+
+worker.addEventListener('activate', (event) => {
+	event.waitUntil(
+		caches
+			.keys()
+			.then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
+			.then(() => worker.clients.claim())
+	);
+});
+
+worker.addEventListener('fetch', (event) => {
+	if (event.request.method !== 'GET') return;
+
+	event.respondWith(
+		caches.match(event.request).then((cached) => {
+			return cached || fetch(event.request);
+		})
+	);
 });
 
 // Push listener
-self.addEventListener('push', (event) => {
+worker.addEventListener('push', (event) => {
 	console.log('Push received!', event);
 	const data = event.data?.json() || { title: 'Hello', body: 'Push message!' };
 	event.waitUntil(
-		self.registration.showNotification(data.title, {
+		worker.registration.showNotification(data.title, {
 			body: data.body,
-			icon: data.icon,
-			badge: data.badge,
+			icon: data.icon || '/logo.png',
+			badge: data.badge || '/logo.png',
 			data: {
 				url: data.url
 			},
@@ -29,13 +51,13 @@ self.addEventListener('push', (event) => {
 	);
 });
 
-self.addEventListener('message', (event) => {
+worker.addEventListener('message', (event) => {
 	if (event.data && event.data.type === 'SKIP_WAITING') {
-		self.skipWaiting();
+		worker.skipWaiting();
 	}
 });
 
-self.addEventListener('notificationclick', (event) => {
+worker.addEventListener('notificationclick', (event) => {
 	event.notification.close();
 
 	const defaultUrl = 'https://f1-league.hades.ws/';
@@ -43,16 +65,14 @@ self.addEventListener('notificationclick', (event) => {
 
 	if (urlToOpen) {
 		event.waitUntil(
-			clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-				// If a tab with the same URL is already open, focus it.
+			worker.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
 				for (const client of clientList) {
 					if (client.url === urlToOpen && 'focus' in client) {
 						return client.focus();
 					}
 				}
-				// Otherwise, open a new tab.
-				if (clients.openWindow) {
-					return clients.openWindow(urlToOpen);
+				if (worker.clients.openWindow) {
+					return worker.clients.openWindow(urlToOpen);
 				}
 			})
 		);

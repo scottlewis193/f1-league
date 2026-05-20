@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { getSubscriptions } from './server/subscriptions';
 import webpush from 'web-push';
 import { PUBLIC_VAPID_PUBLIC_KEY } from '$env/static/public';
-import { VAPID_PRIVATE_KEY } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 export const sendNotifications = async (payload: {
 	title?: string;
@@ -17,7 +17,7 @@ export const sendNotifications = async (payload: {
 	let successCount = 0;
 	let failCount = 0;
 
-	webpush.setVapidDetails('mailto:sl193@pm.me', PUBLIC_VAPID_PUBLIC_KEY!, VAPID_PRIVATE_KEY!);
+	webpush.setVapidDetails('mailto:sl193@pm.me', PUBLIC_VAPID_PUBLIC_KEY!, env.VAPID_PRIVATE_KEY!);
 
 	const notificationPayload = JSON.stringify(payload);
 

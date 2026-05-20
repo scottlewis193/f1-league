@@ -1,4 +1,4 @@
-import { PREDICTION_ENTRY_FEE, PREDICTION_WALLET_ID } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import type { Player, Wallet, Race } from '$lib/types';
 import pb, { getServerPb } from './pocketbase';
 import { updateRaceQuery } from './races';
@@ -46,7 +46,7 @@ export async function payOutWinnings(players: Player[], race: Race) {
 
 	//determine payout amount per winner
 	const playerPayoutAmount =
-		Number((Number(PREDICTION_ENTRY_FEE) * players.length).toFixed(2)) / winners.length;
+		Number((Number(env.PREDICTION_ENTRY_FEE) * players.length).toFixed(2)) / winners.length;
 
 	//transfer winnings to winners
 	for (const winner of winners) {
@@ -64,12 +64,12 @@ async function transferFromPredictionWallet(amount: number, targetWalletId: stri
 	try {
 		const pb = await getServerPb();
 		const targetWallet = await getWalletByIdQuery(targetWalletId);
-		const predictionWallet = await getWalletByIdQuery(PREDICTION_WALLET_ID);
+		const predictionWallet = await getWalletByIdQuery(env.PREDICTION_WALLET_ID!);
 
 		//remove from prediction wallet
 		await pb
 			.collection('wallets')
-			.update(PREDICTION_WALLET_ID, { balance: predictionWallet.balance - amount });
+			.update(env.PREDICTION_WALLET_ID!, { balance: predictionWallet.balance - amount });
 
 		//add to target wallet
 		await pb
@@ -80,8 +80,8 @@ async function transferFromPredictionWallet(amount: number, targetWalletId: stri
 		await createTransferLog(
 			'',
 			targetWallet.user,
-			PREDICTION_WALLET_ID,
-			Number(PREDICTION_ENTRY_FEE),
+			env.PREDICTION_WALLET_ID!,
+			Number(env.PREDICTION_ENTRY_FEE),
 			'transfer',
 			targetWallet.id
 		);

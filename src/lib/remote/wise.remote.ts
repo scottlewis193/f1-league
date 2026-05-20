@@ -1,10 +1,10 @@
 import { query } from '$app/server';
 import { wiseFetch } from '$lib/server/wise';
-import { WISE_PROFILE_ID } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import * as v from 'valibot';
 import { randomUUID } from 'crypto';
 export const getBalance = query(async () => {
-	const res = await wiseFetch(`profiles/${WISE_PROFILE_ID}/balances?types=STANDARD`, 'v4');
+	const res = await wiseFetch(`profiles/${env.WISE_PROFILE_ID}/balances?types=STANDARD`, 'v4');
 	const data = await res.json();
 	console.log(data.balance);
 	return data.balance;
@@ -16,7 +16,7 @@ export const createQuote = query(
 		amount: v.number()
 	}),
 	async ({ recipientId, amount }) => {
-		const data = await wiseFetch(`profiles/${WISE_PROFILE_ID}/quotes`, 'v3', {
+		const data = await wiseFetch(`profiles/${env.WISE_PROFILE_ID}/quotes`, 'v3', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -62,7 +62,7 @@ export const createTransfer = query(
 
 export const fundTransfer = query(v.object({ transferId: v.number() }), async ({ transferId }) => {
 	const data = await wiseFetch(
-		`profiles/${WISE_PROFILE_ID}/transfers/${transferId}/payments`,
+		`profiles/${env.WISE_PROFILE_ID}/transfers/${transferId}/payments`,
 		'v3',
 		{
 			method: 'POST',

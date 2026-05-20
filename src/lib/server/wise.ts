@@ -1,4 +1,4 @@
-import { WISE_API_KEY, WISE_API_BASE } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 export async function wiseFetch(
 	path: string,
@@ -6,12 +6,12 @@ export async function wiseFetch(
 	options: RequestInit = {}
 ) {
 	const headers = {
-		Authorization: `Bearer ${WISE_API_KEY}`,
+		Authorization: `Bearer ${env.WISE_API_KEY}`,
 		'Content-Type': 'application/json',
 		...(options.headers ?? {})
 	};
 
-	const res = await fetch(`${WISE_API_BASE}/${version}/${path}`, {
+	const res = await fetch(`${env.WISE_API_BASE}/${version}/${path}`, {
 		...options,
 		headers
 	});

@@ -4,11 +4,13 @@ WORKDIR /app
 
 # Build-time arguments for SvelteKit public env vars
 ARG PUBLIC_PB_URL
+ARG PUBLIC_VAPID_PUBLIC_KEY
 ENV PUBLIC_PB_URL=$PUBLIC_PB_URL
+ENV PUBLIC_VAPID_PUBLIC_KEY=$PUBLIC_VAPID_PUBLIC_KEY
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
 RUN npm run build
 

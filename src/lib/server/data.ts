@@ -14,7 +14,7 @@ import type {
 import { getPlayerStats, oddsToPoints } from '$lib/utils';
 import _pb, { getServerPb } from './pocketbase';
 import { wiseFetch } from './wise';
-import { PREDICTION_ENTRY_FEE, PREDICTION_WALLET_ID, WISE_ACCOUNT_ID } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import {
 	getAllWalletsQuery,
 	getWalletByIdQuery,
@@ -154,7 +154,7 @@ export async function checkForNewDeposits() {
 		}
 	);
 
-	const deposits = data.filter((transfer) => transfer.targetAccount === Number(WISE_ACCOUNT_ID));
+	const deposits = data.filter((transfer) => transfer.targetAccount === Number(env.WISE_ACCOUNT_ID));
 
 	//get all wallet ids and then filter data so we only have transfers where the reference equals one of the wallet ids
 	const walletIds = (await getAllWalletsQuery()).map((wallet) => wallet.id);

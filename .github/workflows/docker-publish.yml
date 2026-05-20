@@ -28,3 +28,4 @@ jobs:
           tags: scottlewis193/f1-league:latest
           build-args: |
             PUBLIC_PB_URL=https://pb-f1-league.hades.ws
+            PUBLIC_VAPID_PUBLIC_KEY=BHKr-fL3KUrgDknbDc0-N3vbrZtMOwf3to5yM0NLbmsLMyil3EcmdPzRA-ZfP83YxDPgU5XcAiMHTpk7LKQ26Uo

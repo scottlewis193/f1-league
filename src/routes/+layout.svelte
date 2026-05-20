@@ -1,7 +1,6 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.png';
-	import { useRegisterSW } from 'virtual:pwa-register/svelte';
 	import { PUBLIC_PB_URL } from '$env/static/public';
 	import { page } from '$app/state';
 	import {
@@ -38,28 +37,12 @@
 	// svelte-ignore non_reactive_update
 	let userPopover: HTMLElement;
 	// svelte-ignore non_reactive_update
-	let updateModal: HTMLDialogElement;
-	// svelte-ignore non_reactive_update
 	let raceResultsDialog: HTMLDialogElement;
 	// svelte-ignore non_reactive_update
 	let confettiContainer: HTMLDivElement;
 
 	const nextRaceQuery = getNextRace();
 	setToastManagerContext();
-
-	// Set up SW registration
-	const { needRefresh, updateServiceWorker } = useRegisterSW({
-		immediate: true,
-		onRegisteredSW(swUrl, r) {
-			console.log('SW registered:', swUrl, r);
-		},
-		onNeedRefresh() {
-			console.log('SW waiting to update...');
-		},
-		onOfflineReady() {
-			console.log('App ready to work offline');
-		}
-	});
 
 	let isDecember = new Date().getMonth() === 11; //months are zero indexed
 
@@ -69,7 +52,6 @@
 	});
 
 	onMount(() => {
-		if ($needRefresh) updateModal.showModal();
 		if (data.currentUser.displayLatestResultsDialog) {
 			raceResultsDialog.showModal();
 
@@ -320,25 +302,6 @@
 			</li>
 		</ul>
 	{/if}
-
-	<dialog
-		bind:this={updateModal}
-		id="updateModal"
-		class="modal modal-bottom w-screen sm:modal-middle"
-	>
-		<div class="modal-box">
-			<h3 class="text-lg font-bold">New Update Available!</h3>
-			<p class="py-4">Click reload to update</p>
-			<div class="modal-action">
-				<button
-					class="btn btn-sm btn-primary"
-					onclick={async () => {
-						await updateServiceWorker(true);
-					}}>Reload</button
-				>
-			</div>
-		</div>
-	</dialog>
 
 	<dialog bind:this={raceResultsDialog} class="modal w-screen">
 		<div class="modal-box">
