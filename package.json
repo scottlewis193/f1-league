@@ -37,7 +37,10 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"copy": "scp -r ./package.json ./bun.lockb ./svelte.config.js ./build root@192.168.0.2:/mnt/cache/appdata/f1-league",
-		"start": "bun install && bunx puppeteer browsers install chrome && export PORT=9173 && bun build/index.js"
+		"start": "bun install && bunx puppeteer browsers install chrome && export PORT=9173 && bun build/index.js",
+		"twa:doctor": "node scripts/build-twa.mjs doctor",
+		"twa:init": "node scripts/build-twa.mjs init",
+		"twa:build": "node scripts/build-twa.mjs build"
 	},
 	"type": "module",
 	"dependencies": {

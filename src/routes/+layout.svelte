@@ -29,6 +29,7 @@
 	import MessageDialog from '$lib/components/MessageDialog.svelte';
 	import { setToastManagerContext } from '$lib/stores/toastmanager.svelte';
 	import { resolve } from '$app/paths';
+	import { useRegisterSW } from 'virtual:pwa-register/svelte';
 
 	let { children, data } = $props();
 	const url = $derived(page.url.pathname);
@@ -43,6 +44,20 @@
 
 	const nextRaceQuery = getNextRace();
 	setToastManagerContext();
+
+	// Set up SW registration
+	const { needRefresh, updateServiceWorker } = useRegisterSW({
+		immediate: false,
+		onRegisteredSW(swUrl, r) {
+			console.log('SW registered:', swUrl, r);
+		},
+		onNeedRefresh() {
+			console.log('SW waiting to update...');
+		},
+		onOfflineReady() {
+			console.log('App ready to work offline');
+		}
+	});
 
 	let isDecember = new Date().getMonth() === 11; //months are zero indexed
 

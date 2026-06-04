@@ -26,3 +26,14 @@ vite.config.ts.timestamp-*
 
 #localhost
 *.pem
+
+# Android / Trusted Web Activity (Bubblewrap)
+twa-manifest.json
+.bubblewrap/
+.android/
+/android/
+*.apk
+*.aab
+*.jks
+*.keystore
+*.p12

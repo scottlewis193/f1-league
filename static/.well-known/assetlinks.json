@@ -1,0 +1,12 @@
+    [
+      {
+        "relation": ["delegate_permission/common.handle_all_urls"],
+        "target": {
+          "namespace": "android_app",
+          "package_name": "ws.hades.f1_league.twa",
+          "sha256_cert_fingerprints": [
+            "AE:1D:9B:BC:91:30:F6:12:18:01:73:79:62:E7:80:9A:25:C2:0F:EB:CE:76:51:D4:B8:E4:87:94:6F:0A:36:46"
+          ]
+        }
+      }
+    ]

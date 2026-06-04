@@ -52,9 +52,9 @@ export const addUpdatePrediction = form(
 		const wildPrediction = data.wildPrediction;
 
 		if (id !== '') {
-			pb.collection('predictions').update(id, { predictions, wildPrediction });
+			await pb.collection('predictions').update(id, { predictions, wildPrediction });
 		} else {
-			pb.collection('predictions').create({ predictions, user, year, race, wildPrediction });
+			await pb.collection('predictions').create({ predictions, user, year, race, wildPrediction });
 		}
 
 		redirect(303, `/predictions`);
