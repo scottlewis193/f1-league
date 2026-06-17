@@ -13,6 +13,7 @@ declare global {
 	}
 	interface Window {
 		Buffer: typeof import('buffer').Buffer;
+		__PB_URL__?: string;
 	}
 }
 

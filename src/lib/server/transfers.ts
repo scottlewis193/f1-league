@@ -1,7 +1,7 @@
-import pb, { getServerPb } from './pocketbase';
+import { getAdminPb } from './pocketbase';
 
 export async function getTransferLogByIdQuery(id: string) {
-	const pb = await getServerPb();
+	const pb = await getAdminPb();
 	try {
 		const transferLog = await pb.collection('transfer_logs').getFirstListItem(`id='${id}'`);
 		return transferLog;
@@ -16,15 +16,17 @@ export async function createTransferLog(
 	walletId: string,
 	amount: number,
 	type: 'deposit' | 'withdraw' | 'transfer',
-	targetWalletId: string = ''
+	targetWalletId: string = '',
+	status: 'pending' | 'complete' | 'failed' = 'complete'
 ) {
-	const pb = await getServerPb();
+	const pb = await getAdminPb();
 	await pb.collection('transfer_logs').create({
 		id: id,
 		user: userId,
 		wallet: walletId,
 		amount,
 		targetWallet: targetWalletId,
-		type
+		type,
+		status
 	});
 }

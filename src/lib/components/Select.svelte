@@ -3,10 +3,10 @@
 
 	const { name, options }: { name: string; options: string[] } = $props();
 
-	let selectedOption = $state(options[0]);
+	let selectedOption = $state('');
 
 	onMount(() => {
-		selectedOption = localStorage.getItem(name) || options[0];
+		selectedOption = localStorage.getItem(name) || options[0] || '';
 	});
 
 	const setOption = (_option: string) => {
@@ -29,7 +29,6 @@
 	</div>
 	<ul
 		id="theme-dropdown"
-		tabindex="0"
 		class="dropdown-content z-1 h-52 w-52 overflow-y-auto rounded-box bg-base-300 p-2 shadow-2xl"
 	>
 		{#each options as option}

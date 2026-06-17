@@ -1,11 +1,18 @@
 import PocketBase from 'pocketbase';
-import { PUBLIC_PB_URL } from '$env/static/public';
+import { env as publicEnv } from '$env/dynamic/public';
+import { env } from '$env/dynamic/private';
 import { redirect, type Handle, type ServerInit } from '@sveltejs/kit';
 import { checkForNewDeposits, refreshF1DataHourly } from '$lib/server/data';
 import { dev, building } from '$app/environment';
 
 export const init: ServerInit = async () => {
 	if (building) return; // ← skip entirely during `vite build`
+
+	if (env.RUN_BACKGROUND_JOBS !== 'true') {
+		console.log('Background jobs disabled. Set RUN_BACKGROUND_JOBS=true on one worker to enable them.');
+		return;
+	}
+
 	refreshF1DataHourly();
 	checkForNewDeposits();
 };
@@ -16,7 +23,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 	console.log('Incoming request:', event.request.method, event.request.url);
 
 	// --- Setup PocketBase ---
-	event.locals.pb = new PocketBase(PUBLIC_PB_URL);
+	const pbUrl = publicEnv.PUBLIC_PB_URL;
+	if (!pbUrl) {
+		throw new Error(
+			'PocketBase URL is not configured. Set PUBLIC_PB_URL runtime environment variable.'
+		);
+	}
+
+	event.locals.pb = new PocketBase(pbUrl);
 	event.locals.pb.autoCancellation(false);
 	event.locals.pb.authStore.loadFromCookie(event.request.headers.get('cookie') || '');
 
@@ -27,7 +41,16 @@ export const handle: Handle = async ({ event, resolve }) => {
 			event.locals.user = structuredClone(event.locals.pb.authStore.record);
 		} else {
 			event.locals.user = null;
-			if (!event.request.url.includes('/login')) redirect(308, '/login');
+			// Allow unauthenticated access to notification API endpoints
+			const publicPaths = [
+				'/login',
+				'/api/notifications',
+				'/api/subscribe',
+				'/.well-known'
+			];
+			if (!publicPaths.some((path) => event.request.url.includes(path))) {
+				redirect(308, '/login');
+			}
 		}
 	} catch (err) {
 		console.error('Error refreshing auth:', err);

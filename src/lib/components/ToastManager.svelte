@@ -9,10 +9,10 @@
 		<div class="toast toast-end toast-bottom z-50">
 			<div
 				class="relative alert overflow-hidden"
-				class:alert-error={toast.type == 'error'}
-				class:alert-success={toast.type == 'success'}
-				class:alert-warning={toast.type == 'warning'}
-				class:alert-info={toast.type == 'info'}
+				class:alert-error={toast.type === 'error'}
+				class:alert-success={toast.type === 'success'}
+				class:alert-warning={toast.type === 'warning'}
+				class:alert-info={toast.type === 'info'}
 			>
 				{#if toast.type === 'info'}
 					<svg

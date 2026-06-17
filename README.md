@@ -1,38 +1,60 @@
-# sv
+# F1 League
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+F1 League prediction app with push notifications, wagering, and real-time standings.
 
-## Creating a project
+## Features
 
-If you're seeing this, you've probably already done this step. Congrats!
+- 🏎️ **Race Predictions** - Predict top 3 finishers and wild predictions for each race
+- 🔔 **Push Notifications** - Get reminded about upcoming prediction deadlines
+- 💰 **Prediction Wagering** - £5 entry per race, winner takes all
+- 📊 **Live Standings** - Track your position throughout the season
+- 👤 **Player Stats** - View detailed prediction history and accuracy
 
-```sh
-# create a new project in the current directory
-npx sv create
+## Push Notifications
 
-# create a new project in my-app
-npx sv create my-app
+The app sends push notifications to remind players about upcoming prediction deadlines:
+
+- **Cron reminders** - Automatically sent every 6 hours before each race
+- **Test notifications** - Use the API or test script to verify notifications work
+
+### Testing Notifications
+
+```bash
+# Basic test notification
+curl https://f1-league.hades.ws/api/notifications/test
+
+# Prediction reminder
+curl https://f1-league.hades.ws/api/notifications/test?prediction=true
+
+# Using the test script
+node scripts/test-notifications.mjs
+node scripts/test-notifications.mjs prediction
+
+# Detailed docs
+docs/notifications.md
 ```
 
 ## Developing
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
 ```sh
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
 ## Building
-
-To create a production version of your app:
 
 ```sh
 npm run build
 ```
 
-You can preview the production build with `npm run preview`.
+## Deployment
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Built with Docker:
+
+```sh
+docker build --build-arg PUBLIC_PB_URL=https://pb-f1-league.hades.ws --build-arg PUBLIC_VAPID_PUBLIC_KEY=YOUR_KEY -t f1-league .
+```
+
+## Documentation
+
+- [Notification System](docs/notifications.md)

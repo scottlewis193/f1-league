@@ -22,9 +22,9 @@
 	});
 
 	$effect(() => {
-		if (provider == 'dlhd') {
+		if (provider === 'dlhd') {
 			src = `https://dlhd.dad/${stream}/stream-60.php`;
-		} else if (provider == 'ihatestreams') {
+		} else if (provider === 'ihatestreams') {
 			src = `https://ihatestreams.xyz/embed/${stream}`;
 		}
 	});
@@ -34,7 +34,7 @@
 	<div class="h-[calc(100vh-18rem)] w-[min(100vw,100vh)]">
 		<div class="card aspect-video w-full bg-base-100 p-2">
 			{#key stream}
-				{#if stream == 'player' || stream == 'plus'}
+				{#if stream === 'player' || stream === 'plus'}
 					<iframe
 						id="video"
 						title="Stream"
@@ -69,7 +69,7 @@
 	</select>
 	<!-- Buttons -->
 	<div class="flex w-full max-w-6xl flex-wrap items-center justify-center gap-4">
-		{#if provider == 'dlhd'}
+		{#if provider === 'dlhd'}
 			{#each dlhdStreams as _stream, index (index)}
 				<button
 					class="btn btn-primary"
@@ -82,7 +82,7 @@
 				</button>
 			{/each}
 		{/if}
-		{#if provider == 'ihatestreams'}
+		{#if provider === 'ihatestreams'}
 			{#each ihatestreamsStreams as _stream, index (index)}
 				<button
 					class="btn btn-primary"

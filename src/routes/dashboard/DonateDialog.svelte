@@ -1,10 +1,7 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import { withdraw } from '$lib/remote/players.remote';
 	import { transferToSeasonWallet } from '$lib/remote/transfers.remote';
 	import { getToastManagerContext } from '$lib/stores/toastmanager.svelte';
 
-	let amount = $state(0);
 	let dialog = $state<HTMLDialogElement>();
 	const toastManager = getToastManagerContext();
 
@@ -29,12 +26,12 @@
 		<h2 class="text-lg font-bold">Donate Funds</h2>
 		<p class="py-4">Enter the amount you want to donate:</p>
 		<form
-			{...transferToSeasonWallet.enhance(async ({ form, data, submit }) => {
+			{...transferToSeasonWallet.enhance(async ({ element, submit }) => {
 				try {
 					await submit();
-					form.reset();
+					element.reset();
 					toastManager.addToast('Donation successful', 'success');
-				} catch (error) {
+				} catch {
 					toastManager.addToast('Donation failed', 'error');
 				}
 				dialog?.close();

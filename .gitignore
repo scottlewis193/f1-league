@@ -9,6 +9,10 @@ node_modules
 .wrangler
 /.svelte-kit
 /build
+/dist
+/dev-dist
+manifest-checksum.txt
+*.idsig
 
 # OS
 .DS_Store
@@ -27,11 +31,7 @@ vite.config.ts.timestamp-*
 #localhost
 *.pem
 
-# Android / Trusted Web Activity (Bubblewrap)
-twa-manifest.json
-.bubblewrap/
-.android/
-/android/
+# Mobile/signing artifacts
 *.apk
 *.aab
 *.jks

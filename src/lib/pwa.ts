@@ -1,20 +1,23 @@
-import { useRegisterSW } from 'virtual:pwa-register/svelte';
+// For dev mode (HTTP), manually register SW with gcm_sender_id in manifest
+export async function registerSWDev() {
+	if (typeof window === 'undefined' || window.location.protocol !== 'http:') return;
 
-const updateSW = useRegisterSW({
-	immediate: true,
-	// onNeedRefresh() {
-	// 	updateSW(true); // immediately update
-	// },
+	try {
+		// Register the built service worker in dev too.
+		const reg = await navigator.serviceWorker.register('/service-worker.js', {
+			scope: '/',
+			type: 'module',
+			updateViaCache: 'none'
+		});
 
-	onRegisteredSW(url, r) {
-		r &&
-			setInterval(() => {
-				console.log('Checking for sw update');
-				r.update();
-			}, 20000);
-		console.log(`SW Registered: ${r}`);
-	},
-	onOfflineReady() {
-		console.log('PWA is ready to work offline');
+		// Chromium Web Push in dev requires the GCM sender id in the manifest.
+		const manifestResp = await fetch('/manifest.webmanifest');
+		const manifestJson = await manifestResp.json();
+		if (!manifestJson.gcm_sender_id) {
+			console.warn('Push notifications may not work in Chromium browsers: manifest is missing gcm_sender_id.');
+		}
+		return reg;
+	} catch (err) {
+		console.error('Failed to register SW in dev mode:', err);
 	}
-});
+}

@@ -1,25 +1,36 @@
+export type WalletType = 'user' | 'prediction' | 'season';
+export type TransferType = 'deposit' | 'withdraw' | 'transfer';
+export type TransferStatus = 'pending' | 'complete' | 'failed';
+
 export type Prediction = {
 	race: string;
 	id: string;
 	user: string;
 	predictions: string[];
 	wildPrediction: string;
+	wildPredictionPoints: number;
 	expand: { user: Player; race: Race };
 };
 
 export type Player = {
-	[key: string]: string | boolean | number | HistoryEntry[];
 	id: string;
 	name: string;
 	email: string;
 	avatar: string;
 	displayLatestResultsDialog: boolean;
+	walletAddress?: string;
+	wiseRecipientId?: number;
+	userPointsBalance?: number;
+	userPointsEarned?: number;
 	points: number;
 	lastPointsEarned: number;
 	place: number;
 	exact: number;
+	wildPrediction: number;
 	historyEntries: HistoryEntry[];
 };
+
+export type PlayerUpdate = Partial<Omit<Player, 'id' | 'historyEntries'>>;
 
 export type HistoryEntry = {
 	location: string;
@@ -28,6 +39,7 @@ export type HistoryEntry = {
 	points: number[];
 	place: string[];
 	exact: string[];
+	wildPredictionPoints: number;
 };
 
 export type Team = {
@@ -77,11 +89,11 @@ export type OddsRecord = {
 export type Wallet = {
 	id: string;
 	user: string;
-	type: 'user' | 'prediction' | 'season';
+	type: WalletType;
 	balance: number;
 	profit: number;
-	wiseRecipientId: number;
-	expand: { user: Player };
+	wiseRecipientId?: number;
+	expand?: { user: Player };
 };
 
 export type WiseTransfer = {
@@ -115,6 +127,7 @@ export type TransferLog = {
 	user: string;
 	wallet: string;
 	amount: number;
-	type: 'deposit' | 'withdraw' | 'transfer';
-	targetWallet: string;
+	type: TransferType;
+	status: TransferStatus;
+	targetWallet?: string;
 };

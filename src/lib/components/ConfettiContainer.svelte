@@ -28,14 +28,13 @@
 	}
 </script>
 
-<div onclick={click} class:relative class="w-fit">
-	<!-- <button class="btn">Test</button> -->
+<button type="button" onclick={click} class:relative class="w-fit border-0 bg-transparent p-0">
 	{#if active}
 		<div class="confetti">
 			{@render children?.()}
 		</div>
 	{/if}
-</div>
+</button>
 
 <style>
 	.relative .confetti {

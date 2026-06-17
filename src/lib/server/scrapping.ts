@@ -1,10 +1,20 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import type { Browser } from 'puppeteer';
 import type { Driver, Race, Team } from '../types';
 
 puppeteer.use(StealthPlugin());
 
 const SEASON = new Date().getFullYear();
+const DEFAULT_BROWSER_ARGS = ['--no-sandbox', '--disable-setuid-sandbox'];
+
+function launchBrowser(defaultViewport?: { width: number; height: number }) {
+	return puppeteer.launch({
+		headless: true,
+		args: DEFAULT_BROWSER_ARGS,
+		...(defaultViewport ? { defaultViewport } : {})
+	});
+}
 
 export async function scrapeAll() {
 	let races;
@@ -15,29 +25,31 @@ export async function scrapeAll() {
 	let scrapeSuccess = false;
 
 	while (!scrapeSuccess && scrapeAttempt <= 3) {
+		let browser: Browser | undefined;
 		try {
-			races = await scrapeF1Races();
-			drivers = await scrapeDrivers();
-			teams = await scrapeTeams();
-			odds = await scrapeOdds();
+			browser = await launchBrowser();
+			races = await scrapeF1Races(browser);
+			drivers = await scrapeDrivers(browser);
+			teams = await scrapeTeams(browser);
+			odds = await scrapeOdds(browser);
 			scrapeSuccess = true;
 		} catch (e) {
 			if (scrapeAttempt === 3) {
 				return { error: e, races, drivers, teams, odds };
 			}
 			scrapeAttempt++;
+		} finally {
+			await browser?.close();
 		}
 	}
 
 	return { races, drivers, teams, odds };
 }
 
-export async function scrapeDrivers() {
+export async function scrapeDrivers(browserInstance?: Browser) {
 	const url = `https://www.formula1.com/en/results.html/${SEASON}/drivers.html`;
-	const browser = await puppeteer.launch({
-		headless: true,
-		args: ['--no-sandbox', '--disable-setuid-sandbox']
-	});
+	const browser = browserInstance ?? (await launchBrowser());
+	const shouldCloseBrowser = !browserInstance;
 	const page = await browser.newPage();
 
 	try {
@@ -71,16 +83,15 @@ export async function scrapeDrivers() {
 	} catch (e) {
 		console.error(e);
 	} finally {
-		await browser.close();
+		await page.close();
+		if (shouldCloseBrowser) await browser.close();
 	}
 }
 
-export async function scrapeTeams() {
+export async function scrapeTeams(browserInstance?: Browser) {
 	const url = `https://www.formula1.com/en/results.html/${SEASON}/team.html`;
-	const browser = await puppeteer.launch({
-		headless: true,
-		args: ['--no-sandbox', '--disable-setuid-sandbox']
-	});
+	const browser = browserInstance ?? (await launchBrowser());
+	const shouldCloseBrowser = !browserInstance;
 	const page = await browser.newPage();
 
 	try {
@@ -111,15 +122,14 @@ export async function scrapeTeams() {
 	} catch (e) {
 		console.error(e);
 	} finally {
-		await browser.close();
+		await page.close();
+		if (shouldCloseBrowser) await browser.close();
 	}
 }
 
-export async function scrapeRaceLocations() {
-	const browser = await puppeteer.launch({
-		headless: true,
-		args: ['--no-sandbox', '--disable-setuid-sandbox']
-	});
+export async function scrapeRaceLocations(browserInstance?: Browser) {
+	const browser = browserInstance ?? (await launchBrowser());
+	const shouldCloseBrowser = !browserInstance;
 	const page = await browser.newPage();
 
 	// Step 1: Go to races page
@@ -163,24 +173,20 @@ export async function scrapeRaceLocations() {
 		results.push({ url: link, ...data });
 	}
 
-	await browser.close();
+	await page.close();
+	if (shouldCloseBrowser) await browser.close();
 
 	return results;
 }
 
-export async function scrapeF1Races() {
+export async function scrapeF1Races(browserInstance?: Browser) {
+	const browser = browserInstance ?? (await launchBrowser());
+	const shouldCloseBrowser = !browserInstance;
+
 	//first we grab location data from pitwall.app
-	const raceLocations = await scrapeRaceLocations();
+	const raceLocations = await scrapeRaceLocations(browser);
 
 	const baseUrl = `https://www.formula1.com/en/racing/${SEASON}`;
-	const browser = await puppeteer.launch({
-		headless: true,
-		args: ['--no-sandbox', '--disable-setuid-sandbox']
-		// defaultViewport: {
-		// 	width: 1920,
-		// 	height: 1080
-		// }
-	});
 	const page = await browser.newPage();
 
 	try {
@@ -218,7 +224,8 @@ export async function scrapeF1Races() {
 					'#maincontent > div > div:nth-child(2) > div > div > div:nth-child(1) > div.flex.flex-col.px-px-8.md\\:px-px-16.lg\\:px-px-24.py-px-8.md\\:py-px-16.lg\\:py-px-24.bg-surface-neutral-1.rounded-m > ul',
 					{ timeout: 3000 }
 				);
-			} catch (e) {
+			} catch {
+				await racePage.close();
 				continue;
 			}
 
@@ -293,7 +300,8 @@ export async function scrapeF1Races() {
 			await racePage.close();
 		}
 
-		await browser.close();
+		await page.close();
+		if (shouldCloseBrowser) await browser.close();
 
 		//sort by date
 		allRaces.sort((a, b) => Date.parse(a.sessions[0].date) - Date.parse(b.sessions[0].date));
@@ -309,20 +317,19 @@ export async function scrapeF1Races() {
 
 		return allRaces;
 	} catch (e) {
-		await browser.close();
+		await page.close();
+		if (shouldCloseBrowser) await browser.close();
 		console.error(e);
 	}
 }
 
-export const scrapeOdds = async () => {
+export const scrapeOdds = async (browserInstance?: Browser) => {
 	const baseUrl = 'https://www.oddschecker.com';
 	const url = `${baseUrl}/motorsport/formula-1`;
-	const browser = await puppeteer.launch({
-		headless: true,
-		args: ['--no-sandbox', '--disable-setuid-sandbox'],
-		defaultViewport: { width: 1920, height: 1080 }
-	});
+	const browser = browserInstance ?? (await launchBrowser({ width: 1920, height: 1080 }));
+	const shouldCloseBrowser = !browserInstance;
 	const page = await browser.newPage();
+	await page.setViewport({ width: 1920, height: 1080 });
 
 	try {
 		console.log(`Scraping F1 Race Odds: ${url}`);
@@ -388,10 +395,13 @@ export const scrapeOdds = async () => {
 			return driverOdds;
 		});
 
-		await browser.close();
+		await podiumFinishPage.close();
+		await page.close();
+		if (shouldCloseBrowser) await browser.close();
 		return driverOdds;
 	} catch (e) {
-		await browser.close();
+		await page.close();
+		if (shouldCloseBrowser) await browser.close();
 		console.error(e);
 		console.log(`Warning: Odds Not Available (${page.url()})`);
 		return [];

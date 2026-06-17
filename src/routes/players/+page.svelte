@@ -2,24 +2,21 @@
 	import { getPlayersWithStats } from '$lib/remote/players.remote';
 	import { titleCase } from '$lib/utils';
 	import { fade } from 'svelte/transition';
-	import PocketBase from 'pocketbase';
-	import { PUBLIC_PB_URL } from '$env/static/public';
-	import { onMount } from 'svelte';
 	import type { Player } from '$lib/types';
-	import Skeleton from '$lib/components/Skeleton.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import ErrorState from '$lib/components/ErrorState.svelte';
 
 	const query = getPlayersWithStats();
-	const pb = new PocketBase(PUBLIC_PB_URL);
 
+	let { data } = $props();
 	let historyDialog: HTMLDialogElement;
 
 	let historyPlayer: Player | null = $state(null);
+	const pbUrl = $derived(data.pbUrl || '');
 </script>
 
-<div in:fade class="card h-full w-full overflow-auto bg-base-100">
-	<div class="card-body">
+<div in:fade class="h-full w-full overflow-auto bg-base-100">
+	<div class="p-4">
 		{#if query.error}
 			<ErrorState
 				title="Failed to load players"
@@ -28,12 +25,84 @@
 				onRetry={() => query.refresh?.()}
 			/>
 		{:else if query.ready}
-			<table class="table not-md:table-sm">
+			<!-- Mobile: Card layout -->
+			<div class="mobile-only space-y-3">
+				{#each query.current as player (player.id)}
+					<div class="card bg-base-200 shadow-md">
+						<div class="card-body p-4">
+							<div class="flex items-center justify-between">
+								<!-- Player Info -->
+								<div class="flex items-center gap-3">
+									{#if player.avatar}
+										{@const avatarUrl =
+											pbUrl +
+											'/api/files/users/' +
+											player.id +
+											'/' +
+											player.avatar +
+											'?thumb=48x48'}
+										<div
+											style="background-image: url({avatarUrl}); background-size: cover;"
+											class="flex size-10 items-center justify-center rounded-box text-neutral-content"
+										></div>
+									{:else}
+										<div
+											class="flex size-10 items-center justify-center rounded-box bg-neutral text-neutral-content"
+										>
+											<span>{player.name.substring(0, 1).toUpperCase()}</span>
+										</div>
+									{/if}
+									<div>
+										<div class="font-bold">{player.name}</div>
+									</div>
+								</div>
+								<!-- Total Points (prominent) -->
+								<div class="text-right">
+									<div class="text-2xl font-bold">{player.points}</div>
+									<div class="text-xs opacity-60">pts</div>
+								</div>
+							</div>
+							<!-- Stats Grid -->
+							<div class="divider my-1"></div>
+							<div class="grid grid-cols-3 gap-2">
+								<div class="text-center">
+									<div class="text-lg font-bold">{player.place || '-'}</div>
+									<div class="text-xs opacity-60">Placed</div>
+								</div>
+								<div class="text-center">
+									<div class="text-lg font-bold">{player.exact || '-'}</div>
+									<div class="text-xs opacity-60">Exact</div>
+								</div>
+								<div class="text-center">
+									<div class="text-lg font-bold">{player.wildPrediction || '-'}</div>
+									<div class="text-xs opacity-60">Wild</div>
+								</div>
+							</div>
+							<!-- View History Button -->
+							<div class="mt-2 card-actions justify-end">
+								<button
+									class="btn btn-outline btn-sm"
+									onclick={() => {
+										historyPlayer = player;
+										historyDialog.showModal();
+									}}
+								>
+									View History
+								</button>
+							</div>
+						</div>
+					</div>
+				{/each}
+			</div>
+
+			<!-- Desktop: Table layout -->
+			<table class="desktop-only table w-full">
 				<thead>
 					<tr>
 						<th>Player</th>
 						<th>Pl</th>
 						<th>Ex</th>
+						<th>WP</th>
 						<th>Pts</th>
 						<th></th>
 					</tr>
@@ -44,12 +113,7 @@
 							<td class="flex items-center gap-4 font-bold"
 								>{#if player.avatar}
 									{@const avatarUrl =
-										PUBLIC_PB_URL +
-										'/api/files/users/' +
-										player.id +
-										'/' +
-										player.avatar +
-										'?thumb=48x48'}
+										pbUrl + '/api/files/users/' + player.id + '/' + player.avatar + '?thumb=48x48'}
 									<div
 										style="background-image: url({avatarUrl}); background-size: cover;"
 										class="flex size-10 items-center justify-center rounded-box text-neutral-content"
@@ -65,6 +129,7 @@
 							>
 							<td>{player.place}</td>
 							<td>{player.exact}</td>
+							<td>{player.wildPrediction}</td>
 							<td>{player.points}</td>
 							<td
 								><button
@@ -118,6 +183,12 @@
 											<td>{entry.points[index]}</td>
 										</tr>
 									{/each}
+									{#if entry.wildPredictionPoints > 0}
+										<tr>
+											<td colspan="3" class="text-right font-bold">Wild Prediction:</td>
+											<td class="font-bold">{entry.wildPredictionPoints}</td>
+										</tr>
+									{/if}
 								</tbody>
 							</table>
 						</div>

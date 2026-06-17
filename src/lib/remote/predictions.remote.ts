@@ -1,7 +1,10 @@
 import { form, getRequestEvent, query } from '$app/server';
-import { redirect } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
 import { getFeatureFlagStatus } from '$lib/server/data';
+import { PREDICTION_ENTRY_FEE, PREDICTION_WALLET_ID } from '$env/static/private';
+import { env } from '$env/dynamic/private';
+import { getWalletByUserIdQuery, transferBetweenWallets } from '$lib/server/wallets';
 import {
 	getNextRacePredictionsQuery,
 	getPredictionsQuery,
@@ -15,21 +18,28 @@ export const isWageringEnabled = query(async () => {
 });
 
 export const getPredictions = query(async () => {
-	const event = getRequestEvent();
 	return getPredictionsQuery();
 });
 
 export const getNextRacePredictions = query(async () => {
-	const event = getRequestEvent();
 	return getNextRacePredictionsQuery();
 });
 
-export const getUserPredictions = query(async (raceId: string = '') => {
+export const getUserPredictions = query(async (_raceId: string = '') => {
 	const event = getRequestEvent();
 	const pb = event.locals.pb;
 	const user = pb.authStore.record?.id;
 	return getUserPredictionsQuery(user || '');
 });
+
+function isPredictionEntryFeeBypassed(userId: string | undefined) {
+	if (!userId) return false;
+	return (env.PREDICTION_ENTRY_FEE_BYPASS_USER_IDS ?? '')
+		.split(',')
+		.map((id) => id.trim())
+		.filter(Boolean)
+		.includes(userId);
+}
 
 export const addUpdatePrediction = form(
 	v.object({
@@ -54,7 +64,27 @@ export const addUpdatePrediction = form(
 		if (id !== '') {
 			await pb.collection('predictions').update(id, { predictions, wildPrediction });
 		} else {
-			await pb.collection('predictions').create({ predictions, user, year, race, wildPrediction });
+			const prediction = await pb
+				.collection('predictions')
+				.create({ predictions, user, year, race, wildPrediction });
+
+			if ((await getFeatureFlagStatus(pb, 'wagering')) && !isPredictionEntryFeeBypassed(user)) {
+				try {
+					const wallet = await getWalletByUserIdQuery(user || '');
+					await transferBetweenWallets({
+						amount: Number(PREDICTION_ENTRY_FEE),
+						sourceWalletId: wallet.id,
+						targetWalletId: PREDICTION_WALLET_ID,
+						userId: user
+					});
+				} catch {
+					await pb
+						.collection('predictions')
+						.delete(prediction.id)
+						.catch(() => undefined);
+					return fail(400, { error: 'Unable to collect prediction entry fee' });
+				}
+			}
 		}
 
 		redirect(303, `/predictions`);

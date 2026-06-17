@@ -1,16 +1,16 @@
 import type { Driver, OddsRecord } from '$lib/types';
 import { oddsToPoints } from '$lib/utils';
-import pb, { getServerPb } from './pocketbase';
+import { getAdminPb } from './pocketbase';
 import { getNextRaceQuery } from './races';
 
 export async function getOddsQuery() {
-	const pb = await getServerPb();
+	const pb = await getAdminPb();
 	const odds: OddsRecord[] = await pb.collection('odds').getFullList({ expand: 'driver,race' });
 	return odds;
 }
 
 export async function getNextRaceOddsQuery() {
-	const pb = await getServerPb();
+	const pb = await getAdminPb();
 	const race = (await getNextRaceQuery()).id;
 
 	const odds: OddsRecord[] = await pb.collection('odds').getFullList({
@@ -25,7 +25,7 @@ export async function updateOddsQuery(
 	odds: { driverName: string; odds: number }[],
 	drivers: Partial<Driver>[]
 ) {
-	const pb = await getServerPb();
+	const pb = await getAdminPb();
 	const currentOdds = await pb.collection('odds').getFullList();
 	const currentRace = await getNextRaceQuery();
 

@@ -2,13 +2,18 @@ import { getCurrentPlayerWithStats } from '$lib/remote/players.remote';
 import { getPlayersWithStatsQuery } from '$lib/server/players';
 import type { Player } from '$lib/types';
 import type { LayoutServerLoad } from './$types';
+import { env as publicEnv } from '$env/dynamic/public';
 
 export const load: LayoutServerLoad = async ({ url }) => {
-	const players = await getPlayersWithStatsQuery();
-	const currentUser = await getCurrentPlayerWithStats();
+	const currentUser = (await getCurrentPlayerWithStats()) as Player | null;
+	const users = currentUser?.displayLatestResultsDialog
+		? ((await getPlayersWithStatsQuery()) as unknown as Player[])
+		: [];
+
 	return {
-		users: players as unknown as Player[],
+		users,
 		url: url.pathname,
-		currentUser: currentUser as Player
+		currentUser,
+		pbUrl: publicEnv.PUBLIC_PB_URL
 	};
 };

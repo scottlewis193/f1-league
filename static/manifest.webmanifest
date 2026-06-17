@@ -12,5 +12,7 @@
 			"sizes": "any",
 			"type": "image/png"
 		}
-	]
+	],
+	"gcm_sender_id": "1019558193812",
+	"gcm_permissions_enabled": true
 }

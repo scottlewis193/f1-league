@@ -73,9 +73,8 @@ export const updateCurrentPlayer = command('unchecked', async (playerData: Playe
 
 export const updatePlayerBalance = command(
 	'unchecked',
-	async (playerData: Pick<Player, 'id' | 'balance'>) => {
-		const event = getRequestEvent();
-		await updatePlayerQuery(playerData.id, { balance: playerData.balance });
+	async (playerData: { id: string; userPointsBalance: number }) => {
+		await updatePlayerQuery(playerData.id, { userPointsBalance: playerData.userPointsBalance });
 	}
 );
 
@@ -83,9 +82,8 @@ export const updateCurrentPlayerWalletAddress = command(
 	'unchecked',
 	async (walletAddress: string) => {
 		const event = getRequestEvent();
-		const player = event.locals.user as unknown as Player;
-		player.walletAddress = walletAddress;
-		await updateCurrentPlayer(player);
+		if (!event.locals.user?.id) return;
+		await updatePlayerQuery(event.locals.user.id, { walletAddress });
 	}
 );
 
@@ -113,7 +111,12 @@ export const login = form(playerLoginSchema, async (data) => {
 		return fail(400, { error: 'Email and password are required' });
 	}
 
-	await pb.collection('users').authWithPassword(email.toString(), password.toString());
+	try {
+		await pb.collection('users').authWithPassword(email.toString(), password.toString());
+	} catch (error) {
+		console.error('PocketBase login failed:', error);
+		return fail(400, { error: 'Invalid email or password' });
+	}
 
 	if (!pb.authStore.isValid) {
 		return fail(400, { error: 'Invalid email or password' });
@@ -137,7 +140,7 @@ export const register = form(playerRegisterSchema, async (data) => {
 		return fail(400, { error: 'Passwords do not match' });
 	}
 
-	const user = await pb.collection('users').create({ name, email, password, passwordConfirm });
+	await pb.collection('users').create({ name, email, password, passwordConfirm });
 
 	return redirect(303, `/login`);
 });
@@ -156,6 +159,10 @@ export const withdraw = form(v.object({ amount: v.number() }), async ({ amount }
 		return fail(400, { error: 'Amount exceeds balance' });
 	}
 
+	if (!userWallet.wiseRecipientId) {
+		return fail(400, { error: 'Bank account not configured' });
+	}
+
 	//wise transfer to bank account
 
 	//1. create quote
@@ -168,14 +175,21 @@ export const withdraw = form(v.object({ amount: v.number() }), async ({ amount }
 	});
 
 	//3. fund transfer (complete)
-	const data = await fundTransfer({ transferId: transfer.id });
-	console.log(data.status);
+	await fundTransfer({ transferId: transfer.id });
 
 	//update balance in db
 	await pb.collection('wallets').update(userWallet.id, { balance: userWallet.balance - amount });
 
 	//create transfer log
-	await createTransferLog(transfer.id, pb.authStore.record.id, userWallet.id, amount, 'withdraw');
+	await createTransferLog(
+		transfer.id,
+		pb.authStore.record.id,
+		userWallet.id,
+		amount,
+		'withdraw',
+		'',
+		'complete'
+	);
 
 	redirect(303, `/wallet`);
 });

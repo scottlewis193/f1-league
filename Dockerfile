@@ -7,16 +7,23 @@ ARG PUBLIC_PB_URL
 ARG PUBLIC_VAPID_PUBLIC_KEY
 ENV PUBLIC_PB_URL=$PUBLIC_PB_URL
 ENV PUBLIC_VAPID_PUBLIC_KEY=$PUBLIC_VAPID_PUBLIC_KEY
-ENV NODE_TLS_REJECT_UNAUTHORIZED=0
-
 COPY package*.json ./
 RUN npm ci
 COPY . .
 RUN npm run build
+RUN npm prune --omit=dev
 
 # --- STAGE 2: Runtime (Using Bun for performance) ---
 FROM oven/bun:latest AS runner
 WORKDIR /app
+
+# Runtime env vars for the server bundle
+ARG PUBLIC_PB_URL
+ARG PUBLIC_VAPID_PUBLIC_KEY
+ENV PUBLIC_PB_URL=$PUBLIC_PB_URL
+ENV PUBLIC_VAPID_PUBLIC_KEY=$PUBLIC_VAPID_PUBLIC_KEY
+
+# VAPID_PRIVATE_KEY is set at runtime via Portainer environment variables
 
 # 1. Install Chromium AND its dependencies
 RUN apt-get update && apt-get install -y \

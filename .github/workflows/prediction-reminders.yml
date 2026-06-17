@@ -1,0 +1,29 @@
+name: Prediction Reminder Notifications
+
+on:
+  # Run every 6 hours (to catch different timezones and race schedules)
+  schedule:
+    - cron: '0 */6 * * *'
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Prediction Reminders
+        env:
+          F1_LEAGUE_API_URL: ${{ secrets.F1_LEAGUE_API_URL || 'https://f1-league.hades.ws' }}
+        run: |
+          echo "Sending prediction reminder notifications..."
+          echo "API URL: ${F1_LEAGUE_API_URL}"
+          
+          # Call the prediction reminder endpoint
+          RESPONSE=$(curl -s -X POST "${F1_LEAGUE_API_URL}/api/notifications/predictions" \
+            -H "Content-Type: application/json")
+          
+          echo "Response: ${RESPONSE}"
+          
+          # Extract status for logging
+          STATUS=$(echo "${RESPONSE}" | grep -o '"status":"[^"]*"' | head -1)
+          echo "Status: ${STATUS}"

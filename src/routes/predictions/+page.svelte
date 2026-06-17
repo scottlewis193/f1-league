@@ -8,16 +8,21 @@
 		isWageringEnabled
 	} from '$lib/remote/predictions.remote.js';
 	import { userHasSubmitted } from '$lib/utils';
-	import { fade } from 'svelte/transition';
 	import { getNextRaceOdds } from '$lib/remote/odds.remote';
 	import { MessageButtons, showMessageDialog } from '$lib/stores/messagedialog.svelte';
 	import { getToastManagerContext } from '$lib/stores/toastmanager.svelte';
 	import { getPlayerWallet } from '$lib/remote/players.remote';
-	import {
-		playerWalletHasEnoughBalance,
-		transferToPredictionWallet
-	} from '$lib/remote/transfers.remote';
+	import { playerWalletHasEnoughBalance } from '$lib/remote/transfers.remote';
 	import pb from '$lib/pocketbase';
+	import PageCard from '$lib/components/PageCard.svelte';
+	import {
+		areDriverSelectionsValid,
+		getDriverOddsPointsPotential,
+		getSelectionTotals,
+		isPredictionWindowOpen,
+		type DriverSelections
+	} from '$lib/domain/predictions';
+	import { WAGER_AMOUNT } from '$lib/config';
 
 	const wageringEnabled = isWageringEnabled();
 	const driversQuery = getDrivers();
@@ -25,7 +30,10 @@
 	const nextRaceQuery = getNextRace();
 	const oddsQuery = getNextRaceOdds();
 	const toastManager = getToastManagerContext();
-	let wallet = await getPlayerWallet();
+
+	$effect(() => {
+		getPlayerWallet();
+	});
 
 	// svelte-ignore non_reactive_update
 	let submissionModal: HTMLDialogElement;
@@ -34,7 +42,7 @@
 	let submissionsValid = $state(false);
 	let hasUnsavedChanges = $state(false);
 
-	let driverSelections = $state({
+	let driverSelections: DriverSelections = $state({
 		Driver1st: { value: 'Driver', lastChanged: false, place: 0, exact: 0 },
 		Driver2nd: { value: 'Driver', lastChanged: false, place: 0, exact: 0 },
 		Driver3rd: { value: 'Driver', lastChanged: false, place: 0, exact: 0 }
@@ -42,6 +50,8 @@
 
 	let userSubmissionId: string = $state('');
 	let wildPrediction: string = $state('');
+	const selectionTotals = $derived(getSelectionTotals(driverSelections));
+	const driverNames = $derived(driversQuery.current?.map((driver) => driver.name) ?? []);
 
 	function loadUserSelections() {
 		if (!predictionsQuery.ready) return;
@@ -56,12 +66,15 @@
 			wildPrediction = userPredictions.wildPrediction;
 
 			const driver1stOddsPointsPotential = getDriverOddsPointsPotential(
+				oddsQuery.current,
 				driverSelections.Driver1st.value
 			);
 			const driver2ndOddsPointsPotential = getDriverOddsPointsPotential(
+				oddsQuery.current,
 				driverSelections.Driver2nd.value
 			);
 			const driver3rdOddsPointsPotential = getDriverOddsPointsPotential(
+				oddsQuery.current,
 				driverSelections.Driver3rd.value
 			);
 
@@ -91,51 +104,22 @@
 	}
 
 	function isSubmissionWindowOpen() {
-		if (!nextRaceQuery.ready) return false;
-		const firstSession = nextRaceQuery.current.sessions[0];
-		const year = nextRaceQuery.current.year;
-		const now = new Date();
-
-		const raceWeekendStartDate = new Date(
-			Date.parse(firstSession.date + ' ' + year + ' ' + firstSession.time)
-		);
-
-		return now < raceWeekendStartDate;
-	}
-
-	function getDriverOddsPointsPotential(driverName: string) {
-		const driverOddsRecord = oddsQuery.current?.find(
-			(oddsRecord) => oddsRecord.expand.driver.name === driverName
-		);
-		return {
-			place: driverOddsRecord?.pointsForPlace || 0,
-			exact: driverOddsRecord?.pointsForExact || 0
-		};
+		return nextRaceQuery.ready && isPredictionWindowOpen(nextRaceQuery.current);
 	}
 
 	function validateSelections() {
-		console.log('validatingSelections');
-		for (const driverSelection of Object.values(driverSelections)) {
-			if (driverSelection.value === 'Driver') {
-				submissionsValid = false;
-				return;
-			}
-		}
-
-		submissionsValid = true;
+		submissionsValid = areDriverSelectionsValid(driverSelections);
 	}
 
-	async function sendToPredictionWallet() {
-		if (!(await playerWalletHasEnoughBalance())) {
-			await showMessageDialog({
-				title: 'Insufficient funds',
-				message: 'You need to have at least 5 GBP in your wallet to make a submission',
-				buttons: MessageButtons.Ok
-			});
-			return false;
-		}
+	async function confirmSufficientBalance() {
+		if (await playerWalletHasEnoughBalance()) return true;
 
-		return await transferToPredictionWallet();
+		await showMessageDialog({
+			title: 'Insufficient funds',
+			message: `You need to have at least ${WAGER_AMOUNT} GBP in your wallet to make a submission`,
+			buttons: MessageButtons.Ok
+		});
+		return false;
 	}
 
 	$effect(() => {
@@ -149,15 +133,12 @@
 		}
 
 		//update place and exact based on selection
-		lastChangedDriverSelection.place =
-			oddsQuery.current?.find(
-				(oddsRecord) => (oddsRecord.expand.driver?.name ?? '') === lastChangedDriverSelection.value
-			)?.pointsForPlace ?? 0;
-
-		lastChangedDriverSelection.exact =
-			oddsQuery.current?.find(
-				(oddsRecord) => (oddsRecord.expand.driver?.name ?? '') === lastChangedDriverSelection.value
-			)?.pointsForExact || 0;
+		const oddsPointsPotential = getDriverOddsPointsPotential(
+			oddsQuery.current,
+			lastChangedDriverSelection.value
+		);
+		lastChangedDriverSelection.place = oddsPointsPotential.place;
+		lastChangedDriverSelection.exact = oddsPointsPotential.exact;
 
 		for (const driverSelection of Object.values(driverSelections)) {
 			if (
@@ -176,82 +157,124 @@
 </script>
 
 {#if predictionsQuery.current && driversQuery.current && nextRaceQuery.current}
-	<div in:fade class="card h-full w-full overflow-auto bg-base-100">
-		<div class="card-body">
-			<table class="table not-md:table-sm">
-				<thead>
-					<tr>
-						<th class="w-1/4">Player</th>
-						<th class="w-1/4">1st</th>
-						<th class="w-1/4">2nd</th>
-						<th class="w-1/4">3rd</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each predictionsQuery.current as submission (submission.id)}
-						{@const driver1stOddsPointsPotential = getDriverOddsPointsPotential(
-							submission.predictions[0]
-						)}
-						{@const driver2ndOddsPointsPotential = getDriverOddsPointsPotential(
-							submission.predictions[1]
-						)}
-						{@const driver3rdOddsPointsPotential = getDriverOddsPointsPotential(
-							submission.predictions[2]
-						)}
-						<tr>
-							<td rowspan="2" class="text-lg font-bold">
-								{submission.expand.user.name}
-							</td>
-							<td>
-								<div class="flex flex-col">
-									<div>{submission.predictions[0]}</div>
-									<div class="flex opacity-50">
-										<div class="w-1/2">Pl</div>
-										<div class="w-1/2 text-right">{driver1stOddsPointsPotential.place}</div>
-									</div>
-									<div class="flex opacity-50">
-										<div class="w-1/2">Ex</div>
-										<div class="w-1/2 text-right">{driver1stOddsPointsPotential.exact}</div>
-									</div>
-								</div>
-							</td>
+	<PageCard>
+		<div class="mobile-only space-y-3">
+			{#each predictionsQuery.current as submission (submission.id)}
+				<div class="card bg-base-200 shadow-sm">
+					<div class="card-body gap-3 p-4">
+						<div class="flex items-center justify-between">
+							<div class="text-lg font-bold">{submission.expand.user.name}</div>
+							<div class="badge badge-outline">Top 3</div>
+						</div>
 
-							<td>
-								<div class="flex flex-col">
-									<div>{submission.predictions[1]}</div>
-									<div class="flex opacity-50">
-										<div class="w-1/2">Pl</div>
-										<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.place}</div>
+						<div class="grid gap-2">
+							{#each submission.predictions as prediction, index (prediction)}
+								{@const oddsPointsPotential = getDriverOddsPointsPotential(
+									oddsQuery.current,
+									prediction
+								)}
+								<div class="flex items-center justify-between rounded-box bg-base-100 p-3">
+									<div>
+										<div class="text-xs opacity-60">
+											{index + 1}{index === 0 ? 'st' : index === 1 ? 'nd' : 'rd'}
+										</div>
+										<div class="font-bold">{prediction}</div>
 									</div>
-									<div class="flex opacity-50">
-										<div class="w-1/2">Ex</div>
-										<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.exact}</div>
+									<div class="flex gap-3 text-sm opacity-70">
+										<span>Pl {oddsPointsPotential.place}</span>
+										<span>Ex {oddsPointsPotential.exact}</span>
 									</div>
 								</div>
-							</td>
-							<td>
-								<div class="flex flex-col">
-									<div>{submission.predictions[2]}</div>
+							{/each}
+						</div>
 
-									<div class="flex opacity-50">
-										<div class="w-1/2">Pl</div>
-										<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.place}</div>
-									</div>
-									<div class="flex opacity-50">
-										<div class="w-1/2">Ex</div>
-										<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.exact}</div>
-									</div>
-								</div>
-							</td>
-						</tr>
-						<tr>
-							<td colspan="3">{submission.wildPrediction}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
+						{#if submission.wildPrediction}
+							<div class="rounded-box bg-base-100 p-3 text-sm">
+								<div class="mb-1 font-bold">Wild Prediction</div>
+								{submission.wildPrediction}
+							</div>
+						{/if}
+					</div>
+				</div>
+			{/each}
 		</div>
-	</div>
+
+		<table class="desktop-only table">
+			<thead>
+				<tr>
+					<th class="w-1/4">Player</th>
+					<th class="w-1/4">1st</th>
+					<th class="w-1/4">2nd</th>
+					<th class="w-1/4">3rd</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#each predictionsQuery.current as submission (submission.id)}
+					{@const driver1stOddsPointsPotential = getDriverOddsPointsPotential(
+						oddsQuery.current,
+						submission.predictions[0]
+					)}
+					{@const driver2ndOddsPointsPotential = getDriverOddsPointsPotential(
+						oddsQuery.current,
+						submission.predictions[1]
+					)}
+					{@const driver3rdOddsPointsPotential = getDriverOddsPointsPotential(
+						oddsQuery.current,
+						submission.predictions[2]
+					)}
+					<tr>
+						<td rowspan="2" class="text-lg font-bold">
+							{submission.expand.user.name}
+						</td>
+						<td>
+							<div class="flex flex-col">
+								<div>{submission.predictions[0]}</div>
+								<div class="flex opacity-50">
+									<div class="w-1/2">Pl</div>
+									<div class="w-1/2 text-right">{driver1stOddsPointsPotential.place}</div>
+								</div>
+								<div class="flex opacity-50">
+									<div class="w-1/2">Ex</div>
+									<div class="w-1/2 text-right">{driver1stOddsPointsPotential.exact}</div>
+								</div>
+							</div>
+						</td>
+
+						<td>
+							<div class="flex flex-col">
+								<div>{submission.predictions[1]}</div>
+								<div class="flex opacity-50">
+									<div class="w-1/2">Pl</div>
+									<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.place}</div>
+								</div>
+								<div class="flex opacity-50">
+									<div class="w-1/2">Ex</div>
+									<div class="w-1/2 text-right">{driver2ndOddsPointsPotential.exact}</div>
+								</div>
+							</div>
+						</td>
+						<td>
+							<div class="flex flex-col">
+								<div>{submission.predictions[2]}</div>
+
+								<div class="flex opacity-50">
+									<div class="w-1/2">Pl</div>
+									<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.place}</div>
+								</div>
+								<div class="flex opacity-50">
+									<div class="w-1/2">Ex</div>
+									<div class="w-1/2 text-right">{driver3rdOddsPointsPotential.exact}</div>
+								</div>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td colspan="3">{submission.wildPrediction}</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</PageCard>
 
 	<button
 		disabled={!isSubmissionWindowOpen()}
@@ -271,12 +294,12 @@
 			<form
 				bind:this={submissionForm}
 				class="flex w-full flex-col justify-center"
-				{...addUpdatePrediction.enhance(async ({ form, data, submit }) => {
+				{...addUpdatePrediction.enhance(async ({ element, submit }) => {
 					try {
 						await submit();
-						form.reset();
+						element.reset();
 						toastManager.addToast('Submission successful', 'success');
-					} catch (error) {
+					} catch {
 						toastManager.addToast('Submission failed', 'error');
 					}
 					submissionModal?.close();
@@ -301,7 +324,8 @@
 									<SubmissionSelect
 										id="1st"
 										bind:driver={driverSelections.Driver1st}
-										drivers={driversQuery.current.map((driver) => driver.name)}
+										drivers={driverNames}
+									/>
 									/></td
 								>
 								<td>{driverSelections.Driver1st.place}</td>
@@ -314,7 +338,8 @@
 									<SubmissionSelect
 										id="2nd"
 										bind:driver={driverSelections.Driver2nd}
-										drivers={driversQuery.current.map((driver) => driver.name)}
+										drivers={driverNames}
+									/>
 									/></td
 								>
 								<td>{driverSelections.Driver2nd.place}</td>
@@ -327,7 +352,8 @@
 									<SubmissionSelect
 										id="3rd"
 										bind:driver={driverSelections.Driver3rd}
-										drivers={driversQuery.current.map((driver) => driver.name)}
+										drivers={driverNames}
+									/>
 									/></td
 								>
 								<td>{driverSelections.Driver3rd.place}</td>
@@ -336,15 +362,7 @@
 							<tr class="h-16">
 								<th></th>
 								<td class="text-right font-bold">Total</td>
-								<td
-									>{Object.values(driverSelections)
-										.map((driver) => driver.place)
-										.reduce((a, b) => a + b, 0)}</td
-								><td
-									>{Object.values(driverSelections)
-										.map((driver) => driver.exact)
-										.reduce((a, b) => a + b, 0)}</td
-								>
+								<td>{selectionTotals.place}</td><td>{selectionTotals.exact}</td>
 							</tr>
 						</tbody>
 					</table>
@@ -380,8 +398,8 @@
 									wageringEnabled.current &&
 									!userHasSubmitted(predictionsQuery.current, pb.authStore.record?.id || '')
 								) {
-									const result = await sendToPredictionWallet();
-									if (!result) return;
+									const hasEnoughBalance = await confirmSufficientBalance();
+									if (!hasEnoughBalance) return;
 								}
 								submissionForm.requestSubmit();
 
@@ -392,7 +410,7 @@
 							class="btn mt-4 w-full btn-success"
 							>{userHasSubmitted(predictionsQuery.current, pb.authStore.record?.id || '')
 								? 'Submit'
-								: 'Submit' + (wageringEnabled.current ? ' (£5.00)' : '')}</button
+								: `Submit${wageringEnabled.current ? ` (£${WAGER_AMOUNT}.00)` : ''}`}</button
 						>
 					</div>
 				</div>

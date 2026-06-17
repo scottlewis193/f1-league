@@ -1,10 +1,8 @@
 import { form, query } from '$app/server';
-import { PREDICTION_WALLET_ID, PREDICTION_ENTRY_FEE, SEASON_WALLET_ID } from '$env/static/private';
+import { PREDICTION_ENTRY_FEE, SEASON_WALLET_ID } from '$env/static/private';
 import { env } from '$env/dynamic/private';
-import { getWalletByIdQuery } from '$lib/server/wallets';
 import { getPlayerWallet } from './players.remote';
-import pb from '$lib/server/pocketbase';
-import { createTransferLog } from '$lib/server/transfers';
+import { transferBetweenWallets } from '$lib/server/wallets';
 import * as v from 'valibot';
 
 function isPredictionEntryFeeBypassed(userId: string | undefined) {
@@ -16,62 +14,17 @@ function isPredictionEntryFeeBypassed(userId: string | undefined) {
 		.includes(userId);
 }
 
-export const transferToPredictionWallet = query(async () => {
-	try {
-		const wallet = await getPlayerWallet();
-		if (isPredictionEntryFeeBypassed(wallet.user)) return true;
-
-		const predictionWallet = await getWalletByIdQuery(PREDICTION_WALLET_ID);
-
-		//remove from player wallet
-		await pb
-			.collection('wallets')
-			.update(wallet.id, { balance: Number(wallet.balance) - Number(PREDICTION_ENTRY_FEE) });
-
-		//add to prediction wallet
-		await pb.collection('wallets').update(PREDICTION_WALLET_ID, {
-			balance: Number(predictionWallet.balance) + Number(PREDICTION_ENTRY_FEE)
-		});
-
-		//log transfer
-		await createTransferLog(
-			'',
-			wallet.user,
-			wallet.id,
-			Number(PREDICTION_ENTRY_FEE),
-			'transfer',
-			PREDICTION_WALLET_ID
-		);
-		return true;
-	} catch (error) {
-		return false;
-	}
-});
-
 export const transferToSeasonWallet = form(v.object({ amount: v.number() }), async ({ amount }) => {
 	try {
 		const wallet = await getPlayerWallet();
-		const predictionWallet = await getWalletByIdQuery(SEASON_WALLET_ID);
-
-		//remove from player wallet
-		await pb.collection('wallets').update(wallet.id, { balance: wallet.balance - Number(amount) });
-
-		//add to season wallet
-		await pb
-			.collection('wallets')
-			.update(SEASON_WALLET_ID, { balance: predictionWallet.balance + amount });
-
-		//log transfer
-		await createTransferLog(
-			'',
-			wallet.user,
-			wallet.id,
-			Number(amount),
-			'transfer',
-			SEASON_WALLET_ID
-		);
+		await transferBetweenWallets({
+			amount: Number(amount),
+			sourceWalletId: wallet.id,
+			targetWalletId: SEASON_WALLET_ID,
+			userId: wallet.user
+		});
 		return true;
-	} catch (error) {
+	} catch {
 		return false;
 	}
 });
@@ -83,7 +36,7 @@ export const playerWalletHasEnoughBalance = query(async () => {
 		if (isPredictionEntryFeeBypassed(wallet.user)) return true;
 
 		return wallet.balance >= Number(PREDICTION_ENTRY_FEE);
-	} catch (error) {
+	} catch {
 		return false;
 	}
 });

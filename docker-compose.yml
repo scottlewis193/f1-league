@@ -1,0 +1,10 @@
+services:
+  f1-league:
+    image: scottlewis193/f1-league:latest
+    ports:
+      - '9173:9173'
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped

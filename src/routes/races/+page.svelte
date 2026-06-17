@@ -1,26 +1,15 @@
 <script lang="ts">
 	import { getF1Schedule } from '$lib/remote/races.remote';
-	import { titleCase } from '$lib/utils';
-	import { fade } from 'svelte/transition';
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import ErrorState from '$lib/components/ErrorState.svelte';
+	import PageCard from '$lib/components/PageCard.svelte';
+	import { formatRaceLocation, formatRaceName, sortRacesByFirstSession } from '$lib/domain/races';
 
 	const query = getF1Schedule();
-
-	const formatLocation = (location: string) => {
-		return titleCase(location.replaceAll('-', ' '));
-	};
-
-	const formatRaceName = (raceName: string) => {
-		raceName = raceName.substring(10); //remove Formula 1;
-		raceName = raceName.replace(new Date().getFullYear().toString(), '');
-		return titleCase(raceName);
-	};
 </script>
 
-<div in:fade class="card h-full w-full overflow-auto bg-base-100">
-	<div class="card-body">
+<PageCard>
 		{#if query.error}
 			<ErrorState
 				title="Failed to load race schedule"
@@ -71,7 +60,24 @@
 					{/snippet}
 				</EmptyState>
 			{:else}
-				<table class="table not-md:table-sm">
+				<div class="mobile-only space-y-3">
+					{#each sortRacesByFirstSession(query.current) as race (race.id)}
+						<div class="card bg-base-200 shadow-sm">
+							<div class="card-body gap-2 p-4">
+								<div class="flex items-start justify-between gap-3">
+									<div>
+										<div class="font-bold">{formatRaceName(race.raceName)}</div>
+										<div class="text-sm opacity-70">{formatRaceLocation(race.location)}</div>
+									</div>
+									<div class="badge badge-outline whitespace-nowrap">Round {race.raceNo}</div>
+								</div>
+								<div class="text-sm">{race.sessions[0].date}</div>
+							</div>
+						</div>
+					{/each}
+				</div>
+
+				<table class="desktop-only table">
 					<thead>
 						<tr>
 							<th>Race Name</th>
@@ -80,10 +86,10 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each query.current.sort((a, b) => Date.parse(a.sessions[0].date) - Date.parse(b.sessions[0].date)) as race, index (index)}
+						{#each sortRacesByFirstSession(query.current) as race (race.id)}
 							<tr>
 								<td>{formatRaceName(race.raceName)}</td>
-								<td>{formatLocation(race.location)}</td>
+								<td>{formatRaceLocation(race.location)}</td>
 								<td>{race.sessions[0].date}</td>
 							</tr>
 						{/each}
@@ -91,5 +97,4 @@
 				</table>
 			{/if}
 		{/if}
-	</div>
-</div>
+</PageCard>

@@ -1,12 +1,9 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.png';
-	import { PUBLIC_PB_URL } from '$env/static/public';
 	import { page } from '$app/state';
 	import {
-		DriversIcon,
 		PlayersIcon,
-		TeamsIcon,
 		RacesIcon,
 		ProfileIcon,
 		SettingsIcon,
@@ -19,8 +16,9 @@
 		StandingsIcon
 	} from '$lib/components/icons';
 	import { getNextRace } from '$lib/remote/races.remote';
-	import { titleCase } from '$lib/utils';
+	import { titleCase, getAvatarUrl } from '$lib/utils';
 	import { onMount } from 'svelte';
+	import { dev } from '$app/environment';
 	import { subscribeToPush } from '$lib/subscribe';
 	import { logout, updateCurrentPlayer } from '$lib/remote/players.remote';
 	import { Confetti } from 'svelte-confetti';
@@ -30,6 +28,7 @@
 	import { setToastManagerContext } from '$lib/stores/toastmanager.svelte';
 	import { resolve } from '$app/paths';
 	import { useRegisterSW } from 'virtual:pwa-register/svelte';
+	import type { Player } from '$lib/types';
 
 	let { children, data } = $props();
 	const url = $derived(page.url.pathname);
@@ -43,31 +42,50 @@
 	let confettiContainer: HTMLDivElement;
 
 	const nextRaceQuery = getNextRace();
+	const pbUrl = $derived(data.pbUrl || '');
 	setToastManagerContext();
 
-	// Set up SW registration
-	const { needRefresh, updateServiceWorker } = useRegisterSW({
-		immediate: false,
-		onRegisteredSW(swUrl, r) {
-			console.log('SW registered:', swUrl, r);
-		},
-		onNeedRefresh() {
-			console.log('SW waiting to update...');
-		},
-		onOfflineReady() {
-			console.log('App ready to work offline');
-		}
-	});
+	if (!dev) {
+		useRegisterSW({
+			immediate: false,
+			onRegisteredSW(swUrl, r) {
+				console.log('SW registered:', swUrl, r);
+			},
+			onNeedRefresh() {
+				console.log('App waiting for update...');
+			},
+			onOfflineReady() {
+				console.log('App ready to work offline');
+			}
+		});
+	}
 
 	let isDecember = new Date().getMonth() === 11; //months are zero indexed
 
 	//client init
 	onMount(async () => {
-		await subscribeToPush();
+		// Set PB URL globally for client-side PocketBase instance
+		if (pbUrl) {
+			window.__PB_URL__ = pbUrl;
+		}
+
+		if (dev) {
+			const registrations = await navigator.serviceWorker?.getRegistrations();
+			await Promise.all(registrations?.map((registration) => registration.unregister()) ?? []);
+			const cacheNames = await caches?.keys();
+			await Promise.all(cacheNames?.map((cacheName) => caches.delete(cacheName)) ?? []);
+			return;
+		}
+
+		try {
+			await subscribeToPush(data.currentUser?.id);
+		} catch (error) {
+			console.error('Push notification setup failed:', error);
+		}
 	});
 
 	onMount(() => {
-		if (data.currentUser.displayLatestResultsDialog) {
+		if (data.currentUser?.displayLatestResultsDialog) {
 			raceResultsDialog.showModal();
 
 			setTimeout(() => {
@@ -109,7 +127,7 @@
 						</label>
 					</div>
 					<div class="mx-2 px-2 text-lg lg:min-w-[15%] lg:text-left">
-						{url == '/predictions'
+						{url === '/predictions'
 							? 'Predictions (' + titleCase(nextRaceQuery.current?.location) + ' GP)'
 							: titleCase(url.replace('/', '') || 'Home')}
 					</div>
@@ -152,30 +170,29 @@
 							</div>
 						</div>
 						<div class="avatar avatar-placeholder items-center">
-							{#if data.currentUser.avatar}
-								{@const avatarUrl = data.currentUser.avatar
-									? PUBLIC_PB_URL +
-										'/api/files/users/' +
-										data.currentUser?.id +
-										'/' +
-										data.currentUser?.avatar +
-										'?thumb=48x48'
-									: ''}
+							{#if data.currentUser?.avatar}
+								{@const avatarUrl = getAvatarUrl(
+									data.currentUser.id,
+									data.currentUser.avatar,
+									pbUrl
+								)}
 								<button
 									style="background-image: url({avatarUrl}); background-size: cover; anchor-name:--anchor-1"
 									class="h-12 w-12 cursor-pointer rounded-box text-neutral-content"
 									popovertarget="popover-1"
+									aria-label="Open user menu"
 								></button>
 							{:else}
 								<button
 									class="h-12 w-12 cursor-pointer rounded-box bg-neutral text-neutral-content"
 									popovertarget="popover-1"
 									style="anchor-name:--anchor-1"
-									><span>{data.currentUser?.name.substring(0, 1).toUpperCase()}</span></button
+									><span>{data.currentUser?.name?.substring(0, 1).toUpperCase() ?? '?'}</span
+									></button
 								>
 							{/if}
 							<!-- <img
-								src={PUBLIC_PB_URL +
+								src={pbUrl +
 									'/api/files/users/' +
 									data.currentUser?.id +
 									'/' +
@@ -333,12 +350,7 @@
 										{#if user.avatar}
 											<img
 												class="size-10 rounded-box"
-												src={PUBLIC_PB_URL +
-													'/api/files/users/' +
-													user.id +
-													'/' +
-													user.avatar +
-													'?thumb=48x48'}
+												src={getAvatarUrl(user.id, user.avatar, pbUrl)}
 												alt="player avatar"
 											/>
 										{:else}
@@ -359,9 +371,9 @@
 			<button
 				class="btn w-full btn-neutral"
 				onclick={async () => {
-					const currentPlayer = data.currentUser;
-					currentPlayer.displayLatestResultsDialog = false;
-					await updateCurrentPlayer(currentPlayer);
+					if (!data.currentUser) return;
+					const updated = { ...data.currentUser, displayLatestResultsDialog: false } as Player;
+					await updateCurrentPlayer(updated);
 					raceResultsDialog.close();
 				}}>Close</button
 			>

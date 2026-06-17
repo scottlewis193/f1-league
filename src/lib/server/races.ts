@@ -1,8 +1,9 @@
 import type { Race } from '$lib/types';
-import pb, { getServerPb } from './pocketbase';
+import { getAdminPb } from './pocketbase';
+import { parseLondon } from '$lib/utils';
 
 export async function getRacesQuery() {
-	const pb = await getServerPb();
+	const pb = await getAdminPb();
 	const races: Race[] = await pb
 		.collection('races')
 		.getFullList({ filter: `year='${new Date().getFullYear()}'` });
@@ -10,36 +11,30 @@ export async function getRacesQuery() {
 }
 
 export async function getNextRaceQuery() {
-	const pb = await getServerPb();
+	const pb = await getAdminPb();
 	const currentDate = Date.now();
 	let races: Race[] = await pb
 		.collection('races')
 		.getFullList({ filter: `year='${new Date().getFullYear()}'` });
 	races = races.sort(
 		(a, b) =>
-			Date.parse(
-				a.sessions[a.sessions.length - 1].date +
-					' ' +
-					new Date().getFullYear() +
-					' ' +
-					a.sessions[a.sessions.length - 1].time
+			parseLondon(
+				a.sessions[a.sessions.length - 1].date,
+				a.sessions[a.sessions.length - 1].time,
+				a.year
 			) -
-			Date.parse(
-				b.sessions[a.sessions.length - 1].date +
-					' ' +
-					new Date().getFullYear() +
-					' ' +
-					b.sessions[b.sessions.length - 1].time
+			parseLondon(
+				b.sessions[b.sessions.length - 1].date,
+				b.sessions[b.sessions.length - 1].time,
+				b.year
 			)
 	);
 
 	for (const race of races) {
-		const fullRaceDate = Date.parse(
-			race.sessions[race.sessions.length - 1].date +
-				' ' +
-				new Date(currentDate).getFullYear() +
-				' ' +
-				race.sessions[race.sessions.length - 1].time
+		const fullRaceDate = parseLondon(
+			race.sessions[race.sessions.length - 1].date,
+			race.sessions[race.sessions.length - 1].time,
+			race.year
 		);
 
 		if (fullRaceDate > currentDate) {
@@ -50,7 +45,7 @@ export async function getNextRaceQuery() {
 }
 
 export async function updateRacesQuery(races: Partial<Race>[]) {
-	const pb = await getServerPb();
+	const pb = await getAdminPb();
 	const currentRaces = await pb.collection('races').getFullList({ sort: '-raceNo' });
 
 	let raceNo = 1;
@@ -84,13 +79,13 @@ export async function updateRacesQuery(races: Partial<Race>[]) {
 }
 
 export async function updateRaceQuery(race: Partial<Race>) {
-	const pb = await getServerPb();
+	const pb = await getAdminPb();
 	if (!race.id) return;
 	await pb.collection('races').update(race.id, race);
 }
 
-async function getLastRaceWithResultsQuery() {
-	const pb = await getServerPb();
+export async function getLastRaceWithResultsQuery() {
+	const pb = await getAdminPb();
 	const currentYear = new Date().getFullYear();
 	const races = await pb
 		.collection('races')

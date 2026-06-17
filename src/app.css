@@ -14,7 +14,18 @@ body {
 	padding: 0;
 	padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0)
 		env(safe-area-inset-left, 0);
-	user-select: none;
+}
+
+@media (max-width: 767px) {
+	.desktop-only {
+		display: none !important;
+	}
+}
+
+@media (min-width: 768px) {
+	.mobile-only {
+		display: none !important;
+	}
 }
 
 ::view-transition-old(theme) {

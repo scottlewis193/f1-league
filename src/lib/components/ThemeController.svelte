@@ -91,7 +91,6 @@ nord, sunset, caramellatte, abyss, silk
 	</div>
 	<ul
 		id="theme-dropdown"
-		tabindex="0"
 		class="dropdown-content z-1 h-52 w-52 overflow-y-auto rounded-box bg-base-300 p-2 shadow-2xl"
 	>
 		{#each themes as theme}

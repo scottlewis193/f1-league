@@ -1,9 +1,7 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
 	import { withdraw } from '$lib/remote/players.remote';
 	import { getToastManagerContext } from '$lib/stores/toastmanager.svelte';
 
-	let amount = $state(0);
 	let dialog = $state<HTMLDialogElement>();
 	const toastManager = getToastManagerContext();
 
@@ -28,12 +26,12 @@
 		<h2 class="text-lg font-bold">Withdraw Funds</h2>
 		<p class="py-4">Enter the amount you want to withdraw:</p>
 		<form
-			{...withdraw.enhance(async ({ form, data, submit }) => {
+			{...withdraw.enhance(async ({ element, submit }) => {
 				try {
 					await submit();
-					form.reset();
+					element.reset();
 					toastManager.addToast('Withdrawal successful', 'success');
-				} catch (error) {
+				} catch {
 					toastManager.addToast('Withdrawal failed', 'error');
 				}
 				dialog?.close();

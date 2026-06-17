@@ -13,6 +13,7 @@ import HistoryIcon from './xHistoryIcon.svelte';
 import DashboardIcon from './xDashboardIcon.svelte';
 import StandingsIcon from './xStandingsIcon.svelte';
 import CopyIcon from './xCopyIcon.svelte';
+import BackIcon from './xBackIcon.svelte';
 
 export {
 	PlayersIcon,
@@ -29,5 +30,6 @@ export {
 	HistoryIcon,
 	DashboardIcon,
 	StandingsIcon,
-	CopyIcon
+	CopyIcon,
+	BackIcon
 };
