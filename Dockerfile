@@ -2,17 +2,19 @@
 FROM node:20-slim AS builder
 WORKDIR /app
 
-# Build-time arguments for SvelteKit env vars (both public and private)
 ARG PUBLIC_PB_URL
 ARG PUBLIC_VAPID_PUBLIC_KEY
 ARG VAPID_PRIVATE_KEY
 ARG SEASON_WALLET_ID
 ARG PREDICTION_ENTRY_FEE
+ARG PREDICTION_WALLET_ID
 ENV PUBLIC_PB_URL=$PUBLIC_PB_URL
 ENV PUBLIC_VAPID_PUBLIC_KEY=$PUBLIC_VAPID_PUBLIC_KEY
 ENV VAPID_PRIVATE_KEY=$VAPID_PRIVATE_KEY
 ENV SEASON_WALLET_ID=$SEASON_WALLET_ID
 ENV PREDICTION_ENTRY_FEE=$PREDICTION_ENTRY_FEE
+ENV PREDICTION_WALLET_ID=$PREDICTION_WALLET_ID
+
 COPY package*.json ./
 RUN npm ci
 COPY . .
@@ -23,52 +25,30 @@ RUN npm prune --omit=dev
 FROM oven/bun:latest AS runner
 WORKDIR /app
 
-# Runtime env vars for the server bundle
 ARG PUBLIC_PB_URL
 ARG PUBLIC_VAPID_PUBLIC_KEY
 ARG VAPID_PRIVATE_KEY
 ARG SEASON_WALLET_ID
 ARG PREDICTION_ENTRY_FEE
+ARG PREDICTION_WALLET_ID
 ENV PUBLIC_PB_URL=$PUBLIC_PB_URL
 ENV PUBLIC_VAPID_PUBLIC_KEY=$PUBLIC_VAPID_PUBLIC_KEY
 ENV VAPID_PRIVATE_KEY=$VAPID_PRIVATE_KEY
 ENV SEASON_WALLET_ID=$SEASON_WALLET_ID
 ENV PREDICTION_ENTRY_FEE=$PREDICTION_ENTRY_FEE
+ENV PREDICTION_WALLET_ID=$PREDICTION_WALLET_ID
 
 # VAPID_PRIVATE_KEY is set at runtime via Portainer environment variables
 
-# 1. Install Chromium AND its dependencies
 RUN apt-get update && apt-get install -y \
-    chromium \
-    ca-certificates \
-    fonts-liberation \
-    libasound2 \
-    libatk1.0-0 \
-    libc6 \
-    libcairo2 \
-    libcups2 \
-    libdbus-1-3 \
-    libexpat1 \
-    libfontconfig1 \
-    libgbm1 \
-    libglib2.0-0 \
-    libgtk-3-0 \
-    libnss3 \
-    libx11-xcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxrandr2 \
-    wget \
-    xdg-utils \
- && rm -rf /var/lib/apt/lists/*
+    chromium ca-certificates fonts-liberation libasound2 libatk1.0-0 libc6 \
+    libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libgbm1 \
+    libglib2.0-0 libgtk-3-0 libnss3 libx11-xcb1 libxcomposite1 libxdamage1 \
+    libxext6 libxfixes3 libxrandr2 wget xdg-utils && rm -rf /var/lib/apt/lists/*
 
-# 2. Tell Puppeteer to use the system Chromium instead of downloading its own
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
-# 3. Copy built output and dependencies
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/package.json .
 COPY --from=builder /app/node_modules ./node_modules
