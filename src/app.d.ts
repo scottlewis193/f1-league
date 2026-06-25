@@ -12,7 +12,6 @@ declare global {
 		// interface Platform {}
 	}
 	interface Window {
-		Buffer: typeof import('buffer').Buffer;
 		__PB_URL__?: string;
 	}
 }

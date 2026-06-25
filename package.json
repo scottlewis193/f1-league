@@ -10,7 +10,6 @@
 		"@tailwindcss/vite": "^4.2.0",
 		"@types/node": "^24.10.13",
 		"@types/web-push": "^3.6.4",
-		"@types/xml2js": "^0.4.14",
 		"daisyui": "^5.5.18",
 		"eslint": "^10.5.0",
 		"eslint-plugin-svelte": "^3.19.0",
@@ -47,14 +46,11 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"buffer": "^6.0.3",
-		"hls.js": "^1.6.15",
 		"pocketbase": "^0.27.0",
 		"puppeteer": "^24.37.5",
 		"puppeteer-extra": "^3.3.6",
 		"puppeteer-extra-plugin-stealth": "^2.11.2",
 		"valibot": "^1.2.0",
-		"web-push": "^3.6.7",
-		"xml2js": "^0.6.2"
+		"web-push": "^3.6.7"
 	}
 }
