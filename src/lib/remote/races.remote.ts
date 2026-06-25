@@ -8,7 +8,3 @@ export const getF1Schedule = query(async () => {
 export const getNextRace = query(async () => {
 	return getNextRaceQuery();
 });
-
-export const getRaces = query(async () => {
-	return getRacesQuery();
-});

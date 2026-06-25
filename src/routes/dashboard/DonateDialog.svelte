@@ -26,10 +26,10 @@
 		<h2 class="text-lg font-bold">Donate Funds</h2>
 		<p class="py-4">Enter the amount you want to donate:</p>
 		<form
-			{...transferToSeasonWallet.enhance(async ({ element, submit }) => {
+			{...transferToSeasonWallet.enhance(async ({ form, submit }) => {
 				try {
 					await submit();
-					element.reset();
+					form.reset();
 					toastManager.addToast('Donation successful', 'success');
 				} catch {
 					toastManager.addToast('Donation failed', 'error');

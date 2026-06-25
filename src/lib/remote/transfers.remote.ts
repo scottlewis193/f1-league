@@ -3,16 +3,8 @@ import { PREDICTION_ENTRY_FEE, SEASON_WALLET_ID } from '$env/static/private';
 import { env } from '$env/dynamic/private';
 import { getPlayerWallet } from './players.remote';
 import { transferBetweenWallets } from '$lib/server/wallets';
+import { isPredictionEntryFeeBypassed } from '$lib/utils';
 import * as v from 'valibot';
-
-function isPredictionEntryFeeBypassed(userId: string | undefined) {
-	if (!userId) return false;
-	return (env.PREDICTION_ENTRY_FEE_BYPASS_USER_IDS ?? '')
-		.split(',')
-		.map((id) => id.trim())
-		.filter(Boolean)
-		.includes(userId);
-}
 
 export const transferToSeasonWallet = form(v.object({ amount: v.number() }), async ({ amount }) => {
 	try {
@@ -33,7 +25,8 @@ export const playerWalletHasEnoughBalance = query(async () => {
 	try {
 		const wallet = await getPlayerWallet();
 
-		if (isPredictionEntryFeeBypassed(wallet.user)) return true;
+		if (isPredictionEntryFeeBypassed(wallet.user, env.PREDICTION_ENTRY_FEE_BYPASS_USER_IDS ?? ''))
+			return true;
 
 		return wallet.balance >= Number(PREDICTION_ENTRY_FEE);
 	} catch {

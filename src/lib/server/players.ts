@@ -1,4 +1,4 @@
-import type { Player } from '$lib/types';
+import type { OddsRecord, Player, Prediction, Race } from '$lib/types';
 import { getPlayerStats } from '$lib/utils';
 import { getOddsQuery } from './odds';
 import { getAdminPb } from './pocketbase';
@@ -11,31 +11,37 @@ export async function getPlayersQuery() {
 	return players;
 }
 
+function withStats(
+	player: Partial<Player>,
+	submissions: Prediction[],
+	races: Race[],
+	odds: OddsRecord[]
+) {
+	return {
+		id: player.id || '',
+		name: player.name || '',
+		email: player.email || '',
+		avatar: player.avatar || '',
+		displayLatestResultsDialog: player.displayLatestResultsDialog || false,
+		walletAddress: player.walletAddress || '',
+		...getPlayerStats(player.id || '', submissions, races, odds),
+		userPointsBalance: player.userPointsBalance || 0,
+		userPointsEarned: player.userPointsEarned || 0,
+		wiseRecipientId: player.wiseRecipientId || 0
+	};
+}
+
 export async function getPlayersWithStatsQuery() {
 	const pb = await getAdminPb();
 	const players: Partial<Player>[] = await pb.collection('users').getFullList();
-	const playersWithStats: Player[] = [];
 
 	const submissions = await getPredictionsQuery();
 	const races = await getRacesQuery();
 	const odds = await getOddsQuery();
 
-	players.forEach((player) => {
-		const id = player.id || '';
-		const name = player.name || '';
-		playersWithStats.push({
-			id,
-			name,
-			email: player.email || '',
-			avatar: player.avatar || '',
-			displayLatestResultsDialog: player.displayLatestResultsDialog || false,
-			walletAddress: player.walletAddress || '',
-			...getPlayerStats(id, submissions, races, odds),
-			userPointsBalance: player.userPointsBalance || 0,
-			userPointsEarned: player.userPointsEarned || 0,
-			wiseRecipientId: player.wiseRecipientId || 0
-		});
-	});
+	const playersWithStats: Player[] = players.map((player) =>
+		withStats(player, submissions, races, odds)
+	);
 
 	playersWithStats.sort((a, b) => b.points - a.points);
 
@@ -58,20 +64,7 @@ export async function getPlayerWithStatsQuery(playerId: string): Promise<Player 
 	const races = await getRacesQuery();
 	const odds = await getOddsQuery();
 
-	const playerWithStats = {
-		id: player.id,
-		name: player.name,
-		email: player.email,
-		avatar: player.avatar,
-		displayLatestResultsDialog: player.displayLatestResultsDialog || false,
-		walletAddress: player.walletAddress || '',
-		...getPlayerStats(player.id, submissions, races, odds),
-		userPointsBalance: player.userPointsBalance || 0,
-		userPointsEarned: player.userPointsEarned || 0,
-		wiseRecipientId: player.wiseRecipientId || 0
-	};
-
-	return playerWithStats;
+	return withStats(player, submissions, races, odds);
 }
 
 export async function updateAllPlayersQuery(players: Player[]) {

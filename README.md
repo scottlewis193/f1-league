@@ -30,8 +30,8 @@ curl https://f1-league.hades.ws/api/notifications/test?prediction=true
 node scripts/test-notifications.mjs
 node scripts/test-notifications.mjs prediction
 
-# Detailed docs
-docs/notifications.md
+# Detailed vault reference
+See `/home/scott/second-brain/projects/f1-league/Kanban.md` (scraping, notifications, payouts)
 ```
 
 ## Developing
@@ -55,6 +55,4 @@ Built with Docker:
 docker build --build-arg PUBLIC_PB_URL=https://pb-f1-league.hades.ws --build-arg PUBLIC_VAPID_PUBLIC_KEY=YOUR_KEY -t f1-league .
 ```
 
-## Documentation
 
-- [Notification System](docs/notifications.md)

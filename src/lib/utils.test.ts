@@ -5,7 +5,6 @@ import {
 	getPointsGained,
 	oddsToPoints,
 	parseLondon,
-	shortAddress,
 	titleCase,
 	withTimeout
 } from './utils';
@@ -13,11 +12,6 @@ import {
 describe('utils', () => {
 	it('formats title case strings', () => {
 		expect(titleCase('british grand prix')).toBe('British Grand Prix');
-	});
-
-	it('shortens long addresses', () => {
-		expect(shortAddress('1234567890abcdef')).toBe('123456...cdef');
-		expect(shortAddress('short')).toBe('short');
 	});
 
 	it('converts odds to points', () => {

@@ -37,6 +37,4 @@ export async function getAdminPb() {
 	return pb;
 }
 
-export const getServerPb = getAdminPb;
-
 export default pb;

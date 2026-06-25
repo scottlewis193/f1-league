@@ -114,17 +114,15 @@ export async function sendPredictionReminderNotifications(
 				raceName: race.raceName
 			}
 		});
-		const resultJson = (await result.json()) as { status?: string; successCount?: number; failCount?: number };
-
 		return {
-			status: resultJson.status || 'window_closed_notification_sent',
+			status: result.status || 'window_closed_notification_sent',
 			totalUsers,
 			submittedUsers: submittedUserIds.size,
 			nonSubmitters: nonSubmitterNames,
 			raceName: race.raceName,
 			deadline: submissionDeadline.toISOString(),
-			successCount: resultJson.successCount || 0,
-			failCount: resultJson.failCount || 0
+			successCount: result.successCount || 0,
+			failCount: result.failCount || 0
 		};
 	}
 
@@ -191,14 +189,8 @@ export async function sendPredictionReminderNotifications(
 	// Only notify users who have not submitted predictions.
 	for (const user of nonSubmitters) {
 		const result = await sendNotifications(payload, user.id);
-		const resultJson = (await result.json()) as {
-			status?: string;
-			successCount?: number;
-			failCount?: number;
-		};
-
-		successCount += resultJson.successCount || 0;
-		failCount += resultJson.failCount || 0;
+		successCount += result.successCount || 0;
+		failCount += result.failCount || 0;
 	}
 
 	return {
@@ -237,23 +229,15 @@ export async function sendTestNotification(
 		}
 	});
 
-	const resultJson = (await result.json()) as {
-		status?: string;
-		reason?: string;
-		error?: string;
-		successCount?: number;
-		failCount?: number;
-	};
-
 	return {
-		status: resultJson.status || 'unknown',
+		status: result.status || 'unknown',
 		message:
-			resultJson.reason
-				? `${resultJson.reason}${resultJson.error ? `: ${resultJson.error}` : ''}`
-				: resultJson.successCount
-					? `Test notification sent successfully to ${resultJson.successCount} subscription(s).`
+			result.reason
+				? `${result.reason}${result.error ? `: ${result.error}` : ''}`
+				: result.successCount
+					? `Test notification sent successfully to ${result.successCount} subscription(s).`
 					: 'Test notification failed to send.',
-		successCount: resultJson.successCount || 0,
-		failCount: resultJson.failCount || 0
+		successCount: result.successCount || 0,
+		failCount: result.failCount || 0
 	};
 }

@@ -2,6 +2,7 @@ import { form, getRequestEvent, query } from '$app/server';
 import { fail, redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
 import { getFeatureFlagStatus } from '$lib/server/data';
+import { isPredictionEntryFeeBypassed } from '$lib/utils';
 import { PREDICTION_ENTRY_FEE, PREDICTION_WALLET_ID } from '$env/static/private';
 import { env } from '$env/dynamic/private';
 import { getWalletByUserIdQuery, transferBetweenWallets } from '$lib/server/wallets';
@@ -32,15 +33,6 @@ export const getUserPredictions = query(async (_raceId: string = '') => {
 	return getUserPredictionsQuery(user || '');
 });
 
-function isPredictionEntryFeeBypassed(userId: string | undefined) {
-	if (!userId) return false;
-	return (env.PREDICTION_ENTRY_FEE_BYPASS_USER_IDS ?? '')
-		.split(',')
-		.map((id) => id.trim())
-		.filter(Boolean)
-		.includes(userId);
-}
-
 export const addUpdatePrediction = form(
 	v.object({
 		driver1st: v.string(),
@@ -68,7 +60,10 @@ export const addUpdatePrediction = form(
 				.collection('predictions')
 				.create({ predictions, user, year, race, wildPrediction });
 
-			if ((await getFeatureFlagStatus(pb, 'wagering')) && !isPredictionEntryFeeBypassed(user)) {
+			if (
+				(await getFeatureFlagStatus(pb, 'wagering')) &&
+				!isPredictionEntryFeeBypassed(user, env.PREDICTION_ENTRY_FEE_BYPASS_USER_IDS ?? '')
+			) {
 				try {
 					const wallet = await getWalletByUserIdQuery(user || '');
 					await transferBetweenWallets({

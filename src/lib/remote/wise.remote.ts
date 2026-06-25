@@ -3,13 +3,6 @@ import { wiseFetch } from '$lib/server/wise';
 import { env } from '$env/dynamic/private';
 import * as v from 'valibot';
 import { randomUUID } from 'crypto';
-export const getBalance = query(async () => {
-	const res = await wiseFetch(`profiles/${env.WISE_PROFILE_ID}/balances?types=STANDARD`, 'v4');
-	const data = await res.json();
-	console.log(data.balance);
-	return data.balance;
-});
-
 export const createQuote = query(
 	v.object({
 		recipientId: v.number(),

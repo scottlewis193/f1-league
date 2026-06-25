@@ -1,4 +1,4 @@
-import type { Race, Prediction, OddsRecord } from './types';
+import type { HistoryEntry, OddsRecord, Prediction, Race } from './types';
 
 const MONTH_INDEX: Record<string, number> = {
 	jan: 0,
@@ -105,11 +105,6 @@ export function titleCase(str: string) {
 	});
 }
 
-export function shortAddress(value: string, start = 6, end = 4) {
-	if (value.length <= start + end) return value;
-	return `${value.slice(0, start)}...${value.slice(-end)}`;
-}
-
 export function getPointsGained(race: Race, submission: Prediction) {
 	let pointsGained = 0;
 
@@ -145,13 +140,6 @@ export function getPlayerStats(
 	let lastRaceWithResults: Race = races
 		.filter((race) => race.raceResults.length > 0)
 		.sort((a, b) => b.raceNo - a.raceNo)[0];
-	// //we iterate through races in descending order of race no
-	// for (const race of races.sort((a, b) => b.raceNo - a.raceNo)) {
-	// 	if (race.raceResults.length > 0) {
-	// 		lastRaceWithResults = race;
-	// 		break;
-	// 	}
-	// }
 
 	let points = 0;
 	let place = 0;
@@ -159,22 +147,13 @@ export function getPlayerStats(
 	let wildPrediction = 0;
 	let lastPointsEarned = 0;
 	const userSubmissions = submissions.filter((submission) => submission.expand.user.id === user);
-	const historyEntries: {
-		location: string;
-		predictions: string[];
-		results: string[];
-		points: number[];
-		place: string[];
-		exact: string[];
-		wildPredictionPoints: number;
-	}[] = [];
+	const historyEntries: HistoryEntry[] = [];
 
 	for (const submission of userSubmissions) {
 		const race = races.find((race) => race.id === (submission.expand?.race?.id ?? ''));
 		if (!race) continue;
 		if (!race.raceResults) continue;
 		const raceOdds = odds.filter((odd) => odd.race === race.id);
-		if (!raceOdds) continue;
 
 		const top3 = race.raceResults.slice(0, 3);
 
@@ -184,15 +163,7 @@ export function getPlayerStats(
 			wildPrediction += 1;
 		}
 
-		const historyEntry: {
-			location: string;
-			predictions: string[];
-			results: string[];
-			points: number[];
-			place: string[];
-			exact: string[];
-			wildPredictionPoints: number;
-		} = {
+		const historyEntry: HistoryEntry = {
 			location: race.location,
 			results: top3,
 			predictions: submission.predictions,
@@ -254,31 +225,17 @@ export function oddsToPoints(odds: number) {
 	return b;
 }
 
-export function getCSSVarValue(varName: string) {
-	return window.getComputedStyle(document.body).getPropertyValue(varName);
-}
-
-export function setCSSVarValue(varName: string, value: string) {
-	const r = document.querySelector(':root') as HTMLElement;
-	r.style.setProperty(varName, value);
-}
-
-export async function usdToGbp(usdAmount: number) {
-	const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=GBP');
-	const data = await res.json();
-	const rate = data.rates.GBP; // e.g., 0.80
-	return usdAmount * rate;
-}
-
-export async function gbpToUsd(gbpAmount: number) {
-	const res = await fetch('https://api.frankfurter.app/latest?from=GBP&to=USD');
-	const data = await res.json();
-	const rate = data.rates.USD; // e.g., 1.25
-	return gbpAmount * rate;
-}
-
 export function copyToClipboard(text: string) {
 	navigator.clipboard.writeText(text);
+}
+
+export function isPredictionEntryFeeBypassed(userId: string | undefined, bypassIds: string) {
+	if (!userId) return false;
+	return bypassIds
+		.split(',')
+		.map((id) => id.trim())
+		.filter(Boolean)
+		.includes(userId);
 }
 
 export function getAvatarUrl(

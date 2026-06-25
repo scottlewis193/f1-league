@@ -1,4 +1,5 @@
 import { env as publicEnv } from '$env/dynamic/public';
+import { withTimeout } from '$lib/utils';
 
 function urlBase64ToUint8Array(base64String: string) {
 	const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -15,13 +16,6 @@ function arrayBuffersEqual(a: ArrayBuffer | null, b: Uint8Array) {
 
 function toArrayBuffer(bytes: Uint8Array) {
 	return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-}
-
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string) {
-	return Promise.race([
-		promise,
-		new Promise<never>((_, reject) => setTimeout(() => reject(new Error(message)), timeoutMs))
-	]);
 }
 
 export async function subscribeToPush(userId?: string) {

@@ -1,7 +1,7 @@
 import { sendNotifications } from '$lib/notifications';
 import PocketBase from 'pocketbase';
 import { scrapeAll } from '$lib/server/scrapping';
-import type { Driver, Race, Team, WiseTransfer } from '$lib/types';
+import type { Driver, Race, WiseTransfer } from '$lib/types';
 import { getPlayerStats } from '$lib/utils';
 import { getAdminPb } from './pocketbase';
 import { wiseFetch } from './wise';
@@ -211,13 +211,10 @@ export async function getCurrentDataDb(pbInstance: PocketBase | undefined = unde
 	const drivers: Driver[] = await pb
 		.collection('drivers')
 		.getFullList({ sort: '-points', filter: `year='${new Date().getFullYear()}'` });
-	const teams: Team[] = await pb
-		.collection('teams')
-		.getFullList({ sort: '-points', filter: `year='${new Date().getFullYear()}'` });
 	const races: Race[] = await pb
 		.collection('races')
 		.getFullList({ filter: `year='${new Date().getFullYear()}'` });
-	return { currentDrivers: drivers, currentTeams: teams, currentRaces: races };
+	return { currentDrivers: drivers, currentRaces: races };
 }
 
 export async function isOddsUpdateWindowOpen() {

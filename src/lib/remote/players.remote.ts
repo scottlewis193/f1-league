@@ -4,7 +4,6 @@ import { fail, redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
 import { createQuote, createTransfer, fundTransfer } from './wise.remote';
 import {
-	getPlayerQuery,
 	getPlayersWithStatsQuery,
 	getPlayerWithStatsQuery,
 	updatePlayerQuery
@@ -39,13 +38,6 @@ export const getPlayersWithStats = query(async () => {
 	return getPlayersWithStatsQuery();
 });
 
-export const getPlayer = query(async () => {
-	const event = getRequestEvent();
-	const player = event.locals.user;
-	if (!player) throw new Error('Unauthorized');
-	return getPlayerQuery(player.id);
-});
-
 export const getPlayerLocal = query(async () => {
 	const event = getRequestEvent();
 	return event.locals.user;
@@ -70,22 +62,6 @@ export const updateCurrentPlayer = command('unchecked', async (playerData: Playe
 	const event = getRequestEvent();
 	await updatePlayerQuery(event.locals.user?.id || '', playerData);
 });
-
-export const updatePlayerBalance = command(
-	'unchecked',
-	async (playerData: { id: string; userPointsBalance: number }) => {
-		await updatePlayerQuery(playerData.id, { userPointsBalance: playerData.userPointsBalance });
-	}
-);
-
-export const updateCurrentPlayerWalletAddress = command(
-	'unchecked',
-	async (walletAddress: string) => {
-		const event = getRequestEvent();
-		if (!event.locals.user?.id) return;
-		await updatePlayerQuery(event.locals.user.id, { walletAddress });
-	}
-);
 
 export const updatePlayerProfile = form(playerProfileSchema, async (data) => {
 	const event = getRequestEvent();
