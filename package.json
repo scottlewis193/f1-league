@@ -2,7 +2,6 @@
 	"name": "f1-league",
 	"version": "0.0.1",
 	"devDependencies": {
-		"@catppuccin/daisyui": "^2.1.1",
 		"@eslint/js": "^10.0.1",
 		"@sveltejs/adapter-node": "^5.5.3",
 		"@sveltejs/kit": "^2.52.2",
