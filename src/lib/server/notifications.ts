@@ -27,13 +27,18 @@ export async function sendPredictionReminderNotifications(
 	let race;
 	if (raceName) {
 		const races = await getRacesQuery();
+		console.log(`[notifications] races for year ${new Date().getFullYear()}:`, races.length, races.map((r) => r.raceName));
 		race = races.find((r) => r.raceName.includes(raceName));
 		if (!race) {
 			return { status: 'race_not_found', totalUsers: 0, submittedUsers: 0, nonSubmitters: [] };
 		}
 	} else {
+		const races = await getRacesQuery();
+		console.log(`[notifications] next race query - year ${new Date().getFullYear()}, races found:`, races.length);
+		if (races.length) console.log('[notifications] races:', JSON.stringify(races.map((r) => ({ id: r.id, name: r.raceName, sessions: r.sessions?.length ?? 'MISSING' }))));
 		race = await getNextRaceQuery();
 	}
+	console.log(`[notifications] resolved race:`, race ? `${race.raceName} (sessions: ${race.sessions?.length ?? 'MISSING'})` : 'null');
 
 	// Get all predictions for this race
 	const allPredictions = await getPredictionsQuery();
