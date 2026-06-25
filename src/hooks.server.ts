@@ -8,11 +8,6 @@ import { dev, building } from '$app/environment';
 export const init: ServerInit = async () => {
 	if (building) return; // ← skip entirely during `vite build`
 
-	if (env.RUN_BACKGROUND_JOBS !== 'true') {
-		console.log('Background jobs disabled. Set RUN_BACKGROUND_JOBS=true on one worker to enable them.');
-		return;
-	}
-
 	refreshF1DataHourly();
 	checkForNewDeposits();
 };
@@ -42,12 +37,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		} else {
 			event.locals.user = null;
 			// Allow unauthenticated access to notification API endpoints
-			const publicPaths = [
-				'/login',
-				'/api/notifications',
-				'/api/subscribe',
-				'/.well-known'
-			];
+			const publicPaths = ['/login', '/api/notifications', '/api/subscribe', '/.well-known'];
 			if (!publicPaths.some((path) => event.request.url.includes(path))) {
 				redirect(308, '/login');
 			}
