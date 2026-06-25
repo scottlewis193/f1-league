@@ -325,7 +325,6 @@
 										id="1st"
 										bind:driver={driverSelections.Driver1st}
 										drivers={driverNames}
-									/>
 									/></td
 								>
 								<td>{driverSelections.Driver1st.place}</td>
@@ -340,8 +339,7 @@
 										bind:driver={driverSelections.Driver2nd}
 										drivers={driverNames}
 									/>
-									/></td
-								>
+								</td>
 								<td>{driverSelections.Driver2nd.place}</td>
 								<td>{driverSelections.Driver2nd.exact}</td>
 							</tr>
@@ -353,7 +351,6 @@
 										id="3rd"
 										bind:driver={driverSelections.Driver3rd}
 										drivers={driverNames}
-									/>
 									/></td
 								>
 								<td>{driverSelections.Driver3rd.place}</td>
