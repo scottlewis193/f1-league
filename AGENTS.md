@@ -12,6 +12,14 @@
 1. **Read** `/home/scott/second-brain/projects/f1-league/Vault-Index.md` for PocketBase schema, scraping pipeline, and business rules.
 2. **Check Status** at `/home/scott/second-brain/projects/f1-league/Status.md` for status tags — only work on items with clear scope.
 
+## After Any Task — update the vault
+When work changes behavior, schema, structure, status, or known issues, update the matching vault note before declaring the task done:
+
+- `Status.md` — flip status tags (✅/⏳/TODO), record items finished/added, note new open issues.
+- Subsystem notes linked from `Vault-Index.md` — structural/behavioral changes (new/renamed files, changed PocketBase collections/fields, scraping/scoring logic, business rules).
+
+Skip vault edits for pure typos, formatting, or refactors with no behavior change.
+
 ## Quick Commands
 
 ```bash
