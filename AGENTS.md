@@ -15,6 +15,8 @@
 ## After Any Task — update the vault
 When work changes behavior, schema, structure, status, or known issues, update the matching vault note before declaring the task done:
 
+- When a vault-tracked task is completed, update the vault and commit the repo before starting another task.
+
 - `Status.md` — flip status tags (✅/⏳/TODO), record items finished/added, note new open issues.
 - Subsystem notes linked from `Vault-Index.md` — structural/behavioral changes (new/renamed files, changed PocketBase collections/fields, scraping/scoring logic, business rules).
 
