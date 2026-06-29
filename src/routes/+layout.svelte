@@ -333,6 +333,10 @@
 				</form>
 			</li>
 		</ul>
+	{:else}
+		<div class="flex h-svh w-full items-center justify-center p-4">
+			{@render children?.()}
+		</div>
 	{/if}
 
 	<dialog bind:this={raceResultsDialog} class="modal w-screen">

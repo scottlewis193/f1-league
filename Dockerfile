@@ -1,5 +1,5 @@
 # --- STAGE 1: Build (Using Node for stability) ---
-FROM node:20-slim AS builder
+FROM node:24-slim AS builder
 WORKDIR /app
 
 ARG PUBLIC_PB_URL
