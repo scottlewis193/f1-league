@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import type { Player, Wallet, Race } from '$lib/types';
+import type { Player, TransferLog, Wallet, Race } from '$lib/types';
 import { getAdminPb } from './pocketbase';
 import { updateRaceQuery } from './races';
 import { createTransferLog } from './transfers';
@@ -20,6 +20,53 @@ export async function getAllWalletsQuery() {
 	const pb = await getAdminPb();
 	const wallets: Wallet[] = await pb.collection('wallets').getFullList();
 	return wallets;
+}
+
+export async function getDonationTotalsQuery(): Promise<
+	{
+		id: string;
+		name: string;
+		totalDonated: number;
+		owed: number;
+	}[]
+> {
+	const pb = await getAdminPb();
+
+	// Get all players with names
+	const players: Player[] = await pb.collection('users').getFullList();
+	const playerMap = new Map(players.map((p) => [p.id, p.name]));
+
+	// Get wallets to map user -> wallet id
+	const wallets: Wallet[] = await pb.collection('wallets').getFullList();
+	const walletById = new Map(wallets.map((w) => [w.id, w.user]));
+
+	// Sum donations per player (transfers into the season wallet)
+	const logs: TransferLog[] = await pb.collection('transfer_logs').getFullList({
+		filter: `type='transfer' && targetWallet='${env.SEASON_WALLET_ID}'`,
+		expand: 'user'
+	});
+
+	const totals = new Map<string, number>();
+	for (const log of logs) {
+		// if (log.status !== 'complete') continue;
+		totals.set(log.user, (totals.get(log.user) ?? 0) + log.amount);
+	}
+
+	// Count races with results this season
+	const completedRaces: Race[] = await pb.collection('races').getFullList({
+		filter: `year='${new Date().getFullYear()}' && raceResults != '[]'`
+	});
+	const RACE_DONATION_PER_RACE = 2;
+	const racesCompleted = completedRaces.length;
+
+	return players
+		.map((p) => {
+			const totalDonated = totals.get(p.id) ?? 0;
+			const owed = racesCompleted * RACE_DONATION_PER_RACE - totalDonated;
+			return { id: p.id, name: playerMap.get(p.id) || p.name, totalDonated, owed };
+		})
+		.filter((entry) => entry.totalDonated > 0)
+		.sort((a, b) => b.totalDonated - a.totalDonated);
 }
 
 export async function updateWalletBalance(walletId: string, newBalance: number) {

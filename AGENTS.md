@@ -9,8 +9,8 @@
 
 ## Before Any Task
 
-1. **Read** `/home/scott/second-brain/projects/f1-league/Vault-Index.md` for PocketBase schema, scraping pipeline, and business rules.
-2. **Check Status** at `/home/scott/second-brain/projects/f1-league/Status.md` for status tags — only work on items with clear scope.
+1. **Read** `/home/scott/second-brain/projects/f1-league/Vault-Index.md` first.
+2. Read `/home/scott/second-brain/projects/f1-league/Status.md` only for current bugs/backlog/debug commands or unclear scope.
 
 ## After Any Task — update the vault
 When work changes behavior, schema, structure, status, or known issues, update the matching vault note before declaring the task done:
@@ -51,5 +51,5 @@ npm test           # Vitest unit tests
 
 ## Vault Reference
 
-- Architecture, data flow, business rules → `/home/scott/second-brain/projects/f1-league/Vault-Index.md`
-- Status, debugging workflow, known issues → `/home/scott/second-brain/projects/f1-league/Status.md`
+- Start point → `/home/scott/second-brain/projects/f1-league/Vault-Index.md`
+- Current status/debug only → `/home/scott/second-brain/projects/f1-league/Status.md`

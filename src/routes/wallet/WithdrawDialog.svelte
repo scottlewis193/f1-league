@@ -26,10 +26,10 @@
 		<h2 class="text-lg font-bold">Withdraw Funds</h2>
 		<p class="py-4">Enter the amount you want to withdraw:</p>
 		<form
-			{...withdraw.enhance(async ({ form, submit }) => {
+			{...withdraw.enhance(async (form) => {
 				try {
-					await submit();
-					form.reset();
+					await form.submit();
+					form.element.reset();
 					toastManager.addToast('Withdrawal successful', 'success');
 				} catch {
 					toastManager.addToast('Withdrawal failed', 'error');

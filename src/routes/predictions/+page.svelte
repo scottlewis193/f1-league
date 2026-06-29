@@ -294,10 +294,10 @@
 			<form
 				bind:this={submissionForm}
 				class="flex w-full flex-col justify-center"
-				{...addUpdatePrediction.enhance(async ({ instance, submit }) => {
+				{...addUpdatePrediction.enhance(async (form) => {
 					try {
-						await submit();
-						instance.element.reset();
+						await form.submit();
+						form.element.reset();
 						toastManager.addToast('Submission successful', 'success');
 					} catch {
 						toastManager.addToast('Submission failed', 'error');
