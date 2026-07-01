@@ -10,6 +10,8 @@ import {
 } from '$lib/server/players';
 import { getWalletByUserIdQuery } from '$lib/server/wallets';
 import { createTransferLog } from '$lib/server/transfers';
+import { sendNotifications } from '$lib/notifications';
+import { walletActivityNotificationPayload } from '$lib/domain/wallets';
 
 const playerProfileSchema = v.intersect([
 	v.object({
@@ -157,8 +159,8 @@ export const withdraw = form(v.object({ amount: v.number() }), async ({ amount }
 	await pb.collection('wallets').update(userWallet.id, { balance: userWallet.balance - amount });
 
 	//create transfer log
-	await createTransferLog(
-		transfer.id,
+	const transferLog = await createTransferLog(
+		String(transfer.id),
 		pb.authStore.record.id,
 		userWallet.id,
 		amount,
@@ -166,6 +168,13 @@ export const withdraw = form(v.object({ amount: v.number() }), async ({ amount }
 		'',
 		'complete'
 	);
+
+	const payload = walletActivityNotificationPayload(transferLog);
+	if (payload) {
+		sendNotifications(payload, pb.authStore.record.id).catch((error) =>
+			console.error('Withdrawal notification failed:', error)
+		);
+	}
 
 	redirect(303, `/wallet`);
 });

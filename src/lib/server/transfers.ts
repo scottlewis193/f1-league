@@ -1,3 +1,4 @@
+import type { TransferLog } from '$lib/types';
 import { getAdminPb } from './pocketbase';
 
 export async function getTransferLogByIdQuery(id: string) {
@@ -20,7 +21,7 @@ export async function createTransferLog(
 	status: 'pending' | 'complete' | 'failed' = 'complete'
 ) {
 	const pb = await getAdminPb();
-	await pb.collection('transfer_logs').create({
+	return pb.collection('transfer_logs').create<TransferLog>({
 		id: id,
 		user: userId,
 		wallet: walletId,

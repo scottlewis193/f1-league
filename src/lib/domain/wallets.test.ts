@@ -1,11 +1,12 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { TransferLog, Wallet } from '$lib/types';
 import {
 	formatTransferAmount,
 	formatTransferDate,
 	formatTransferType,
 	isIncomingTransfer,
-	isOutgoingTransfer
+	isOutgoingTransfer,
+	walletActivityNotificationPayload
 } from './wallets';
 
 const wallet = { id: 'wallet-a' } as Wallet;
@@ -61,5 +62,36 @@ describe('wallet domain helpers', () => {
 
 	it('formats transfer dates using gb locale ordering', () => {
 		expect(formatTransferDate('2026-06-15T12:00:00Z')).toBe('15 Jun 2026');
+	});
+
+	it('builds a deposit notification payload', () => {
+		const payload = walletActivityNotificationPayload(transferLog({ id: 'wise-1', type: 'deposit' }));
+
+		expect(payload).toMatchObject({
+			title: 'Deposit received',
+			body: '£12.50 has been added to your F1 League wallet.',
+			url: '/wallet',
+			tag: 'wallet-deposit-wise-1',
+			data: { url: '/wallet', transferId: 'wise-1', type: 'deposit' }
+		});
+	});
+
+	it('builds withdrawal notification payloads', () => {
+		expect(walletActivityNotificationPayload(transferLog({ id: 'wise-2', type: 'withdraw' }))).toMatchObject(
+			{
+				title: 'Withdrawal sent',
+				body: '£12.50 has been withdrawn from your F1 League wallet.',
+				tag: 'wallet-withdraw-wise-2'
+			}
+		);
+		expect(
+			walletActivityNotificationPayload(
+				transferLog({ id: 'wise-3', type: 'withdraw', status: 'failed' })
+			)
+		).toMatchObject({
+			title: 'Withdrawal failed',
+			body: '£12.50 could not be withdrawn from your F1 League wallet.',
+			tag: 'wallet-withdraw-wise-3'
+		});
 	});
 });

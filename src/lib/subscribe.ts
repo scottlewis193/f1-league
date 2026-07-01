@@ -43,7 +43,15 @@ export async function subscribeToPush(userId?: string) {
 	const permission = await Notification.requestPermission();
 	if (permission !== 'granted') return;
 
-	const registration = await navigator.serviceWorker.ready;
+	const registration = await withTimeout(
+		navigator.serviceWorker.ready,
+		10000,
+		'Timed out waiting for service worker registration.'
+	).catch((error) => {
+		console.warn('Push notifications are unavailable:', error);
+		return null;
+	});
+	if (!registration) return;
 
 	let applicationServerKey: Uint8Array;
 	try {

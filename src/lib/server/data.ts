@@ -19,6 +19,7 @@ import { updateTeamsQuery } from './teams';
 import { updateDriversQuery } from './drivers';
 import { getPlayersQuery, updateAllPlayersQuery } from './players';
 import { getPredictionsQuery } from './predictions';
+import { walletActivityNotificationPayload } from '$lib/domain/wallets';
 
 const ONE_HOUR = 60 * 60 * 1000;
 
@@ -178,13 +179,13 @@ export async function checkForNewDepositsOnce() {
 
 	for (const deposit of filteredDeposits) {
 		//check if deposit has log already, if not add it and update wallet balance
-		const transferLog = await getTransferLogByIdQuery(String(deposit.id));
-		if (transferLog) continue;
+		const existingTransferLog = await getTransferLogByIdQuery(String(deposit.id));
+		if (existingTransferLog) continue;
 
 		const wallet = await getWalletByIdQuery(deposit.reference);
 		if (!wallet) continue;
 
-		await createTransferLog(
+		const transferLog = await createTransferLog(
 			String(deposit.id),
 			wallet.user,
 			wallet.id,
@@ -192,6 +193,13 @@ export async function checkForNewDepositsOnce() {
 			'deposit'
 		);
 		await updateWalletBalance(deposit.reference, wallet.balance + deposit.targetValue);
+
+		const payload = walletActivityNotificationPayload(transferLog);
+		if (payload) {
+			sendNotifications(payload, wallet.user).catch((error) =>
+				console.error('Deposit notification failed:', error)
+			);
+		}
 	}
 }
 

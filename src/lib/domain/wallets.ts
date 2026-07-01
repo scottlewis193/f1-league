@@ -40,3 +40,43 @@ export function formatTransferDate(created: string) {
 		year: 'numeric'
 	});
 }
+
+export function walletActivityNotificationPayload(transferLog: TransferLog):
+	| {
+			title: string;
+			body: string;
+			url: string;
+			tag: string;
+			data: Record<string, string>;
+	  }
+	| undefined {
+	const amount = `£${transferLog.amount.toFixed(2)}`;
+
+	if (transferLog.type === 'deposit') {
+		return {
+			title: 'Deposit received',
+			body: `${amount} has been added to your F1 League wallet.`,
+			url: '/wallet',
+			tag: `wallet-deposit-${transferLog.id}`,
+			data: { url: '/wallet', transferId: transferLog.id, type: transferLog.type }
+		};
+	}
+
+	if (transferLog.type === 'withdraw') {
+		return {
+			title: transferLog.status === 'failed' ? 'Withdrawal failed' : 'Withdrawal sent',
+			body:
+				transferLog.status === 'failed'
+					? `${amount} could not be withdrawn from your F1 League wallet.`
+					: `${amount} has been withdrawn from your F1 League wallet.`,
+			url: '/wallet',
+			tag: `wallet-withdraw-${transferLog.id}`,
+			data: {
+				url: '/wallet',
+				transferId: transferLog.id,
+				type: transferLog.type,
+				status: transferLog.status
+			}
+		};
+	}
+}

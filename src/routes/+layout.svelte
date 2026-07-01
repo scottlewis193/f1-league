@@ -47,7 +47,7 @@
 
 	if (!dev) {
 		useRegisterSW({
-			immediate: false,
+			immediate: true,
 			onRegisteredSW(swUrl, r) {
 				console.log('SW registered:', swUrl, r);
 			},

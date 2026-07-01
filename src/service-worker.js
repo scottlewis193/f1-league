@@ -3,6 +3,10 @@ import { precacheAndRoute } from 'workbox-precaching';
 
 precacheAndRoute(self.__WB_MANIFEST || []);
 
+self.addEventListener('install', () => {
+	self.skipWaiting();
+});
+
 // Push listener
 self.addEventListener('push', (event) => {
 	let data = {};
