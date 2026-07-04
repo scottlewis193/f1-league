@@ -17,11 +17,13 @@
 			let theme = localStorage.getItem('theme');
 			if (!theme) theme = 'dark';
 			document.documentElement.setAttribute('data-theme', theme);
-
-			//set theme color (status bar on mobile devices) from base color variable
-			const barColor = window.getComputedStyle(document.body).getPropertyValue('--color-base-300');
-			const themeColor = document.querySelector('meta[name="theme-color"]');
-			if (themeColor) themeColor.content = barColor;
+		</script>
+		<script type="module">
+			requestAnimationFrame(() => {
+				const barColor = window.getComputedStyle(document.body).getPropertyValue('--color-base-300').trim();
+				const meta = document.querySelector('meta[name="theme-color"]');
+				if (meta) meta.content = barColor;
+			});
 		</script>
 	</body>
 </html>

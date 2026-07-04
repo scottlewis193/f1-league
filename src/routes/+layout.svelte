@@ -77,11 +77,9 @@
 			return;
 		}
 
-		try {
-			await subscribeToPush(data.currentUser?.id);
-		} catch (error) {
+		subscribeToPush(data.currentUser?.id).catch((error) => {
 			console.error('Push notification setup failed:', error);
-		}
+		});
 	});
 
 	onMount(() => {

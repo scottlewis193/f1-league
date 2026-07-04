@@ -9,8 +9,8 @@
 
 ## Before Any Task
 
-1. **Read** `/home/scott/second-brain/projects/f1-league/Vault-Index.md` first.
-2. Read `/home/scott/second-brain/projects/f1-league/Status.md` only for current bugs/backlog/debug commands or unclear scope.
+1. **Read** `/home/scott/Projects/second-brain/projects/f1-league/Vault-Index.md` first.
+2. Read `/home/scott/Projects/second-brain/projects/f1-league/Status.md` only for current bugs/backlog/debug commands or unclear scope.
 
 ## After Any Task — update the vault
 When work changes behavior, schema, structure, status, or known issues, update the matching vault note before declaring the task done:
@@ -51,5 +51,5 @@ npm test           # Vitest unit tests
 
 ## Vault Reference
 
-- Start point → `/home/scott/second-brain/projects/f1-league/Vault-Index.md`
-- Current status/debug only → `/home/scott/second-brain/projects/f1-league/Status.md`
+- Start point → `/home/scott/Projects/second-brain/projects/f1-league/Vault-Index.md`
+- Current status/debug only → `/home/scott/Projects/second-brain/projects/f1-league/Status.md`
