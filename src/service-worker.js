@@ -1,10 +1,24 @@
 /// <reference lib="webworker" />
-import { precacheAndRoute } from 'workbox-precaching';
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 
+// Register precached routes
 precacheAndRoute(self.__WB_MANIFEST || []);
 
+// Cleanup outdated caches
+cleanupOutdatedCaches();
+
 self.addEventListener('install', () => {
+	// Immediately skip waiting to activate new SW
 	self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+	event.waitUntil(
+		Promise.all([
+			cleanupOutdatedCaches(),
+			self.clients.claim()
+		])
+	);
 });
 
 // Push listener

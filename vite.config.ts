@@ -12,9 +12,10 @@ export default defineConfig({
 			strategies: 'injectManifest',
 			registerType: 'autoUpdate',
 			filename: 'service-worker.js',
-			devOptions: { enabled: false },
+			devOptions: { enabled: true, type: 'module' },
 			workbox: {
-				globPatterns: ['**/*.{js,css,html,png,svg}']
+				globPatterns: ['**/*.{js,css,html,png,svg}'],
+				cleanupOutdatedCaches: true
 			},
 			manifest: false
 		})

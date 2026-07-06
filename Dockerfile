@@ -56,4 +56,4 @@ COPY --from=builder /app/node_modules ./node_modules
 ENV PORT=9173
 EXPOSE 9173
 
-CMD ["bun", "build/index.js"]
+CMD ["bun", ".svelte-kit/output/server/index.js"]
