@@ -77,9 +77,8 @@
 			return;
 		}
 
-		subscribeToPush(data.currentUser?.id).catch((error) => {
-			console.error('Push notification setup failed:', error);
-		});
+		// Fire-and-forget push setup — never block the splash screen
+		subscribeToPush(data.currentUser?.id).catch(() => {});
 	});
 
 	onMount(() => {
@@ -115,12 +114,12 @@
 								fill="none"
 								viewBox="0 0 24 24"
 								class="inline-block h-5 w-5 stroke-current md:h-6 md:w-6"
-								><path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M4 6h16M4 12h16M4 18h16"
-								></path></svg
+							><path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M4 6h16M4 12h16M4 18h16"
+							></path></svg
 							>
 						</label>
 					</div>
@@ -185,9 +184,8 @@
 									class="h-12 w-12 cursor-pointer rounded-box bg-neutral text-neutral-content"
 									popovertarget="popover-1"
 									style="anchor-name:--anchor-1"
-									><span>{data.currentUser?.name?.substring(0, 1).toUpperCase() ?? '?'}</span
-									></button
-								>
+								><span>{data.currentUser?.name?.substring(0, 1).toUpperCase() ?? '?'}</span
+								></button>
 							{/if}
 							<!-- <img
 								src={pbUrl +
@@ -230,7 +228,8 @@
 							class="flex h-16 items-center"
 							class:active={url === '/dashboard'}
 							href={resolve('/dashboard')}
-							onclick={() => (drawerToggle.checked = false)}><DashboardIcon /> Dashboard</a
+							onclick={() => (drawerToggle.checked = false)}
+						><DashboardIcon /> Dashboard</a
 						>
 					</li>
 					<li>
@@ -238,7 +237,8 @@
 							class="flex h-16 items-center"
 							class:active={url === '/players'}
 							href={resolve('/players')}
-							onclick={() => (drawerToggle.checked = false)}><PlayersIcon /> Players</a
+							onclick={() => (drawerToggle.checked = false)}
+						><PlayersIcon /> Players</a
 						>
 					</li>
 					<li>
@@ -246,7 +246,8 @@
 							class="flex h-16 items-center"
 							class:active={url === '/standings'}
 							href={resolve('/standings')}
-							onclick={() => (drawerToggle.checked = false)}><StandingsIcon /> Standings</a
+							onclick={() => (drawerToggle.checked = false)}
+						><StandingsIcon /> Standings</a
 						>
 					</li>
 
@@ -255,7 +256,8 @@
 							class="flex h-16 items-center"
 							class:active={url === '/races'}
 							href={resolve('/races')}
-							onclick={() => (drawerToggle.checked = false)}><RacesIcon /> Races</a
+							onclick={() => (drawerToggle.checked = false)}
+						><RacesIcon /> Races</a
 						>
 					</li>
 					<li>
@@ -263,7 +265,8 @@
 							class="flex h-16 items-center"
 							class:active={url === '/rules'}
 							href={resolve('/rules')}
-							onclick={() => (drawerToggle.checked = false)}><RulesIcon /> Rules</a
+							onclick={() => (drawerToggle.checked = false)}
+						><RulesIcon /> Rules</a
 						>
 					</li>
 					<li>
@@ -271,7 +274,8 @@
 							class="flex h-16 items-center"
 							class:active={url === '/predictions'}
 							href={resolve('/predictions')}
-							onclick={() => (drawerToggle.checked = false)}><SubmissionsIcon /> Predictions</a
+							onclick={() => (drawerToggle.checked = false)}
+						><SubmissionsIcon /> Predictions</a
 						>
 					</li>
 					<li>
@@ -279,7 +283,8 @@
 							class="flex h-16 items-center"
 							class:active={url === '/stream'}
 							href={resolve('/stream')}
-							onclick={() => (drawerToggle.checked = false)}><StreamIcon /> Stream</a
+							onclick={() => (drawerToggle.checked = false)}
+						><StreamIcon /> Stream</a
 						>
 					</li>
 				</ul>
@@ -295,7 +300,6 @@
 					</div>
 				</div>
 			</div>
-		</div>
 		<!-- Popover -->
 		<ul
 			class="menu dropdown dropdown-end w-52 menu-lg rounded-box bg-base-100 shadow-sm"
@@ -308,21 +312,24 @@
 				<a
 					href={resolve('/profile')}
 					class="flex h-16 items-center"
-					onclick={() => userPopover.hidePopover()}><ProfileIcon /> Profile</a
+					onclick={() => userPopover.hidePopover()}
+				><ProfileIcon /> Profile</a
 				>
 			</li>
 			<li>
 				<a
 					href={resolve('/settings')}
 					class="flex h-16 items-center"
-					onclick={() => userPopover.hidePopover()}><SettingsIcon /> Settings</a
+					onclick={() => userPopover.hidePopover()}
+				><SettingsIcon /> Settings</a
 				>
 			</li>
 			<li>
 				<a
 					href={resolve('/wallet')}
 					class="flex h-16 items-center"
-					onclick={() => userPopover.hidePopover()}><WalletIcon /> Wallet</a
+					onclick={() => userPopover.hidePopover()}
+				><WalletIcon /> Wallet</a
 				>
 			</li>
 			<li>
@@ -331,6 +338,7 @@
 				</form>
 			</li>
 		</ul>
+		</div>
 	{:else}
 		<div class="flex h-svh w-full items-center justify-center p-4">
 			{@render children?.()}
@@ -377,7 +385,8 @@
 					const updated = { ...data.currentUser, displayLatestResultsDialog: false } as Player;
 					await updateCurrentPlayer(updated);
 					raceResultsDialog.close();
-				}}>Close</button
+				}}
+			>Close</button
 			>
 		</div>
 		<div
