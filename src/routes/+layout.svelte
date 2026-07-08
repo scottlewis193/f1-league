@@ -77,7 +77,7 @@
 		}
 
 		// Fire-and-forget push setup — never block the splash screen
-		subscribeToPush(data.currentUser?.id).catch(() => {});
+		// subscribeToPush(data.currentUser?.id).catch(() => {});
 	});
 
 	onMount(() => {
