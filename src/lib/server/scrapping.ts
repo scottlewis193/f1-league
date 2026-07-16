@@ -6,7 +6,11 @@ import type { Driver, Race, Team } from '../types';
 puppeteer.use(StealthPlugin());
 
 const SEASON = new Date().getFullYear();
-const DEFAULT_BROWSER_ARGS = ['--no-sandbox', '--disable-setuid-sandbox'];
+const DEFAULT_BROWSER_ARGS = [
+	'--no-sandbox',
+	'--disable-setuid-sandbox',
+	'--disable-dev-shm-usage'
+];
 
 function launchBrowser(defaultViewport?: { width: number; height: number }) {
 	return puppeteer.launch({

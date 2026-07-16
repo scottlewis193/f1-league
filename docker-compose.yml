@@ -3,6 +3,7 @@ services:
     image: scottlewis193/f1-league:latest
     ports:
       - '9173:9173'
+    shm_size: '512mb'
     env_file:
       - .env.production
     environment:
