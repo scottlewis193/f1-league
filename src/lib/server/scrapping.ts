@@ -337,51 +337,43 @@ export const scrapeOdds = async (browserInstance?: Browser) => {
 
 	try {
 		console.log(`Scraping F1 Race Odds: ${url}`);
-		await page.goto(url);
-
-		await page.waitForNetworkIdle({ idleTime: 1000 });
-
-		//wait for accept cookies button
-
-		await page.waitForSelector('body > div > div > div > div > button');
-
-		//click accept cookies button
-
-		await page.locator('body > div > div > div > div > button').click({ delay: 100 });
-
-		//wait for menu button
-
-		//await page.waitForSelector('#mid-nav > div.container > div > button');
-		await page.waitForSelector('#oddsItem > button');
-
-		//click menu button
-
-		await page.locator('#oddsItem > button').click();
-		//await page.locator('#mid-nav > div.container > div > button').click();
-
-		//change to decimal odds
-
-		await page.waitForSelector('#OddsDropdown-2');
-		await page.locator('#OddsDropdown-2').click();
-
-		//wait for podium finish
+		await page.goto(url, { waitUntil: 'domcontentloaded' });
 		await page.waitForSelector('a[href*="podium-finish"]');
 
-		//get href from podium finish a
 		const podiumFinishUrl = await page.evaluate(() => {
-			const podiumFinishUrl = document
-				.querySelector('a[href*="podium-finish"]')
-				?.getAttribute('href');
+			const podiumFinishUrl = Array.from(document.querySelectorAll<HTMLAnchorElement>('a')).find(
+				(link) => link.getAttribute('href')?.endsWith('/podium-finish')
+			)?.href;
 
 			return podiumFinishUrl;
 		});
+		if (!podiumFinishUrl) throw new Error('Podium finish market link was not found');
 
 		const podiumFinishPage = await browser.newPage();
-		await podiumFinishPage.goto(baseUrl + podiumFinishUrl);
-		await podiumFinishPage.waitForNetworkIdle({ idleTime: 1000 });
-
-		//wait for event table
+		await podiumFinishPage.goto(podiumFinishUrl, { waitUntil: 'domcontentloaded' });
 		await podiumFinishPage.waitForSelector('table.eventTable');
+		await podiumFinishPage.waitForSelector('#OddsDropdown-2');
+
+		const decimalOddsSelected = await podiumFinishPage.evaluate(() => {
+			Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
+				.find((button) => button.textContent?.trim() === 'Accept all')
+				?.click();
+			const decimalButton = document.querySelector<HTMLButtonElement>('#OddsDropdown-2');
+			decimalButton?.click();
+			return Boolean(decimalButton);
+		});
+		if (!decimalOddsSelected) throw new Error('Decimal odds selector was not found');
+		await podiumFinishPage.waitForFunction(() => {
+			const rows = Array.from(document.querySelectorAll('table.eventTable tbody tr'));
+			return (
+				rows.length >= 20 &&
+				rows.every((row) =>
+					/^\d+(\.\d+)?$/.test(
+						row.querySelector<HTMLParagraphElement>('td > p')?.textContent?.trim() || ''
+					)
+				)
+			);
+		});
 
 		//iterate over table rows and grab driver name and odds
 		const driverOdds = await podiumFinishPage.evaluate(() => {
@@ -389,10 +381,7 @@ export const scrapeOdds = async (browserInstance?: Browser) => {
 			const table = document.querySelector('table.eventTable');
 			const rows = table?.querySelectorAll('tbody > tr');
 			rows?.forEach((row) => {
-				const driverName =
-					row.querySelector<HTMLAnchorElement>(
-						'td.sel.nm.basket-active > span.float-wrap.name-wrap > span > div > a'
-					)?.innerText || '';
+				const driverName = row.querySelector<HTMLAnchorElement>('td.sel.nm a')?.innerText || '';
 				const odds = row.querySelector<HTMLParagraphElement>('td > p')?.innerText || '';
 				driverOdds.push({ driverName, odds: Number(odds) });
 			});
@@ -402,7 +391,14 @@ export const scrapeOdds = async (browserInstance?: Browser) => {
 		await podiumFinishPage.close();
 		await page.close();
 		if (shouldCloseBrowser) await browser.close();
-		return driverOdds;
+		const validDriverOdds = driverOdds.filter(
+			({ driverName, odds }) => driverName.length > 0 && Number.isFinite(odds) && odds > 0
+		);
+		if (validDriverOdds.length !== driverOdds.length || validDriverOdds.length < 20) {
+			throw new Error('Podium odds market is incomplete');
+		}
+
+		return validDriverOdds;
 	} catch (e) {
 		await page.close();
 		if (shouldCloseBrowser) await browser.close();
