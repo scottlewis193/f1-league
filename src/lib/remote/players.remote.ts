@@ -9,7 +9,7 @@ import {
 	updatePlayerQuery
 } from '$lib/server/players';
 import { getWalletByUserIdQuery } from '$lib/server/wallets';
-import { createTransferLog } from '$lib/server/transfers';
+import { completeWithdrawal, createTransferLog, updateTransferLogStatus } from '$lib/server/transfers';
 import { sendNotifications } from '$lib/notifications';
 import { walletActivityNotificationPayload } from '$lib/domain/wallets';
 
@@ -152,13 +152,7 @@ export const withdraw = form(v.object({ amount: v.number() }), async ({ amount }
 		recipientId: userWallet.wiseRecipientId
 	});
 
-	//3. fund transfer (complete)
-	await fundTransfer({ transferId: transfer.id });
-
-	//update balance in db
-	await pb.collection('wallets').update(userWallet.id, { balance: userWallet.balance - amount });
-
-	//create transfer log
+	// Record the provider transfer before funding it, so a failed funding attempt remains auditable.
 	const transferLog = await createTransferLog(
 		String(transfer.id),
 		pb.authStore.record.id,
@@ -166,10 +160,36 @@ export const withdraw = form(v.object({ amount: v.number() }), async ({ amount }
 		amount,
 		'withdraw',
 		'',
-		'complete'
+		'pending'
 	);
 
-	const payload = walletActivityNotificationPayload(transferLog);
+	try {
+		await fundTransfer({ transferId: transfer.id });
+	} catch (error) {
+		try {
+			const failedTransferLog = await updateTransferLogStatus(transferLog.id, 'failed');
+			const payload = walletActivityNotificationPayload(failedTransferLog);
+			if (payload) {
+				sendNotifications(payload, pb.authStore.record.id).catch((notificationError) =>
+					console.error('Withdrawal failure notification failed:', notificationError)
+				);
+			}
+		} catch (statusError) {
+			console.error('Failed to record withdrawal failure:', statusError);
+		}
+		throw error;
+	}
+
+	// Only debit the local wallet after Wise confirms it has funded the transfer.
+	// PocketBase commits the balance and status together, leaving the log pending if that transaction fails.
+	await completeWithdrawal({
+		transferLogId: transferLog.id,
+		walletId: userWallet.id,
+		balance: userWallet.balance - amount
+	});
+	const completedTransferLog = { ...transferLog, status: 'complete' as const };
+
+	const payload = walletActivityNotificationPayload(completedTransferLog);
 	if (payload) {
 		sendNotifications(payload, pb.authStore.record.id).catch((error) =>
 			console.error('Withdrawal notification failed:', error)

@@ -1,4 +1,4 @@
-import type { TransferLog } from '$lib/types';
+import type { TransferLog, TransferStatus } from '$lib/types';
 import { getAdminPb } from './pocketbase';
 
 export async function getTransferLogByIdQuery(id: string) {
@@ -20,7 +20,7 @@ export async function createTransferLog(
 	amount: number,
 	type: 'deposit' | 'withdraw' | 'transfer',
 	targetWalletId: string = '',
-	status: 'pending' | 'complete' | 'failed' = 'complete'
+	status: TransferStatus = 'complete'
 ) {
 	const pb = await getAdminPb();
 	return pb.collection('transfer_logs').create<TransferLog>({
@@ -32,4 +32,28 @@ export async function createTransferLog(
 		type,
 		status
 	});
+}
+
+export async function updateTransferLogStatus(
+	id: string,
+	status: TransferStatus
+) {
+	const pb = await getAdminPb();
+	return pb.collection('transfer_logs').update<TransferLog>(id, { status });
+}
+
+export async function completeWithdrawal({
+	transferLogId,
+	walletId,
+	balance
+}: {
+	transferLogId: string;
+	walletId: string;
+	balance: number;
+}) {
+	const pb = await getAdminPb();
+	const batch = pb.createBatch();
+	batch.collection('wallets').update(walletId, { balance });
+	batch.collection('transfer_logs').update(transferLogId, { status: 'complete' });
+	await batch.send();
 }

@@ -2,6 +2,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Driver, Team, Wallet } from '$lib/types';
 
 const collections = new Map<string, ReturnType<typeof makeCollection>>();
+const batchUpdates = vi.fn();
+const batch = {
+	collection: vi.fn((name: string) => ({
+		update: (id: string, data: any) => batchUpdates(name, id, data)
+	})),
+	send: vi.fn(async () => undefined)
+};
 
 function makeCollection(records: any[] = []) {
 	return {
@@ -39,7 +46,8 @@ function filter(raw: string, params: Record<string, unknown> = {}) {
 vi.mock('./pocketbase', () => ({
 	getAdminPb: vi.fn(async () => ({
 		collection: (name: string) => collections.get(name) ?? setCollection(name),
-		filter
+		filter,
+		createBatch: vi.fn(() => batch)
 	}))
 }));
 
@@ -138,7 +146,12 @@ describe('server collection helpers', () => {
 	it('gets wallets and returns created transfer logs', async () => {
 		const { getWalletByIdQuery, getWalletByUserIdQuery, updateWalletBalance } =
 			await import('./wallets');
-		const { createTransferLog, getTransferLogByIdQuery } = await import('./transfers');
+		const {
+			completeWithdrawal,
+			createTransferLog,
+			getTransferLogByIdQuery,
+			updateTransferLogStatus
+		} = await import('./transfers');
 		const wallets = setCollection('wallets', [
 			{ id: 'wallet-1', user: 'user-1', balance: 10 } as Wallet
 		]);
@@ -155,9 +168,17 @@ describe('server collection helpers', () => {
 			amount: 5,
 			type: 'deposit'
 		});
+		await updateTransferLogStatus('log-2', 'failed');
+		await completeWithdrawal({ transferLogId: 'log-2', walletId: 'wallet-1', balance: 5 });
 
 		expect(wallets.update).toHaveBeenCalledWith('wallet-1', { balance: 15 });
 		expect(logs.create).toHaveBeenCalledWith(expect.objectContaining({ id: 'log-2' }));
+		expect(logs.update).toHaveBeenCalledWith('log-2', { status: 'failed' });
+		expect(batchUpdates).toHaveBeenNthCalledWith(1, 'wallets', 'wallet-1', { balance: 5 });
+		expect(batchUpdates).toHaveBeenNthCalledWith(2, 'transfer_logs', 'log-2', {
+			status: 'complete'
+		});
+		expect(batch.send).toHaveBeenCalledOnce();
 	});
 
 	it('sorts players with computed stats', async () => {
