@@ -21,33 +21,32 @@ function launchBrowser(defaultViewport?: { width: number; height: number }) {
 }
 
 export async function scrapeAll() {
-	let races;
-	let drivers;
-	let teams;
-	let odds;
-	let scrapeAttempt = 1;
-	let scrapeSuccess = false;
+	const browser = await launchBrowser();
+	try {
+		// Each scrape is independent so one failure doesn't abort the others
+		const [races, drivers, teams, odds] = await Promise.all([
+			scrapeF1Races(browser).catch((e) => {
+				console.error('Races scrape failed:', e);
+				return undefined;
+			}),
+			scrapeDrivers(browser).catch((e) => {
+				console.error('Drivers scrape failed:', e);
+				return undefined;
+			}),
+			scrapeTeams(browser).catch((e) => {
+				console.error('Teams scrape failed:', e);
+				return undefined;
+			}),
+			scrapeOdds(browser).catch((e) => {
+				console.error('Odds scrape failed:', e);
+				return undefined;
+			})
+		]);
 
-	while (!scrapeSuccess && scrapeAttempt <= 3) {
-		let browser: Browser | undefined;
-		try {
-			browser = await launchBrowser();
-			races = await scrapeF1Races(browser);
-			drivers = await scrapeDrivers(browser);
-			teams = await scrapeTeams(browser);
-			odds = await scrapeOdds(browser);
-			scrapeSuccess = true;
-		} catch (e) {
-			if (scrapeAttempt === 3) {
-				return { error: e, races, drivers, teams, odds };
-			}
-			scrapeAttempt++;
-		} finally {
-			await browser?.close();
-		}
+		return { races, drivers, teams, odds };
+	} finally {
+		await browser.close();
 	}
-
-	return { races, drivers, teams, odds };
 }
 
 export async function scrapeDrivers(browserInstance?: Browser) {
@@ -188,7 +187,12 @@ export async function scrapeF1Races(browserInstance?: Browser) {
 	const shouldCloseBrowser = !browserInstance;
 
 	//first we grab location data from pitwall.app
-	const raceLocations = await scrapeRaceLocations(browser);
+	let raceLocations: Awaited<ReturnType<typeof scrapeRaceLocations>> = [];
+	try {
+		raceLocations = await scrapeRaceLocations(browser);
+	} catch (e) {
+		console.error('Race location scrape failed, continuing without city data:', e);
+	}
 
 	const baseUrl = `https://www.formula1.com/en/racing/${SEASON}`;
 	const page = await browser.newPage();

@@ -7,9 +7,22 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Bump version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          npm version patch -m "chore: bump version to %s [skip ci]"
+          git push --follow-tags
+
+      - name: Read version
+        id: version
+        run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -25,7 +38,9 @@ jobs:
         with:
           context: .
           push: true
-          tags: scottlewis193/f1-league:latest
+          tags: |
+            scottlewis193/f1-league:latest
+            scottlewis193/f1-league:${{ steps.version.outputs.VERSION }}
           build-args: |
             PUBLIC_PB_URL=https://pb-f1-league.hades.ws
             PUBLIC_VAPID_PUBLIC_KEY=${{ secrets.PUBLIC_VAPID_PUBLIC_KEY || 'BHKr-fL3KUrgDknbDc0-N3vbrZtMOwf3to5yM0NLbmsLMyil3EcmdPzRA-ZfP83YxDPgU5XcAiMHTpk7LKQ26Uo' }}

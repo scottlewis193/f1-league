@@ -30,111 +30,84 @@ export async function refreshF1DataOnce() {
 	const { currentDrivers, currentRaces } = await getCurrentDataDb();
 
 	console.log('Refreshing F1 data...', new Date());
-	const { drivers, teams, races, odds, error } = await scrapeAll();
+	const { drivers, teams, races, odds } = await scrapeAll();
 
-	if (error) {
-		console.error('F1 data scrape failed:', error, new Date());
-		return;
-	}
-
-	if (!races || !drivers || !teams || !odds) {
-		console.error('F1 data is missing fields', new Date());
-		return;
-	}
-
-	//testing
-	// races.push({
-	// 	raceName: 'FORMULA 1 QATAR AIRWAYS AUSTRALIAN GRAND PRIX 2026',
-	// 	city: 'Melbourne',
-	// 	location: 'australia',
-	// 	raceResults: ['Verstappen', 'Piastri', 'Norris', 'Leclerc', 'Russell'],
-	// 	year: 2026,
-	// 	raceNo: 1,
-	// 	id: '',
-	// 	sessions: []
-	// });
-
-	//assign existing race id based on race name
-	for (const race of races) {
-		const currentRaceNames = currentRaces.map((cr) => cr.raceName);
-		if (currentRaceNames.includes(race.raceName)) {
-			race.id = currentRaces.find((cr) => cr.raceName === race.raceName)?.id || '';
-		}
-	}
-
-	//here we will check if race results have come in by comparing the current race data to the newly scrapped race data
-
-	//filter out races with results — guard against null/undefined
-	const currentRacesWithResults = currentRaces.filter(
-		(r) => r.raceResults && r.raceResults.length > 0
-	);
-	const newRacesWithResults = races.filter((r) => r.raceResults && r.raceResults.length > 0);
-
-	//if race results have come in, we will notify users/players and pay out the winnings
-	if (currentRacesWithResults.length !== newRacesWithResults.length) {
-		let latestRaceWithResults: Race | undefined = undefined;
-
-		for (const race of newRacesWithResults) {
-			const currentRaceNames = currentRacesWithResults.map((cr) => cr.raceName);
-			if (!currentRaceNames.includes(race.raceName)) {
-				latestRaceWithResults = race;
+	if (races) {
+		//assign existing race id based on race name
+		for (const race of races) {
+			const currentRaceNames = currentRaces.map((cr) => cr.raceName);
+			if (currentRaceNames.includes(race.raceName)) {
+				race.id = currentRaces.find((cr) => cr.raceName === race.raceName)?.id || '';
 			}
 		}
 
-		if (!latestRaceWithResults) {
-			console.warn('Race results changed but no new race with results found');
-			return;
-		}
-
-		// Ensure the latest race has an ID before proceeding
-		if (!latestRaceWithResults.id) {
-			console.error(`Latest race with results has no ID: ${latestRaceWithResults.raceName}`);
-			return;
-		}
-
-		console.log(`New race results detected: ${latestRaceWithResults.raceName}`, new Date());
-
-		await sendNotifications({
-			title: 'New Race Results',
-			body: 'Check out the latest race results.',
-			icon: 'https://f1-league.hades.ws/logo.png',
-			badge: 'https://f1-league.hades.ws/logo.png',
-			data: {
-				url: 'https://f1-league.hades.ws/players'
-			},
-			tag: 'message-notification'
-		});
-
-		const players = await getPlayersQuery();
-		const oddsRecords = await getOddsQuery();
-		const submissions = await getPredictionsQuery();
-
-		for (let i = 0; i < players.length; i++) {
-			players[i] = {
-				...players[i],
-				...getPlayerStats(players[i].id, submissions, newRacesWithResults, oddsRecords)
-			};
-			players[i].displayLatestResultsDialog = true;
-		}
-
-		await updateAllPlayersQuery(players);
-
-		//latest race predictions
-		const latestRacePredictions = submissions.filter((s) => s.race == latestRaceWithResults?.id);
-
-		//the players with prediction for that race
-		const playersWithPredictions = players.filter((p) =>
-			latestRacePredictions.map((p) => p.user).includes(p.id)
+		//check if race results have come in by comparing current vs newly scraped
+		const currentRacesWithResults = currentRaces.filter(
+			(r) => r.raceResults && r.raceResults.length > 0
 		);
+		const newRacesWithResults = races.filter((r) => r.raceResults && r.raceResults.length > 0);
 
-		//pay out winnings
-		await payOutWinnings(playersWithPredictions, latestRaceWithResults);
+		if (currentRacesWithResults.length !== newRacesWithResults.length) {
+			let latestRaceWithResults: Race | undefined = undefined;
+
+			for (const race of newRacesWithResults) {
+				const currentRaceNames = currentRacesWithResults.map((cr) => cr.raceName);
+				if (!currentRaceNames.includes(race.raceName)) {
+					latestRaceWithResults = race;
+				}
+			}
+
+			if (!latestRaceWithResults) {
+				console.warn('Race results changed but no new race with results found');
+			} else if (!latestRaceWithResults.id) {
+				console.error(`Latest race with results has no ID: ${latestRaceWithResults.raceName}`);
+			} else {
+				console.log(`New race results detected: ${latestRaceWithResults.raceName}`, new Date());
+
+				await sendNotifications({
+					title: 'New Race Results',
+					body: 'Check out the latest race results.',
+					icon: 'https://f1-league.hades.ws/logo.png',
+					badge: 'https://f1-league.hades.ws/logo.png',
+					data: {
+						url: 'https://f1-league.hades.ws/players'
+					},
+					tag: 'message-notification'
+				});
+
+				const players = await getPlayersQuery();
+				const oddsRecords = await getOddsQuery();
+				const submissions = await getPredictionsQuery();
+
+				for (let i = 0; i < players.length; i++) {
+					players[i] = {
+						...players[i],
+						...getPlayerStats(players[i].id, submissions, newRacesWithResults, oddsRecords)
+					};
+					players[i].displayLatestResultsDialog = true;
+				}
+
+				await updateAllPlayersQuery(players);
+
+				//latest race predictions
+				const latestRacePredictions = submissions.filter((s) => s.race == latestRaceWithResults?.id);
+
+				//the players with prediction for that race
+				const playersWithPredictions = players.filter((p) =>
+					latestRacePredictions.map((p) => p.user).includes(p.id)
+				);
+
+				//pay out winnings
+				await payOutWinnings(playersWithPredictions, latestRaceWithResults);
+			}
+		}
+
+		await updateRacesQuery(races);
 	}
 
-	await updateDriversQuery(drivers);
-	await updateTeamsQuery(teams);
-	await updateRacesQuery(races);
-	if (await isOddsUpdateWindowOpen()) {
+	if (drivers) await updateDriversQuery(drivers);
+	if (teams) await updateTeamsQuery(teams);
+	if (odds && (await isOddsUpdateWindowOpen())) {
 		await updateOddsQuery(odds, currentDrivers);
 	}
 	console.log('F1 data refreshed', new Date());
