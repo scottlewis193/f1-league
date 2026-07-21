@@ -47,7 +47,8 @@ export async function updateOddsQuery(
 
 	//here we update or create a record on the db depending on if it already exists
 	for (const oddsRecord of oddsRecords) {
-		if (!oddsRecord) return;
+		//skip records where the driver didn't match — writing an empty driver id would create junk rows
+		if (!oddsRecord.driver) continue;
 		const currentOdd = currentOdds.find(
 			(d) => d.driver === oddsRecord.driver && d.race === oddsRecord.race
 		);
