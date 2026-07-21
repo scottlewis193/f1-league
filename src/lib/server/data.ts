@@ -1,7 +1,7 @@
 import { sendNotifications } from '$lib/notifications';
 import PocketBase from 'pocketbase';
 import { scrapeAll } from '$lib/server/scrapping';
-import type { Driver, Race, WiseTransfer } from '$lib/types';
+import type { Driver, Player, Race, WiseTransfer } from '$lib/types';
 import { getPlayerStats } from '$lib/utils';
 import { getAdminPb } from './pocketbase';
 import { wiseFetch } from './wise';
@@ -42,63 +42,72 @@ export async function refreshF1DataOnce() {
 		}
 
 		//check if race results have come in by comparing current vs newly scraped
-		const currentRacesWithResults = currentRaces.filter(
-			(r) => r.raceResults && r.raceResults.length > 0
+		const currentRaceNamesWithResults = new Set(
+			currentRaces.filter((r) => r.raceResults && r.raceResults.length > 0).map((r) => r.raceName)
 		);
 		const newRacesWithResults = races.filter((r) => r.raceResults && r.raceResults.length > 0);
 
-		if (currentRacesWithResults.length !== newRacesWithResults.length) {
-			let latestRaceWithResults: Race | undefined = undefined;
+		//races that gained results since the last scrape — every one of them must be paid out
+		const newlyCompletedRaces = newRacesWithResults.filter(
+			(r) => !currentRaceNamesWithResults.has(r.raceName)
+		);
 
-			for (const race of newRacesWithResults) {
-				const currentRaceNames = currentRacesWithResults.map((cr) => cr.raceName);
-				if (!currentRaceNames.includes(race.raceName)) {
-					latestRaceWithResults = race;
-				}
+		if (newlyCompletedRaces.length > 0) {
+			console.log(
+				`New race results detected: ${newlyCompletedRaces.map((r) => r.raceName).join(', ')}`,
+				new Date()
+			);
+
+			await sendNotifications({
+				title: 'New Race Results',
+				body: 'Check out the latest race results.',
+				icon: 'https://f1-league.hades.ws/logo.png',
+				badge: 'https://f1-league.hades.ws/logo.png',
+				data: {
+					url: 'https://f1-league.hades.ws/players'
+				},
+				tag: 'message-notification'
+			});
+
+			const oddsRecords = await getOddsQuery();
+			const submissions = await getPredictionsQuery();
+
+			//recompute player stats across the full set of resulted races so totals stay correct
+			const players = await getPlayersQuery();
+			for (let i = 0; i < players.length; i++) {
+				players[i] = {
+					...players[i],
+					...getPlayerStats(players[i].id, submissions, newRacesWithResults, oddsRecords)
+				};
+				players[i].displayLatestResultsDialog = true;
 			}
+			await updateAllPlayersQuery(players);
 
-			if (!latestRaceWithResults) {
-				console.warn('Race results changed but no new race with results found');
-			} else if (!latestRaceWithResults.id) {
-				console.error(`Latest race with results has no ID: ${latestRaceWithResults.raceName}`);
-			} else {
-				console.log(`New race results detected: ${latestRaceWithResults.raceName}`, new Date());
-
-				await sendNotifications({
-					title: 'New Race Results',
-					body: 'Check out the latest race results.',
-					icon: 'https://f1-league.hades.ws/logo.png',
-					badge: 'https://f1-league.hades.ws/logo.png',
-					data: {
-						url: 'https://f1-league.hades.ws/players'
-					},
-					tag: 'message-notification'
-				});
-
-				const players = await getPlayersQuery();
-				const oddsRecords = await getOddsQuery();
-				const submissions = await getPredictionsQuery();
-
-				for (let i = 0; i < players.length; i++) {
-					players[i] = {
-						...players[i],
-						...getPlayerStats(players[i].id, submissions, newRacesWithResults, oddsRecords)
-					};
-					players[i].displayLatestResultsDialog = true;
+			//pay out every newly-completed race, each against its own per-race points so the
+			//winner is determined correctly regardless of how many races landed in one cycle
+			for (const race of newlyCompletedRaces) {
+				if (!race.id) {
+					console.error(`Latest race with results has no ID: ${race.raceName}`);
+					continue;
 				}
 
-				await updateAllPlayersQuery(players);
+				//recompute per-race stats for this single race so lastPointsEarned is race-scoped
+				const racePredictions = submissions.filter((s) => s.race === race.id);
+				const playersWithPredictions = racePredictions
+					.map((pred) => {
+						const player = players.find((p) => p.id === pred.user);
+						if (!player) return undefined;
+						const perRaceStats = getPlayerStats(
+							player.id,
+							[pred],
+							newRacesWithResults.filter((r) => r.id === race.id),
+							oddsRecords
+						);
+						return { ...player, lastPointsEarned: perRaceStats.lastPointsEarned };
+					})
+					.filter((p): p is Player => Boolean(p));
 
-				//latest race predictions
-				const latestRacePredictions = submissions.filter((s) => s.race == latestRaceWithResults?.id);
-
-				//the players with prediction for that race
-				const playersWithPredictions = players.filter((p) =>
-					latestRacePredictions.map((p) => p.user).includes(p.id)
-				);
-
-				//pay out winnings
-				await payOutWinnings(playersWithPredictions, latestRaceWithResults);
+				await payOutWinnings(playersWithPredictions, race);
 			}
 		}
 
