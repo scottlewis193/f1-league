@@ -4,7 +4,9 @@ import { getAdminPb } from './pocketbase';
 export async function getTransferLogByIdQuery(id: string) {
 	const pb = await getAdminPb();
 	try {
-		const transferLog = await pb.collection('transfer_logs').getFirstListItem(`id='${id}'`);
+		const transferLog = await pb
+			.collection('transfer_logs')
+			.getFirstListItem(pb.filter('id = {:id}', { id }));
 		return transferLog;
 	} catch {
 		return null;

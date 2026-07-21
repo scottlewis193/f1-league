@@ -6,13 +6,17 @@ import { createTransferLog } from './transfers';
 
 export async function getWalletByIdQuery(walletId: string) {
 	const pb = await getAdminPb();
-	const wallet: Wallet = await pb.collection('wallets').getFirstListItem(`id='${walletId}'`);
+	const wallet: Wallet = await pb
+		.collection('wallets')
+		.getFirstListItem(pb.filter('id = {:walletId}', { walletId }));
 	return wallet;
 }
 
 export async function getWalletByUserIdQuery(userId: string) {
 	const pb = await getAdminPb();
-	const wallet: Wallet = await pb.collection('wallets').getFirstListItem(`user='${userId}'`);
+	const wallet: Wallet = await pb
+		.collection('wallets')
+		.getFirstListItem(pb.filter('user = {:userId}', { userId }));
 	return wallet;
 }
 
@@ -42,7 +46,10 @@ export async function getDonationTotalsQuery(): Promise<
 
 	// Sum donations per player (transfers into the season wallet)
 	const logs: TransferLog[] = await pb.collection('transfer_logs').getFullList({
-		filter: `type='transfer' && targetWallet='${env.SEASON_WALLET_ID}'`,
+		filter: pb.filter('type = {:type} && targetWallet = {:targetWallet}', {
+			type: 'transfer',
+			targetWallet: env.SEASON_WALLET_ID
+		}),
 		expand: 'user'
 	});
 

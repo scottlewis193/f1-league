@@ -13,7 +13,7 @@ export async function addSubscription(subscription: PushSubscription, userId?: s
 	// Check if a record already exists with this endpoint
 	const existing = await pb
 		.collection('subscriptions')
-		.getFirstListItem(`endpoint="${endpoint}"`)
+		.getFirstListItem(pb.filter('endpoint = {:endpoint}', { endpoint }))
 		.catch(() => null);
 
 	const data = {
@@ -33,12 +33,8 @@ export async function addSubscription(subscription: PushSubscription, userId?: s
 
 export async function getSubscriptions(userId?: string): Promise<PushSubscription[]> {
 	const pb = await getAdminPb();
-	
-	let filter = '';
-	if (userId) {
-		filter = `userId="${userId}"`;
-	}
-	
+	const filter = userId ? pb.filter('userId = {:userId}', { userId }) : '';
+
 	const records = await pb.collection('subscriptions').getFullList({ filter });
 	return records.map((record) => ({
 		endpoint: record.endpoint,
@@ -52,12 +48,8 @@ export async function getSubscriptions(userId?: string): Promise<PushSubscriptio
  */
 export async function getSubscriptionRecords(userId?: string): Promise<SubscriptionRecord[]> {
 	const pb = await getAdminPb();
-	
-	let filter = '';
-	if (userId) {
-		filter = `userId="${userId}"`;
-	}
-	
+	const filter = userId ? pb.filter('userId = {:userId}', { userId }) : '';
+
 	const records = await pb.collection('subscriptions').getFullList({ filter });
 	return records.map((record) => ({
 		id: record.id,

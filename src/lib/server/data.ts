@@ -225,6 +225,8 @@ export async function getFeatureFlagStatus(
 	name: string
 ) {
 	const pb = pbInstance || (await getAdminPb());
-	const result = await pb.collection('feature_flags').getFirstListItem(`name="${name}"`);
+	const result = await pb
+		.collection('feature_flags')
+		.getFirstListItem(pb.filter('name = {:name}', { name }));
 	return result.enabled;
 }

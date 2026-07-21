@@ -14,8 +14,15 @@ const collection = {
 	update: vi.fn()
 };
 
+function filter(raw: string, params: Record<string, unknown> = {}) {
+	return raw.replace(/\{:(\w+)\}/g, (_, key: string) => {
+		const value = params[key];
+		return typeof value === 'string' ? `'${value.replaceAll("'", "\\'")}'` : String(value);
+	});
+}
+
 vi.mock('./pocketbase', () => ({
-	getAdminPb: vi.fn(async () => ({ collection: () => collection }))
+	getAdminPb: vi.fn(async () => ({ collection: () => collection, filter }))
 }));
 
 beforeEach(() => {
@@ -28,16 +35,27 @@ describe('Wise API wrapper', () => {
 		const { wiseFetch } = await import('./wise');
 		vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ ok: true })) as any);
 
-		await expect(wiseFetch('transfers', 'v1', { headers: { 'X-Test': '1' } })).resolves.toEqual({ ok: true });
+		await expect(wiseFetch('transfers', 'v1', { headers: { 'X-Test': '1' } })).resolves.toEqual({
+			ok: true
+		});
 
-		expect(fetch).toHaveBeenCalledWith('https://wise.test/v1/transfers', expect.objectContaining({
-			headers: expect.objectContaining({ Authorization: 'Bearer wise-key', 'Content-Type': 'application/json', 'X-Test': '1' })
-		}));
+		expect(fetch).toHaveBeenCalledWith(
+			'https://wise.test/v1/transfers',
+			expect.objectContaining({
+				headers: expect.objectContaining({
+					Authorization: 'Bearer wise-key',
+					'Content-Type': 'application/json',
+					'X-Test': '1'
+				})
+			})
+		);
 	});
 
 	it('throws the Wise error body on failure', async () => {
 		const { wiseFetch } = await import('./wise');
-		vi.mocked(fetch).mockResolvedValue(new Response('bad request', { status: 400, statusText: 'Bad Request' }) as any);
+		vi.mocked(fetch).mockResolvedValue(
+			new Response('bad request', { status: 400, statusText: 'Bad Request' }) as any
+		);
 
 		await expect(wiseFetch('transfers')).rejects.toThrow('400 Bad Request — bad request');
 	});
@@ -48,7 +66,10 @@ describe('push subscription persistence', () => {
 		const { addSubscription } = await import('./subscriptions');
 		collection.getFirstListItem.mockRejectedValue(new Error('missing'));
 
-		await addSubscription({ endpoint: 'https://push.test', keys: { p256dh: 'p', auth: 'a' } } as any, 'user-1');
+		await addSubscription(
+			{ endpoint: 'https://push.test', keys: { p256dh: 'p', auth: 'a' } } as any,
+			'user-1'
+		);
 
 		expect(collection.create).toHaveBeenCalledWith({
 			endpoint: 'https://push.test',
@@ -61,7 +82,10 @@ describe('push subscription persistence', () => {
 		const { addSubscription } = await import('./subscriptions');
 		collection.getFirstListItem.mockResolvedValue({ id: 'sub-1' });
 
-		await addSubscription({ endpoint: 'https://push.test', keys: { p256dh: 'p', auth: 'a' } } as any, 'user-1');
+		await addSubscription(
+			{ endpoint: 'https://push.test', keys: { p256dh: 'p', auth: 'a' } } as any,
+			'user-1'
+		);
 
 		expect(collection.update).toHaveBeenCalledWith('sub-1', { userId: 'user-1' });
 		expect(collection.create).not.toHaveBeenCalled();
@@ -70,15 +94,27 @@ describe('push subscription persistence', () => {
 	it('maps subscription records back to web-push shape', async () => {
 		const { getSubscriptions, getSubscriptionRecords } = await import('./subscriptions');
 		collection.getFullList.mockResolvedValue([
-			{ id: 'sub-1', endpoint: 'https://push.test', keys: { p256dh: 'p', auth: 'a' }, expirationTime: 123, userId: 'user-1' }
+			{
+				id: 'sub-1',
+				endpoint: 'https://push.test',
+				keys: { p256dh: 'p', auth: 'a' },
+				expirationTime: 123,
+				userId: 'user-1'
+			}
 		]);
 
 		await expect(getSubscriptions('user-1')).resolves.toEqual([
 			{ endpoint: 'https://push.test', keys: { p256dh: 'p', auth: 'a' }, expirationTime: 123 }
 		]);
 		await expect(getSubscriptionRecords('user-1')).resolves.toEqual([
-			{ id: 'sub-1', endpoint: 'https://push.test', keys: { p256dh: 'p', auth: 'a' }, expirationTime: 123, userId: 'user-1' }
+			{
+				id: 'sub-1',
+				endpoint: 'https://push.test',
+				keys: { p256dh: 'p', auth: 'a' },
+				expirationTime: 123,
+				userId: 'user-1'
+			}
 		]);
-		expect(collection.getFullList).toHaveBeenCalledWith({ filter: 'userId="user-1"' });
+		expect(collection.getFullList).toHaveBeenCalledWith({ filter: "userId = 'user-1'" });
 	});
 });
