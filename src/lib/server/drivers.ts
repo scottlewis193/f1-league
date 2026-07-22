@@ -11,7 +11,11 @@ export async function getDriversQuery() {
 
 export async function updateDriversQuery(drivers: Partial<Driver>[]) {
 	const pb = await getAdminPb();
-	const currentDrivers = await pb.collection('drivers').getFullList({ sort: '-points' });
+	const currentYear = new Date().getFullYear();
+	const currentDrivers = await pb.collection('drivers').getFullList({
+		sort: '-points',
+		filter: pb.filter('year = {:year}', { year: currentYear })
+	});
 
 	for (const driver of drivers) {
 		if (!driver) return;

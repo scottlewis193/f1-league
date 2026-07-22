@@ -46,7 +46,11 @@ export async function getNextRaceQuery() {
 
 export async function updateRacesQuery(races: Partial<Race>[]) {
 	const pb = await getAdminPb();
-	const currentRaces = await pb.collection('races').getFullList({ sort: '-raceNo' });
+	const currentYear = new Date().getFullYear();
+	const currentRaces = await pb.collection('races').getFullList({
+		sort: '-raceNo',
+		filter: pb.filter('year = {:year}', { year: currentYear })
+	});
 
 	let raceNo = 1;
 	for (const race of races) {

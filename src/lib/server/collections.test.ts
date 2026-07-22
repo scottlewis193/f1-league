@@ -97,6 +97,10 @@ describe('server collection helpers', () => {
 			'driver-1',
 			expect.objectContaining({ points: 100 })
 		);
+		expect(drivers.getFullList).toHaveBeenCalledWith({
+			sort: '-points',
+			filter: `year = ${new Date().getFullYear()}`
+		});
 		expect(drivers.create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Piastri' }));
 	});
 
@@ -118,6 +122,10 @@ describe('server collection helpers', () => {
 		] as Partial<Team>[]);
 
 		expect(teams.update).toHaveBeenCalledWith('team-1', expect.objectContaining({ points: 200 }));
+		expect(teams.getFullList).toHaveBeenCalledWith({
+			sort: '-points',
+			filter: `year = ${new Date().getFullYear()}`
+		});
 		expect(teams.create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Ferrari' }));
 	});
 

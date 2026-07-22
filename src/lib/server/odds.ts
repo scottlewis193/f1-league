@@ -26,8 +26,10 @@ export async function updateOddsQuery(
 	drivers: Partial<Driver>[]
 ) {
 	const pb = await getAdminPb();
-	const currentOdds = await pb.collection('odds').getFullList();
 	const currentRace = await getNextRaceQuery();
+	const currentOdds = await pb.collection('odds').getFullList({
+		filter: pb.filter('race = {:race}', { race: currentRace.id })
+	});
 
 	//here we adding the driver and race ids before insert the object into the db
 	const oddsRecords: Partial<OddsRecord>[] = [];

@@ -13,7 +13,11 @@ export async function getTeamsQuery() {
 
 export async function updateTeamsQuery(teams: Partial<Team>[]) {
 	const pb = await getAdminPb();
-	const currentTeams = await pb.collection('teams').getFullList({ sort: '-points' });
+	const currentYear = new Date().getFullYear();
+	const currentTeams = await pb.collection('teams').getFullList({
+		sort: '-points',
+		filter: pb.filter('year = {:year}', { year: currentYear })
+	});
 
 	for (const team of teams) {
 		if (!team) return;

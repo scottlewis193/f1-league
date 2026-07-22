@@ -22,7 +22,9 @@ function setCollection(name: string, records: any[] = []) {
 
 vi.mock('./pocketbase', () => ({
 	getAdminPb: vi.fn(async () => ({
-		collection: (name: string) => collections.get(name) ?? setCollection(name)
+		collection: (name: string) => collections.get(name) ?? setCollection(name),
+		filter: (raw: string, params: Record<string, unknown>) =>
+			raw.replace(/\{:(\w+)\}/g, (_, key: string) => `'${params[key]}'`)
 	}))
 }));
 
@@ -51,6 +53,7 @@ describe('updateOddsQuery', () => {
 		];
 
 		await updateOddsQuery(scraped, drivers);
+		expect(odds.getFullList).toHaveBeenCalledWith({ filter: "race = 'race-1'" });
 
 		// both matched drivers written; the unmatched one in the middle did not abort the loop
 		expect(odds.create).toHaveBeenCalledTimes(2);
@@ -70,6 +73,7 @@ describe('updateOddsQuery', () => {
 			[{ id: 'driver-norris', name: 'Norris' }] as Partial<Driver>[]
 		);
 
+		expect(odds.getFullList).toHaveBeenCalledWith({ filter: "race = 'race-1'" });
 		expect(odds.update).toHaveBeenCalledWith('odds-1', expect.objectContaining({ driver: 'driver-norris' }));
 		expect(odds.create).not.toHaveBeenCalled();
 	});
