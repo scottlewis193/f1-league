@@ -3,6 +3,7 @@ import type { Player, TransferLog, Wallet, Race } from '$lib/types';
 import { getAdminPb } from './pocketbase';
 import { updateRaceQuery } from './races';
 import { createTransferLog } from './transfers';
+import { withWalletLocks } from './wallet-lock';
 
 export async function getWalletByIdQuery(walletId: string) {
 	const pb = await getAdminPb();
@@ -77,8 +78,20 @@ export async function getDonationTotalsQuery(): Promise<
 }
 
 export async function updateWalletBalance(walletId: string, newBalance: number) {
-	const pb = await getAdminPb();
-	await pb.collection('wallets').update(walletId, { balance: newBalance });
+	await withWalletLocks([walletId], async () => {
+		const pb = await getAdminPb();
+		await pb.collection('wallets').update(walletId, { balance: newBalance });
+	});
+}
+
+export async function adjustWalletBalance(walletId: string, amount: number) {
+	await withWalletLocks([walletId], async () => {
+		const pb = await getAdminPb();
+		const wallet = await getWalletByIdQuery(walletId);
+		await pb.collection('wallets').update(walletId, {
+			balance: roundMoney(wallet.balance + amount)
+		});
+	});
 }
 
 function roundMoney(amount: number) {
@@ -104,40 +117,42 @@ export async function transferBetweenWallets({
 		throw new Error('Transfer amount must be greater than zero');
 	}
 
-	const pb = await getAdminPb();
-	const sourceWallet = await getWalletByIdQuery(sourceWalletId);
-	const targetWallet = await getWalletByIdQuery(targetWalletId);
-	const transferAmount = roundMoney(amount);
+	return withWalletLocks([sourceWalletId, targetWalletId], async () => {
+		const pb = await getAdminPb();
+		const sourceWallet = await getWalletByIdQuery(sourceWalletId);
+		const targetWallet = await getWalletByIdQuery(targetWalletId);
+		const transferAmount = roundMoney(amount);
 
-	if (!allowOverdraft && sourceWallet.balance < transferAmount) {
-		throw new Error('Insufficient wallet balance');
-	}
+		if (!allowOverdraft && sourceWallet.balance < transferAmount) {
+			throw new Error('Insufficient wallet balance');
+		}
 
-	await pb.collection('wallets').update(sourceWallet.id, {
-		balance: roundMoney(sourceWallet.balance - transferAmount)
-	});
-
-	try {
-		await pb.collection('wallets').update(targetWallet.id, {
-			balance: roundMoney(targetWallet.balance + transferAmount)
+		await pb.collection('wallets').update(sourceWallet.id, {
+			balance: roundMoney(sourceWallet.balance - transferAmount)
 		});
 
-		await createTransferLog(
-			'',
-			userId ?? sourceWallet.user,
-			sourceWallet.id,
-			transferAmount,
-			'transfer',
-			targetWallet.id,
-			status
-		);
-	} catch (error) {
-		// Best-effort rollback to avoid leaving balances inconsistent if the second update/log fails.
-		await pb.collection('wallets').update(sourceWallet.id, { balance: sourceWallet.balance });
-		throw error;
-	}
+		try {
+			await pb.collection('wallets').update(targetWallet.id, {
+				balance: roundMoney(targetWallet.balance + transferAmount)
+			});
 
-	return true;
+			await createTransferLog(
+				'',
+				userId ?? sourceWallet.user,
+				sourceWallet.id,
+				transferAmount,
+				'transfer',
+				targetWallet.id,
+				status
+			);
+		} catch (error) {
+			// Best-effort rollback to avoid leaving balances inconsistent if the second update/log fails.
+			await pb.collection('wallets').update(sourceWallet.id, { balance: sourceWallet.balance });
+			throw error;
+		}
+
+		return true;
+	});
 }
 
 export async function payOutWinnings(players: Player[], race: Race) {

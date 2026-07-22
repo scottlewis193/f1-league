@@ -12,6 +12,7 @@ import { getWalletByUserIdQuery } from '$lib/server/wallets';
 import { completeWithdrawal, createTransferLog, updateTransferLogStatus } from '$lib/server/transfers';
 import { sendNotifications } from '$lib/notifications';
 import { walletActivityNotificationPayload } from '$lib/domain/wallets';
+import { withWalletLocks } from '$lib/server/wallet-lock';
 
 const playerProfileSchema = v.intersect([
 	v.object({
@@ -133,68 +134,66 @@ export const withdraw = form(v.object({ amount: v.number() }), async ({ amount }
 
 	const userWallet: Wallet = await getWalletByUserIdQuery(pb.authStore.record.id);
 
-	if (amount > userWallet.balance) {
-		return fail(400, { error: 'Amount exceeds balance' });
-	}
+	return withWalletLocks([userWallet.id], async () => {
+		// Re-read after acquiring the lock so the balance check cannot use a stale value.
+		const currentWallet = await getWalletByUserIdQuery(pb.authStore.record!.id);
 
-	if (!userWallet.wiseRecipientId) {
-		return fail(400, { error: 'Bank account not configured' });
-	}
-
-	//wise transfer to bank account
-
-	//1. create quote
-	const quote = await createQuote({ recipientId: userWallet.wiseRecipientId, amount });
-
-	//2. create transfer using quote
-	const transfer = await createTransfer({
-		quoteUuid: quote.id,
-		recipientId: userWallet.wiseRecipientId
-	});
-
-	// Record the provider transfer before funding it, so a failed funding attempt remains auditable.
-	const transferLog = await createTransferLog(
-		String(transfer.id),
-		pb.authStore.record.id,
-		userWallet.id,
-		amount,
-		'withdraw',
-		'',
-		'pending'
-	);
-
-	try {
-		await fundTransfer({ transferId: transfer.id });
-	} catch (error) {
-		try {
-			const failedTransferLog = await updateTransferLogStatus(transferLog.id, 'failed');
-			const payload = walletActivityNotificationPayload(failedTransferLog);
-			if (payload) {
-				sendNotifications(payload, pb.authStore.record.id).catch((notificationError) =>
-					console.error('Withdrawal failure notification failed:', notificationError)
-				);
-			}
-		} catch (statusError) {
-			console.error('Failed to record withdrawal failure:', statusError);
+		if (amount > currentWallet.balance) {
+			return fail(400, { error: 'Amount exceeds balance' });
 		}
-		throw error;
-	}
 
-	// Only debit the local wallet after Wise confirms it has funded the transfer.
-	// PocketBase commits the balance and status together, leaving the log pending if that transaction fails.
-	await completeWithdrawal({
-		transferLogId: transferLog.id,
-		walletId: userWallet.id,
-		balance: userWallet.balance - amount
-	});
-	const completedTransferLog = { ...transferLog, status: 'complete' as const };
+		if (!currentWallet.wiseRecipientId) {
+			return fail(400, { error: 'Bank account not configured' });
+		}
 
-	const payload = walletActivityNotificationPayload(completedTransferLog);
-	if (payload) {
-		sendNotifications(payload, pb.authStore.record.id).catch((error) =>
-			console.error('Withdrawal notification failed:', error)
+		const quote = await createQuote({ recipientId: currentWallet.wiseRecipientId, amount });
+		const transfer = await createTransfer({
+			quoteUuid: quote.id,
+			recipientId: currentWallet.wiseRecipientId
+		});
+
+		// Record the provider transfer before funding it, so a failed funding attempt remains auditable.
+		const transferLog = await createTransferLog(
+			String(transfer.id),
+			pb.authStore.record!.id,
+			currentWallet.id,
+			amount,
+			'withdraw',
+			'',
+			'pending'
 		);
-	}
 
-	redirect(303, `/wallet`);
+		try {
+			await fundTransfer({ transferId: transfer.id });
+		} catch (error) {
+			try {
+				const failedTransferLog = await updateTransferLogStatus(transferLog.id, 'failed');
+				const payload = walletActivityNotificationPayload(failedTransferLog);
+				if (payload) {
+					sendNotifications(payload, pb.authStore.record!.id).catch((notificationError) =>
+						console.error('Withdrawal failure notification failed:', notificationError)
+					);
+				}
+			} catch (statusError) {
+				console.error('Failed to record withdrawal failure:', statusError);
+			}
+			throw error;
+		}
+
+		await completeWithdrawal({
+			transferLogId: transferLog.id,
+			walletId: currentWallet.id,
+			balance: currentWallet.balance - amount
+		});
+		const completedTransferLog = { ...transferLog, status: 'complete' as const };
+
+		const payload = walletActivityNotificationPayload(completedTransferLog);
+		if (payload) {
+			sendNotifications(payload, pb.authStore.record!.id).catch((error) =>
+				console.error('Withdrawal notification failed:', error)
+			);
+		}
+
+		redirect(303, `/wallet`);
+	});
 });

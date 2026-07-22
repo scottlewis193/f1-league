@@ -8,7 +8,7 @@ const env = {
 const wiseFetch = vi.fn();
 const getAllWalletsQuery = vi.fn();
 const getWalletByIdQuery = vi.fn();
-const updateWalletBalance = vi.fn();
+const adjustWalletBalance = vi.fn();
 const getTransferLogByIdQuery = vi.fn();
 const createTransferLog = vi.fn();
 const sendNotifications = vi.fn();
@@ -31,7 +31,7 @@ vi.mock('./wise', () => ({ wiseFetch }));
 vi.mock('./wallets', () => ({
 	getAllWalletsQuery,
 	getWalletByIdQuery,
-	updateWalletBalance,
+	adjustWalletBalance,
 	payOutWinnings
 }));
 vi.mock('./transfers', () => ({ getTransferLogByIdQuery, createTransferLog }));
@@ -83,7 +83,7 @@ describe('deposit polling', () => {
 			expect.any(Object)
 		);
 		expect(createTransferLog).toHaveBeenCalledWith('1', 'user-1', 'wallet-1', 10, 'deposit');
-		expect(updateWalletBalance).toHaveBeenCalledWith('wallet-1', 17);
+		expect(adjustWalletBalance).toHaveBeenCalledWith('wallet-1', 10);
 		expect(sendNotifications).toHaveBeenCalledWith(
 			expect.objectContaining({ title: 'Deposit received', tag: 'wallet-deposit-1' }),
 			'user-1'
@@ -97,7 +97,7 @@ describe('deposit polling', () => {
 		await checkForNewDepositsOnce();
 
 		expect(createTransferLog).not.toHaveBeenCalled();
-		expect(updateWalletBalance).not.toHaveBeenCalled();
+		expect(adjustWalletBalance).not.toHaveBeenCalled();
 		expect(sendNotifications).not.toHaveBeenCalled();
 	});
 });

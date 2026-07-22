@@ -10,7 +10,7 @@ import {
 	getAllWalletsQuery,
 	getWalletByIdQuery,
 	payOutWinnings,
-	updateWalletBalance
+	adjustWalletBalance
 } from './wallets';
 import { getNextRaceQuery, updateRacesQuery } from './races';
 import { createTransferLog, getTransferLogByIdQuery } from './transfers';
@@ -174,7 +174,7 @@ export async function checkForNewDepositsOnce() {
 			deposit.targetValue,
 			'deposit'
 		);
-		await updateWalletBalance(deposit.reference, wallet.balance + deposit.targetValue);
+		await adjustWalletBalance(deposit.reference, deposit.targetValue);
 
 		const payload = walletActivityNotificationPayload(transferLog);
 		if (payload) {

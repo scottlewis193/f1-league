@@ -181,6 +181,28 @@ describe('server collection helpers', () => {
 		expect(batch.send).toHaveBeenCalledOnce();
 	});
 
+	it('serializes concurrent wallet transfers', async () => {
+		const { withWalletLocks } = await import('./wallet-lock');
+		let balance = 10;
+		const spend = () =>
+			withWalletLocks(['wallet-1'], async () => {
+				const currentBalance = balance;
+				await Promise.resolve();
+				if (currentBalance < 7) throw new Error('Insufficient wallet balance');
+				balance = currentBalance - 7;
+				return true;
+			});
+
+		const results = await Promise.allSettled([
+			spend(),
+			spend()
+		]);
+
+		expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+		expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+		expect(balance).toBe(3);
+	});
+
 	it('sorts players with computed stats', async () => {
 		const { getPlayersWithStatsQuery, updateAllPlayersQuery } = await import('./players');
 		const users = setCollection('users', [
