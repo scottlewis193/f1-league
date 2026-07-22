@@ -155,14 +155,18 @@ export async function transferBetweenWallets({
 	});
 }
 
-export async function payOutWinnings(players: Player[], race: Race) {
+export async function payOutWinnings(
+	players: Player[],
+	race: Race,
+	paidEntryCount = players.length
+) {
 	//if race is already paid out, return early
 	if (race.paidOut) {
 		console.log('Race already paid out:', race.id);
 		return;
 	}
 
-	if (!players.length) {
+	if (!players.length || paidEntryCount <= 0) {
 		console.log('No players to pay out for race:', race.id);
 		return;
 	}
@@ -180,9 +184,9 @@ export async function payOutWinnings(players: Player[], race: Race) {
 	// determine winners
 	const winners = players.filter((player) => player.lastPointsEarned == winningPointsAmount);
 
-	// determine payout amount per winner — use actual number of predictors, not total players
+	// determine payout amount per winner from paid entries, not total players
 	const playerPayoutAmount =
-		Number((Number(env.PREDICTION_ENTRY_FEE) * players.length).toFixed(2)) / winners.length;
+		Number((Number(env.PREDICTION_ENTRY_FEE) * paidEntryCount).toFixed(2)) / winners.length;
 
 	// transfer winnings to winners
 	for (const winner of winners) {

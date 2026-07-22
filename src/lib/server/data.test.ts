@@ -136,13 +136,21 @@ describe('refreshF1DataOnce race-result payout', () => {
 			odds: undefined
 		});
 
-		getPlayersQuery.mockResolvedValue([{ id: 'user-1' }, { id: 'user-2' }]);
+		getPlayersQuery.mockResolvedValue([{ id: 'user-1' }, { id: 'user-2' }, { id: 'user-3' }]);
 		getPredictionsQuery.mockResolvedValue([
 			{
 				race: 'race-A',
 				user: 'user-1',
 				predictions: [],
+				entryFeePaid: true,
 				expand: { user: { id: 'user-1' }, race: { id: 'race-A' } }
+			},
+			{
+				race: 'race-A',
+				user: 'user-3',
+				predictions: [],
+				entryFeePaid: false,
+				expand: { user: { id: 'user-3' }, race: { id: 'race-A' } }
 			},
 			{
 				race: 'race-B',
@@ -167,6 +175,9 @@ describe('refreshF1DataOnce race-result payout', () => {
 		expect(payOutWinnings).toHaveBeenCalledTimes(2);
 		const paidRaceIds = payOutWinnings.mock.calls.map((call) => call[1].id);
 		expect(paidRaceIds).toEqual(expect.arrayContaining(['race-A', 'race-B']));
+		expect(payOutWinnings.mock.calls.find((call) => call[1].id === 'race-A')).toEqual(
+			expect.arrayContaining([expect.any(Array), expect.any(Object), 1])
+	);
 	});
 
 	it('does not pay out races that already had results', async () => {

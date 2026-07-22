@@ -92,8 +92,12 @@ export async function refreshF1DataOnce() {
 				}
 
 				//recompute per-race stats for this single race so lastPointsEarned is race-scoped
+				// Predictions created before the payment marker existed are treated as paid for
+				// backwards compatibility. New free/bypassed entries explicitly store false.
 				const racePredictions = submissions.filter((s) => s.race === race.id);
-				const playersWithPredictions = racePredictions
+				const paidEntryCount = racePredictions.filter((s) => s.entryFeePaid !== false).length;
+				const paidRacePredictions = racePredictions.filter((s) => s.entryFeePaid !== false);
+				const playersWithPredictions = paidRacePredictions
 					.map((pred) => {
 						const player = players.find((p) => p.id === pred.user);
 						if (!player) return undefined;
@@ -107,7 +111,7 @@ export async function refreshF1DataOnce() {
 					})
 					.filter((p): p is Player => Boolean(p));
 
-				await payOutWinnings(playersWithPredictions, race);
+				await payOutWinnings(playersWithPredictions, race, paidEntryCount);
 			}
 		}
 

@@ -7,6 +7,8 @@ export type Prediction = {
 	id: string;
 	user: string;
 	predictions: string[];
+	/** Explicitly false for entries that did not contribute to the prize pool. */
+	entryFeePaid?: boolean;
 	wildPrediction: string;
 	wildPredictionPoints: number;
 	expand: { user: Player; race: Race };

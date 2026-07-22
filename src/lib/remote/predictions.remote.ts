@@ -56,29 +56,60 @@ export const addUpdatePrediction = form(
 		if (id !== '') {
 			await pb.collection('predictions').update(id, { predictions, wildPrediction });
 		} else {
-			const prediction = await pb
-				.collection('predictions')
-				.create({ predictions, user, year, race, wildPrediction });
+			const wageringEnabled = await getFeatureFlagStatus(pb, 'wagering');
+			const entryFeeBypassed = isPredictionEntryFeeBypassed(
+				user,
+				env.PREDICTION_ENTRY_FEE_BYPASS_USER_IDS ?? ''
+			);
+			const entryFeeRequired = wageringEnabled && !entryFeeBypassed;
+			let sourceWalletId = '';
 
-			if (
-				(await getFeatureFlagStatus(pb, 'wagering')) &&
-				!isPredictionEntryFeeBypassed(user, env.PREDICTION_ENTRY_FEE_BYPASS_USER_IDS ?? '')
-			) {
+			if (entryFeeRequired) {
 				try {
 					const wallet = await getWalletByUserIdQuery(user || '');
+					sourceWalletId = wallet.id;
 					await transferBetweenWallets({
 						amount: Number(PREDICTION_ENTRY_FEE),
-						sourceWalletId: wallet.id,
+						sourceWalletId,
 						targetWalletId: PREDICTION_WALLET_ID,
 						userId: user
 					});
 				} catch {
-					await pb
-						.collection('predictions')
-						.delete(prediction.id)
-						.catch(() => undefined);
 					return fail(400, { error: 'Unable to collect prediction entry fee' });
 				}
+			}
+
+			try {
+				await pb.collection('predictions').create({
+					predictions,
+					user,
+					year,
+					race,
+					wildPrediction,
+					entryFeePaid: entryFeeRequired
+				});
+			} catch (error) {
+				if (entryFeeRequired) {
+					try {
+						await transferBetweenWallets({
+							amount: Number(PREDICTION_ENTRY_FEE),
+							sourceWalletId: PREDICTION_WALLET_ID,
+							targetWalletId: sourceWalletId,
+							userId: user,
+							allowOverdraft: true
+						});
+					} catch (rollbackError) {
+						console.error('Failed to refund prediction entry fee after creation failure', {
+							error,
+							rollbackError,
+							user,
+							sourceWalletId
+						});
+						return fail(500, { error: 'Prediction failed after fee collection; contact support' });
+					}
+				}
+
+				return fail(400, { error: 'Unable to create prediction' });
 			}
 		}
 
