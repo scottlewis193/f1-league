@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Prediction, Race } from './types';
+import type { OddsRecord, Player, Prediction, Race } from './types';
 import {
 	formatSessionToUKTime,
 	getPointsGained,
+	getPlayerStats,
+	getPlayersStats,
 	oddsToPoints,
 	parseLondon,
 	titleCase,
@@ -60,5 +62,30 @@ describe('utils', () => {
 
 		// Norris: +1 placed +3 exact, Verstappen: +1 placed
 		expect(getPointsGained(race, submission)).toBe(5);
+	});
+
+	it('calculates last-race points once for a player and shared stats queries', () => {
+		const user = { id: 'user-1' } as Player;
+		const race = { id: 'race-1', raceNo: 1, location: 'Silverstone', raceResults: ['Norris'] } as Race;
+		const submission = {
+			id: 'prediction-1',
+			expand: { user, race },
+			predictions: ['Norris'],
+			wildPredictionPoints: 2
+		} as Prediction;
+		const odd = {
+			race: race.id,
+			expand: { driver: { name: 'Norris' } },
+			pointsForPlace: 4,
+			pointsForExact: 8
+		} as OddsRecord;
+
+		const expected = expect.objectContaining({
+			points: 14,
+			lastPointsEarned: 12,
+			wildPrediction: 1
+		});
+		expect(getPlayerStats(user.id, [submission], [race], [odd])).toEqual(expected);
+		expect(getPlayersStats([user.id], [submission], [race], [odd]).get(user.id)).toEqual(expected);
 	});
 });

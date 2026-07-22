@@ -131,16 +131,115 @@ export function getPointsGained(race: Race, submission: Prediction) {
 	return pointsGained;
 }
 
+function createStatsCalculator(submissions: Prediction[], races: Race[], odds: OddsRecord[]) {
+	const racesById = new Map(races.map((race) => [race.id, race]));
+	const submissionsByUser = new Map<string, Prediction[]>();
+	const oddsByRaceAndDriver = new Map<string, Map<string, OddsRecord>>();
+	const lastRaceWithResults = races.reduce<Race | undefined>(
+		(lastRace, race) =>
+			race.raceResults.length > 0 && (!lastRace || race.raceNo > lastRace.raceNo)
+				? race
+				: lastRace,
+		undefined
+	);
+
+	for (const submission of submissions) {
+		const userSubmissions = submissionsByUser.get(submission.expand.user.id) || [];
+		userSubmissions.push(submission);
+		submissionsByUser.set(submission.expand.user.id, userSubmissions);
+	}
+
+	for (const odd of odds) {
+		const raceOdds = oddsByRaceAndDriver.get(odd.race) || new Map<string, OddsRecord>();
+		const driverName = odd.expand.driver?.name || '';
+		if (!raceOdds.has(driverName)) raceOdds.set(driverName, odd);
+		oddsByRaceAndDriver.set(odd.race, raceOdds);
+	}
+
+	return (user: string) => {
+		const userSubmissions = submissionsByUser.get(user) || [];
+		const lastRaceId = lastRaceWithResults?.id;
+		let points = 0;
+		let place = 0;
+		let exact = 0;
+		let wildPrediction = 0;
+		let lastPointsEarned = 0;
+		const historyEntries: HistoryEntry[] = [];
+
+		for (const submission of userSubmissions) {
+			const race = racesById.get(submission.expand?.race?.id ?? '');
+			if (!race || !race.raceResults) continue;
+			const raceOdds = oddsByRaceAndDriver.get(race.id) || new Map<string, OddsRecord>();
+			const isLastRaceSubmission = race.id === lastRaceId;
+			const top3 = race.raceResults.slice(0, 3);
+
+			const wildPredictionPoints = submission.wildPredictionPoints || 0;
+			points += wildPredictionPoints;
+			if (wildPredictionPoints > 0) {
+				wildPrediction += 1;
+			}
+
+			const historyEntry: HistoryEntry = {
+				location: race.location,
+				results: top3,
+				predictions: submission.predictions,
+				points: [0, 0, 0],
+				place: ['No', 'No', 'No'],
+				exact: ['No', 'No', 'No'],
+				wildPredictionPoints
+			};
+
+			for (let i = 0; i < submission.predictions.length; i++) {
+				const driverName = submission.predictions[i];
+				const raceDriverOdds = raceOdds.get(driverName);
+				if (!raceDriverOdds) continue;
+
+				if (top3.includes(driverName)) {
+					points += raceDriverOdds.pointsForPlace;
+					if (isLastRaceSubmission) lastPointsEarned += raceDriverOdds.pointsForPlace;
+					place += 1;
+
+					historyEntry.points[i] += raceDriverOdds.pointsForPlace;
+					historyEntry.place[i] = 'Yes';
+				}
+
+				if (top3[i] == driverName) {
+					points += raceDriverOdds.pointsForExact;
+					if (isLastRaceSubmission) lastPointsEarned += raceDriverOdds.pointsForExact;
+					exact += 1;
+
+					historyEntry.points[i] += raceDriverOdds.pointsForExact;
+					historyEntry.exact[i] = 'Yes';
+				}
+			}
+
+			historyEntries.push(historyEntry);
+		}
+
+		return { points, place, exact, wildPrediction, lastPointsEarned, historyEntries };
+	};
+}
+
 export function getPlayerStats(
 	user: string,
 	submissions: Prediction[],
 	races: Race[],
 	odds: OddsRecord[]
 ) {
-	let lastRaceWithResults: Race = races
-		.filter((race) => race.raceResults.length > 0)
-		.sort((a, b) => b.raceNo - a.raceNo)[0];
+	return createStatsCalculator(submissions, races, odds)(user);
+}
 
+export function getPlayersStats(
+	users: string[],
+	submissions: Prediction[],
+	races: Race[],
+	odds: OddsRecord[]
+) {
+	const calculateStats = createStatsCalculator(submissions, races, odds);
+	return new Map(users.map((user) => [user, calculateStats(user)]));
+}
+
+/*
 	let points = 0;
 	let place = 0;
 	let exact = 0;
@@ -213,7 +312,7 @@ export function getPlayerStats(
 	}
 
 	return { points, place, exact, wildPrediction, lastPointsEarned, historyEntries };
-}
+} */
 
 export function userHasSubmitted(submissions: Prediction[], user: string) {
 	return submissions.some((submission) => submission.expand.user.id === user);

@@ -1,5 +1,5 @@
-import type { OddsRecord, Player, Prediction, Race } from '$lib/types';
-import { getPlayerStats } from '$lib/utils';
+import type { Player } from '$lib/types';
+import { getPlayerStats, getPlayersStats } from '$lib/utils';
 import { getOddsQuery } from './odds';
 import { getAdminPb } from './pocketbase';
 import { getPredictionsQuery } from './predictions';
@@ -13,9 +13,7 @@ export async function getPlayersQuery() {
 
 function withStats(
 	player: Partial<Player>,
-	submissions: Prediction[],
-	races: Race[],
-	odds: OddsRecord[]
+	stats: ReturnType<typeof getPlayerStats>
 ) {
 	return {
 		id: player.id || '',
@@ -24,7 +22,7 @@ function withStats(
 		avatar: player.avatar || '',
 		displayLatestResultsDialog: player.displayLatestResultsDialog || false,
 		walletAddress: player.walletAddress || '',
-		...getPlayerStats(player.id || '', submissions, races, odds),
+		...stats,
 		userPointsBalance: player.userPointsBalance || 0,
 		userPointsEarned: player.userPointsEarned || 0,
 		wiseRecipientId: player.wiseRecipientId || 0
@@ -39,8 +37,14 @@ export async function getPlayersWithStatsQuery() {
 	const races = await getRacesQuery();
 	const odds = await getOddsQuery();
 
+	const statsByUser = getPlayersStats(
+		players.map((player) => player.id || ''),
+		submissions,
+		races,
+		odds
+	);
 	const playersWithStats: Player[] = players.map((player) =>
-		withStats(player, submissions, races, odds)
+		withStats(player, statsByUser.get(player.id || '')!)
 	);
 
 	playersWithStats.sort((a, b) => b.points - a.points);
@@ -64,7 +68,7 @@ export async function getPlayerWithStatsQuery(playerId: string): Promise<Player 
 	const races = await getRacesQuery();
 	const odds = await getOddsQuery();
 
-	return withStats(player, submissions, races, odds);
+	return withStats(player, getPlayerStats(player.id || '', submissions, races, odds));
 }
 
 export async function updateAllPlayersQuery(players: Player[]) {
