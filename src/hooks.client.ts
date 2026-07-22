@@ -5,7 +5,7 @@ pb.authStore.loadFromCookie(document.cookie);
 pb.authStore.onChange(() => {
 	document.cookie = pb.authStore.exportToCookie({
 		httpOnly: false,
-		sameSite: 'strict',
+		sameSite: 'lax',
 		secure: !dev,
 		path: '/'
 	});
