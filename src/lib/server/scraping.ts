@@ -47,6 +47,10 @@ export function parseRaceSessionText(text: string) {
 	return { date: match[1], time: match[3] || '', title: match[2].trim() };
 }
 
+export function parseRaceSessionTexts(texts: string[]) {
+	return texts.map(parseRaceSessionText).filter((session) => session.date && session.title);
+}
+
 async function closePage(page: Page) {
 	if (page.isClosed()) return;
 
@@ -381,7 +385,7 @@ export async function scrapeF1Races(browserInstance?: Browser) {
 			});
 			const raceDetails = {
 				...rawRaceDetails,
-				sessions: rawRaceDetails.sessions.map(parseRaceSessionText)
+				sessions: parseRaceSessionTexts(rawRaceDetails.sessions)
 			};
 
 			//check if race exists, if so update race result
