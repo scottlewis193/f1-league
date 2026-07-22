@@ -39,7 +39,7 @@ export function parseRaceSessionText(text: string) {
 		.replace(/\s+/g, ' ')
 		.replace(/^(?:Chequered Flag|Next Race)\s+/i, '');
 	const match = normalized.match(
-		/^(\d{1,2}\s+[A-Za-z]+)\s+(.+?)(?:\s+(\d{1,2}:\d{2})(?:\s*-\s*\d{1,2}:\d{2})?)?(?:\s+(?:Expand|Report|Results|Highlights))*$/
+		/^(\d{1,2}\s+[A-Za-z]+)\s+(.+?)(?:\s+(\d{1,2}:\d{2})(?:\s*-\s*\d{1,2}:\d{2})?)?(?:\s+(?:Expand|Report|Results|Highlights|Lap-by-lap))*$/
 	);
 
 	if (!match) return { date: '', time: '', title: '' };

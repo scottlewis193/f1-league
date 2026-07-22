@@ -28,6 +28,12 @@ describe('scraper result validation', () => {
 		).toEqual({ date: '19 Jul', time: '13:00', title: 'Race' });
 	});
 
+	it('ignores the lap-by-lap action label on completed race pages', () => {
+		expect(
+			parseRaceSessionText('08 Mar Race 04:00 Report Results Highlights Lap-by-lap')
+		).toEqual({ date: '08 Mar', time: '04:00', title: 'Race' });
+	});
+
 	it('keeps schedule rows when F1 mixes related articles into the session list', () => {
 		expect(
 			parseRaceSessionTexts([
