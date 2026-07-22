@@ -16,8 +16,6 @@ export const init: ServerInit = async () => {
 export const handle: Handle = async ({ event, resolve }) => {
 	if (building) return resolve(event); // ← skip during `vite build`
 
-	console.log('Incoming request:', event.request.method, event.request.url);
-
 	// --- Setup PocketBase ---
 	const pbUrl = publicEnv.PUBLIC_PB_URL;
 	if (!pbUrl) {
