@@ -16,6 +16,7 @@ const MIN_EXPECTED_RACES = 5;
 const MIN_EXPECTED_DRIVERS = 20;
 const MIN_EXPECTED_TEAMS = 10;
 const MIN_EXPECTED_ODDS = 20;
+const RACE_SESSION_TITLE = /^(?:practice [1-3]|qualifying|sprint(?: qualifying| shootout)?|race)$/i;
 
 function hasText(value: unknown): value is string {
 	return typeof value === 'string' && value.trim().length > 0;
@@ -39,7 +40,7 @@ export function parseRaceSessionText(text: string) {
 		.replace(/\s+/g, ' ')
 		.replace(/^(?:Chequered Flag|Next Race)\s+/i, '');
 	const match = normalized.match(
-		/^(\d{1,2}\s+[A-Za-z]+)\s+(.+?)(?:\s+(\d{1,2}:\d{2}(?:\s*-\s*\d{1,2}:\d{2})?))?(?:\s+(?:Expand|Report|Results|Highlights))*$/
+		/^(\d{1,2}\s+[A-Za-z]+)\s+(.+?)(?:\s+(\d{1,2}:\d{2})(?:\s*-\s*\d{1,2}:\d{2})?)?(?:\s+(?:Expand|Report|Results|Highlights))*$/
 	);
 
 	if (!match) return { date: '', time: '', title: '' };
@@ -48,7 +49,11 @@ export function parseRaceSessionText(text: string) {
 }
 
 export function parseRaceSessionTexts(texts: string[]) {
-	return texts.map(parseRaceSessionText).filter((session) => session.date && session.title);
+	return texts
+		.map(parseRaceSessionText)
+		.filter(
+			(session) => session.date && session.time && session.title && RACE_SESSION_TITLE.test(session.title)
+		);
 }
 
 async function closePage(page: Page) {
@@ -104,7 +109,9 @@ export function validateScrapedRaces(races: Race[]) {
 				!hasText(race.location) ||
 				!hasFiniteNumber(race.raceNo) ||
 				race.sessions.length === 0 ||
-				race.sessions.some((session) => !hasText(session.date) || !hasText(session.title))
+				race.sessions.some(
+					(session) => !hasText(session.date) || !hasText(session.time) || !hasText(session.title)
+				)
 		)
 	) {
 		throw new Error(`Race schedule is incomplete (${races.length} rows)`);

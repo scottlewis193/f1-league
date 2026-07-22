@@ -2,6 +2,18 @@ import type { Race } from '$lib/types';
 import { getAdminPb } from './pocketbase';
 import { parseLondon } from '$lib/utils';
 
+function getRaceSession(race: Race) {
+	return (
+		race.sessions.find((session) => session.title?.trim().toLowerCase() === 'race') ??
+		race.sessions.at(-1)
+	);
+}
+
+function getRaceTime(race: Race) {
+	const session = getRaceSession(race);
+	return session ? parseLondon(session.date, session.time, race.year) : Number.NaN;
+}
+
 export async function getRacesQuery() {
 	const pb = await getAdminPb();
 	const races: Race[] = await pb
@@ -16,26 +28,10 @@ export async function getNextRaceQuery() {
 	let races: Race[] = await pb
 		.collection('races')
 		.getFullList({ filter: `year='${new Date().getFullYear()}'` });
-	races = races.sort(
-		(a, b) =>
-			parseLondon(
-				a.sessions[a.sessions.length - 1].date,
-				a.sessions[a.sessions.length - 1].time,
-				a.year
-			) -
-			parseLondon(
-				b.sessions[b.sessions.length - 1].date,
-				b.sessions[b.sessions.length - 1].time,
-				b.year
-			)
-	);
+	races = races.sort((a, b) => getRaceTime(a) - getRaceTime(b));
 
 	for (const race of races) {
-		const fullRaceDate = parseLondon(
-			race.sessions[race.sessions.length - 1].date,
-			race.sessions[race.sessions.length - 1].time,
-			race.year
-		);
+		const fullRaceDate = getRaceTime(race);
 
 		if (fullRaceDate > currentDate) {
 			return race;

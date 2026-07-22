@@ -59,6 +59,35 @@ beforeEach(() => {
 });
 
 describe('server collection helpers', () => {
+	it('selects the race session even when a related article follows it', async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2026-07-22T12:00:00Z'));
+		const { getNextRaceQuery } = await import('./races');
+		setCollection('races', [
+			{
+				id: 'hungary',
+				year: 2026,
+				raceNo: 11,
+				raceName: 'Hungarian Grand Prix',
+				sessions: [
+					{ date: '24 Jul', time: '11:30', title: 'Practice 1' },
+					{ date: '26 Jul', time: '13:00', title: 'Race' },
+					{ date: '5 storylines', time: '', title: "we're excited about ahead of the Hungarian GP" }
+				]
+			},
+			{
+				id: 'netherlands',
+				year: 2026,
+				raceNo: 15,
+				raceName: 'Dutch Grand Prix',
+				sessions: [{ date: '21 Aug', time: '14:00', title: 'Race' }]
+			}
+		]);
+
+		await expect(getNextRaceQuery()).resolves.toMatchObject({ id: 'hungary' });
+		vi.useRealTimers();
+	});
+
 	it('queries and upserts drivers', async () => {
 		const { getDriversQuery, updateDriversQuery } = await import('./drivers');
 		const drivers = setCollection('drivers', [

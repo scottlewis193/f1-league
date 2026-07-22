@@ -14,10 +14,10 @@ describe('scraper result validation', () => {
 		expect(normalizeDriverName('Kimi AntonelliANT')).toBe('Antonelli');
 	});
 
-	it('parses schedule text without relying on DOM descendant positions', () => {
+	it('keeps only the session start time when F1 provides a time range', () => {
 		expect(parseRaceSessionText('24 Jul Practice 1 11:30 - 12:30')).toEqual({
 			date: '24 Jul',
-			time: '11:30 - 12:30',
+			time: '11:30',
 			title: 'Practice 1'
 		});
 	});
@@ -34,10 +34,12 @@ describe('scraper result validation', () => {
 				'24 Jul Practice 1 11:30 - 12:30',
 				'Why the Hungarian Grand Prix is special',
 				'26 Jul Race 13:00',
+				"5 storylines we're excited about ahead of the Hungarian GP 4 hours ago",
+				'25 Jul The 13:00 guide to Budapest',
 				'Destination Budapest: An F1 fan’s guide'
 			])
 		).toEqual([
-			{ date: '24 Jul', time: '11:30 - 12:30', title: 'Practice 1' },
+			{ date: '24 Jul', time: '11:30', title: 'Practice 1' },
 			{ date: '26 Jul', time: '13:00', title: 'Race' }
 		]);
 	});
