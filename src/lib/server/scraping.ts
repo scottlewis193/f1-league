@@ -16,7 +16,6 @@ const MIN_EXPECTED_RACES = 5;
 const MIN_EXPECTED_DRIVERS = 20;
 const MIN_EXPECTED_TEAMS = 10;
 const MIN_EXPECTED_ODDS = 20;
-const RACE_SESSION_TITLE = /^(?:practice [1-3]|qualifying|sprint(?: qualifying| shootout)?|race)$/i;
 
 function hasText(value: unknown): value is string {
 	return typeof value === 'string' && value.trim().length > 0;
@@ -51,9 +50,7 @@ export function parseRaceSessionText(text: string) {
 export function parseRaceSessionTexts(texts: string[]) {
 	return texts
 		.map(parseRaceSessionText)
-		.filter(
-			(session) => session.date && session.time && session.title && RACE_SESSION_TITLE.test(session.title)
-		);
+		.filter((session) => session.date && session.time && session.title);
 }
 
 async function closePage(page: Page) {
@@ -415,6 +412,8 @@ export async function scrapeF1Races(browserInstance?: Browser) {
 		await closePage(page);
 		if (shouldCloseBrowser) await browser.close();
 
+		validateScrapedRaces(allRaces);
+
 		//sort by date
 		allRaces.sort((a, b) => Date.parse(a.sessions[0].date) - Date.parse(b.sessions[0].date));
 
@@ -427,7 +426,7 @@ export async function scrapeF1Races(browserInstance?: Browser) {
 			allRaces[i].raceNo = i + 1;
 		}
 
-		return validateScrapedRaces(allRaces);
+		return allRaces;
 	} catch (e) {
 		await closePage(page);
 		if (shouldCloseBrowser) await browser.close();
