@@ -1,6 +1,6 @@
 import { sendNotifications } from '$lib/notifications';
 import PocketBase from 'pocketbase';
-import { scrapeAll } from '$lib/server/scrapping';
+import { scrapeAll } from '$lib/server/scraping';
 import type { Driver, Player, Race, WiseTransfer } from '$lib/types';
 import { getPlayerStats } from '$lib/utils';
 import { getAdminPb } from './pocketbase';

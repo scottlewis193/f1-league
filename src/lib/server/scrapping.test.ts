@@ -4,7 +4,7 @@ import {
 	validateScrapedOdds,
 	validateScrapedRaces,
 	validateScrapedTeams
-} from './scrapping';
+} from './scraping';
 
 describe('scraper result validation', () => {
 	it('rejects a partial driver standings page', () => {

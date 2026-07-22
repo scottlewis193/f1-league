@@ -41,7 +41,7 @@ vi.mock('./transfers', () => ({
 	createTransferLog
 }));
 vi.mock('$lib/notifications', () => ({ sendNotifications }));
-vi.mock('./scrapping', () => ({ scrapeAll }));
+vi.mock('./scraping', () => ({ scrapeAll }));
 vi.mock('./pocketbase', () => ({ getAdminPb }));
 vi.mock('./races', () => ({ getNextRaceQuery, updateRacesQuery }));
 vi.mock('./odds', () => ({ getOddsQuery, updateOddsQuery }));

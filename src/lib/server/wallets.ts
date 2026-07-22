@@ -41,10 +41,6 @@ export async function getDonationTotalsQuery(): Promise<
 	const players: Player[] = await pb.collection('users').getFullList();
 	const playerMap = new Map(players.map((p) => [p.id, p.name]));
 
-	// Get wallets to map user -> wallet id
-	const wallets: Wallet[] = await pb.collection('wallets').getFullList();
-	const walletById = new Map(wallets.map((w) => [w.id, w.user]));
-
 	// Sum donations per player (transfers into the season wallet)
 	const logs: TransferLog[] = await pb.collection('transfer_logs').getFullList({
 		filter: pb.filter('type = {:type} && targetWallet = {:targetWallet}', {
