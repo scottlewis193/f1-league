@@ -6,7 +6,8 @@ import {
 	validateScrapedTeams,
 	normalizeDriverName,
 	parseRaceSessionText,
-	parseRaceSessionTexts
+	parseRaceSessionTexts,
+	getPodiumFinishUrl
 } from './scraping';
 
 describe('scraper result validation', () => {
@@ -32,6 +33,16 @@ describe('scraper result validation', () => {
 		expect(
 			parseRaceSessionText('08 Mar Race 04:00 Report Results Highlights Lap-by-lap')
 		).toEqual({ date: '08 Mar', time: '04:00', title: 'Race' });
+	});
+
+	it('derives the podium market from the current race winner market', () => {
+		expect(
+			getPodiumFinishUrl([
+				'https://www.oddschecker.com/motorsport/formula-1',
+				'https://www.oddschecker.com/motorsport/formula-1/hungarian-grand-prix/winner',
+				'https://www.oddschecker.com/motorsport/formula-1/drivers-championship/winner'
+			])
+		).toBe('https://www.oddschecker.com/motorsport/formula-1/hungarian-grand-prix/podium-finish');
 	});
 
 	it('keeps schedule rows when F1 mixes related articles into the session list', () => {

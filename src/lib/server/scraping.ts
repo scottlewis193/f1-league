@@ -53,6 +53,14 @@ export function parseRaceSessionTexts(texts: string[]) {
 		.filter((session) => session.date && session.time && session.title);
 }
 
+export function getPodiumFinishUrl(urls: string[]) {
+	const podiumUrl = urls.find((url) => /\/motorsport\/formula-1\/[^/]+\/podium-finish$/.test(url));
+	if (podiumUrl) return podiumUrl;
+
+	const winnerUrl = urls.find((url) => /\/motorsport\/formula-1\/[^/]+\/winner$/.test(url));
+	return winnerUrl?.replace(/\/winner$/, '/podium-finish');
+}
+
 async function closePage(page: Page) {
 	if (page.isClosed()) return;
 
@@ -445,15 +453,13 @@ export const scrapeOdds = async (browserInstance?: Browser) => {
 	try {
 		console.log(`Scraping F1 Race Odds: ${url}`);
 		await page.goto(url, { waitUntil: 'domcontentloaded' });
-		await page.waitForSelector('a[href*="podium-finish"]');
-
-		const podiumFinishUrl = await page.evaluate(() => {
-			const podiumFinishUrl = Array.from(document.querySelectorAll<HTMLAnchorElement>('a')).find(
-				(link) => link.getAttribute('href')?.endsWith('/podium-finish')
-			)?.href;
-
-			return podiumFinishUrl;
-		});
+		await page.waitForFunction(() =>
+			Array.from(document.querySelectorAll<HTMLAnchorElement>('a')).some((link) =>
+				/\/motorsport\/formula-1\/[^/]+\/winner$/.test(link.href)
+			)
+		);
+		const marketUrls = await page.$$eval('a[href]', (links) => links.map((link) => link.href));
+		const podiumFinishUrl = getPodiumFinishUrl(marketUrls);
 		if (!podiumFinishUrl) throw new Error('Podium finish market link was not found');
 
 		const podiumFinishPage = await browser.newPage();
