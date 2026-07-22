@@ -4,12 +4,27 @@ import {
 	validateScrapedOdds,
 	validateScrapedRaces,
 	validateScrapedTeams,
-	normalizeDriverName
+	normalizeDriverName,
+	parseRaceSessionText
 } from './scraping';
 
 describe('scraper result validation', () => {
 	it('removes the driver code appended to the full name', () => {
 		expect(normalizeDriverName('Kimi AntonelliANT')).toBe('Antonelli');
+	});
+
+	it('parses schedule text without relying on DOM descendant positions', () => {
+		expect(parseRaceSessionText('24 Jul Practice 1 11:30 - 12:30')).toEqual({
+			date: '24 Jul',
+			time: '11:30 - 12:30',
+			title: 'Practice 1'
+		});
+	});
+
+	it('ignores schedule status and action labels', () => {
+		expect(
+			parseRaceSessionText('Chequered Flag 19 Jul Race 13:00 Expand Report Results Highlights')
+		).toEqual({ date: '19 Jul', time: '13:00', title: 'Race' });
 	});
 
 	it('rejects a partial driver standings page', () => {

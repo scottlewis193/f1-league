@@ -33,6 +33,20 @@ export function normalizeDriverName(name: string) {
 	return withoutCode.split(' ').at(-1) || '';
 }
 
+export function parseRaceSessionText(text: string) {
+	const normalized = text
+		.trim()
+		.replace(/\s+/g, ' ')
+		.replace(/^(?:Chequered Flag|Next Race)\s+/i, '');
+	const match = normalized.match(
+		/^(\d{1,2}\s+[A-Za-z]+)\s+(.+?)(?:\s+(\d{1,2}:\d{2}(?:\s*-\s*\d{1,2}:\d{2})?))?(?:\s+(?:Expand|Report|Results|Highlights))*$/
+	);
+
+	if (!match) return { date: '', time: '', title: '' };
+
+	return { date: match[1], time: match[3] || '', title: match[2].trim() };
+}
+
 async function closePage(page: Page) {
 	if (page.isClosed()) return;
 
@@ -158,21 +172,24 @@ export async function scrapeDrivers(browserInstance?: Browser) {
 		// Wait for the standings table to load
 		await page.waitForSelector('#results-table');
 
-		const standings = (await page.evaluate(() => {
+		const rawStandings = (await page.evaluate(() => {
 			const rows = Array.from(document.querySelectorAll('#results-table table tbody tr'));
 			return rows.map((row) => {
 				const cols = row.querySelectorAll('td');
 				if (cols.length < 5) return undefined;
 				return {
 					position: Number(cols[0]?.innerText.trim()),
-					name: normalizeDriverName(cols[1]?.innerText.trim().replace(/\n/g, ' ') || ''),
+					name: cols[1]?.innerText.trim().replace(/\n/g, ' ') || '',
 					nationality: cols[2]?.innerText.trim(),
 					team: cols[3]?.innerText.trim(),
 					points: Number(cols[4]?.innerText.trim()),
 					year: 1900
 				};
 			});
-		})) as unknown as Driver[];
+		})) as (Driver | undefined)[];
+		const standings = rawStandings
+			.filter((driver): driver is Driver => Boolean(driver))
+			.map((driver) => ({ ...driver, name: normalizeDriverName(driver.name) }));
 
 		standings.forEach((driver) => {
 			driver.year = SEASON;
@@ -330,30 +347,13 @@ export async function scrapeF1Races(browserInstance?: Browser) {
 				continue;
 			}
 
-			const raceDetails = await racePage.evaluate(() => {
+			const rawRaceDetails = await racePage.evaluate(() => {
 				const raceName = document.querySelector('h1')?.innerText.trim() || '';
 
-				const sessionItems = Array.from(document.querySelectorAll('#maincontent ul li'));
-
-				const sessions = sessionItems.map((li) => {
-					const detail = li.querySelector('span:nth-child(3)');
-					if (!detail) return { title: 'unknown', time: 'unknown', date: 'unknown' };
-					const date =
-						li.querySelector<HTMLSpanElement>('span > span')?.innerText.trim() +
-							' ' +
-							li.querySelector<HTMLSpanElement>('span > span:nth-child(2)')?.innerText.trim() || '';
-					const title =
-						detail.querySelector<HTMLSpanElement>('span > span')?.innerText.trim() || '';
-					const time =
-						detail
-							.querySelector<HTMLTimeElement>('span > span:nth-child(2) > span > time')
-							?.innerText.trim() ||
-						li
-							.querySelector<HTMLTimeElement>('span:nth-child(4) > span > time ')
-							?.innerText.trim() ||
-						'';
-					return { date, time, title };
-				});
+				const sessionItems = Array.from(
+					document.querySelectorAll<HTMLLIElement>('#maincontent ul li')
+				);
+				const sessions = sessionItems.map((li) => li.innerText.trim());
 
 				const raceResultBtn = [...document.querySelectorAll('button')].find(
 					(btn) => btn.textContent?.trim() === 'Race Result'
@@ -379,6 +379,10 @@ export async function scrapeF1Races(browserInstance?: Browser) {
 
 				return { raceName, sessions, raceResults };
 			});
+			const raceDetails = {
+				...rawRaceDetails,
+				sessions: rawRaceDetails.sessions.map(parseRaceSessionText)
+			};
 
 			//check if race exists, if so update race result
 			const raceNameAry = raceDetails.raceName.split(' ');
