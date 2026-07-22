@@ -18,8 +18,13 @@ function makeCollection(records: any[] = []) {
 			const id = filter.match(/id\s*=\s*'([^']+)'/)?.[1];
 			const user = filter.match(/user\s*=\s*'([^']+)'/)?.[1];
 			const endpoint = filter.match(/endpoint\s*=\s*'([^']+)'/)?.[1];
+			const type = filter.match(/type\s*=\s*'([^']+)'/)?.[1];
 			const record = records.find(
-				(item) => item.id === id || item.user === user || item.endpoint === endpoint
+				(item) =>
+					item.id === id ||
+					item.user === user ||
+					item.endpoint === endpoint ||
+					item.type === type
 			);
 			if (!record) throw new Error('missing');
 			return record;
@@ -149,6 +154,7 @@ describe('server collection helpers', () => {
 		const {
 			completeWithdrawal,
 			createTransferLog,
+			getLatestDepositTransferLogQuery,
 			getTransferLogByIdQuery,
 			updateTransferLogStatus
 		} = await import('./transfers');
@@ -161,6 +167,8 @@ describe('server collection helpers', () => {
 		await expect(getWalletByUserIdQuery('user-1')).resolves.toMatchObject({ user: 'user-1' });
 		await updateWalletBalance('wallet-1', 15);
 		await expect(getTransferLogByIdQuery('log-1')).resolves.toMatchObject({ id: 'log-1' });
+		logs.records.unshift({ id: 'deposit-1', type: 'deposit', created: '2026-07-22 10:00:00.000Z' });
+		await expect(getLatestDepositTransferLogQuery()).resolves.toMatchObject({ id: 'deposit-1' });
 		await expect(
 			createTransferLog('log-2', 'user-1', 'wallet-1', 5, 'deposit')
 		).resolves.toMatchObject({
@@ -173,6 +181,7 @@ describe('server collection helpers', () => {
 
 		expect(wallets.update).toHaveBeenCalledWith('wallet-1', { balance: 15 });
 		expect(logs.create).toHaveBeenCalledWith(expect.objectContaining({ id: 'log-2' }));
+		expect(logs.getFirstListItem).toHaveBeenCalledWith("type = 'deposit'", { sort: '-created' });
 		expect(logs.update).toHaveBeenCalledWith('log-2', { status: 'failed' });
 		expect(batchUpdates).toHaveBeenNthCalledWith(1, 'wallets', 'wallet-1', { balance: 5 });
 		expect(batchUpdates).toHaveBeenNthCalledWith(2, 'transfer_logs', 'log-2', {

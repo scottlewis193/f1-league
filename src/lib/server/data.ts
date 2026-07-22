@@ -13,7 +13,11 @@ import {
 	adjustWalletBalance
 } from './wallets';
 import { getNextRaceQuery, updateRacesQuery } from './races';
-import { createTransferLog, getTransferLogByIdQuery } from './transfers';
+import {
+	createTransferLog,
+	getLatestDepositTransferLogQuery,
+	getTransferLogByIdQuery
+} from './transfers';
 import { getOddsQuery, updateOddsQuery } from './odds';
 import { updateTeamsQuery } from './teams';
 import { updateDriversQuery } from './drivers';
@@ -22,6 +26,8 @@ import { getPredictionsQuery } from './predictions';
 import { walletActivityNotificationPayload } from '$lib/domain/wallets';
 
 const ONE_HOUR = 60 * 60 * 1000;
+const DEPOSIT_INITIAL_LOOKBACK_DAYS = 7;
+const DEPOSIT_CURSOR_OVERLAP_DAYS = 1;
 
 export async function refreshF1DataOnce() {
 	//scrape all data and update db every hour
@@ -142,9 +148,12 @@ export async function checkForNewDepositsOnce() {
 		return;
 	}
 
-	const today = new Date();
+	const now = new Date();
+	const latestDeposit = await getLatestDepositTransferLogQuery();
+	const cursor = latestDeposit ? new Date(latestDeposit.created) : undefined;
+	const startDate = getDepositPollingStartDate(now, cursor);
 	const data: WiseTransfer[] = await wiseFetch(
-		'transfers?status=COMPLETED&createdDateStart=' + today.toISOString().split('T')[0],
+		`transfers?status=COMPLETED&createdDateStart=${toWiseDate(startDate)}&createdDateEnd=${toWiseDate(now)}`,
 		'v1',
 		{
 			method: 'GET',
@@ -187,6 +196,22 @@ export async function checkForNewDepositsOnce() {
 			);
 		}
 	}
+}
+
+function getDepositPollingStartDate(now: Date, cursor?: Date) {
+	if (cursor && !Number.isNaN(cursor.getTime())) {
+		const cursorDate = new Date(cursor);
+		cursorDate.setUTCDate(cursorDate.getUTCDate() - DEPOSIT_CURSOR_OVERLAP_DAYS);
+		return cursorDate;
+	}
+
+	const startDate = new Date(now);
+	startDate.setUTCDate(startDate.getUTCDate() - DEPOSIT_INITIAL_LOOKBACK_DAYS);
+	return startDate;
+}
+
+function toWiseDate(date: Date) {
+	return date.toISOString().split('T')[0];
 }
 
 export async function checkForNewDeposits() {

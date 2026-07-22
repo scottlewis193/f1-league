@@ -13,6 +13,18 @@ export async function getTransferLogByIdQuery(id: string) {
 	}
 }
 
+export async function getLatestDepositTransferLogQuery() {
+	const pb = await getAdminPb();
+	try {
+		return await pb.collection('transfer_logs').getFirstListItem<TransferLog>(
+			pb.filter('type = {:type}', { type: 'deposit' }),
+			{ sort: '-created' }
+		);
+	} catch {
+		return null;
+	}
+}
+
 export async function createTransferLog(
 	id: string = '',
 	userId: string,

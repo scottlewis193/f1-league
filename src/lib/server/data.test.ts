@@ -10,6 +10,7 @@ const getAllWalletsQuery = vi.fn();
 const getWalletByIdQuery = vi.fn();
 const adjustWalletBalance = vi.fn();
 const getTransferLogByIdQuery = vi.fn();
+const getLatestDepositTransferLogQuery = vi.fn();
 const createTransferLog = vi.fn();
 const sendNotifications = vi.fn();
 const payOutWinnings = vi.fn();
@@ -34,7 +35,11 @@ vi.mock('./wallets', () => ({
 	adjustWalletBalance,
 	payOutWinnings
 }));
-vi.mock('./transfers', () => ({ getTransferLogByIdQuery, createTransferLog }));
+vi.mock('./transfers', () => ({
+	getTransferLogByIdQuery,
+	getLatestDepositTransferLogQuery,
+	createTransferLog
+}));
 vi.mock('$lib/notifications', () => ({ sendNotifications }));
 vi.mock('./scrapping', () => ({ scrapeAll }));
 vi.mock('./pocketbase', () => ({ getAdminPb }));
@@ -55,6 +60,7 @@ beforeEach(() => {
 	]);
 	getAllWalletsQuery.mockResolvedValue([{ id: 'wallet-1' }]);
 	getTransferLogByIdQuery.mockResolvedValue(null);
+	getLatestDepositTransferLogQuery.mockResolvedValue(null);
 	getWalletByIdQuery.mockResolvedValue({ id: 'wallet-1', user: 'user-1', balance: 7 });
 	createTransferLog.mockResolvedValue({
 		id: '1',
@@ -78,7 +84,9 @@ describe('deposit polling', () => {
 		await checkForNewDepositsOnce();
 
 		expect(wiseFetch).toHaveBeenCalledWith(
-			expect.stringMatching(/^transfers\?status=COMPLETED&createdDateStart=/),
+			expect.stringMatching(
+				/^transfers\?status=COMPLETED&createdDateStart=\d{4}-\d{2}-\d{2}&createdDateEnd=\d{4}-\d{2}-\d{2}$/
+			),
 			'v1',
 			expect.any(Object)
 		);
@@ -88,6 +96,25 @@ describe('deposit polling', () => {
 			expect.objectContaining({ title: 'Deposit received', tag: 'wallet-deposit-1' }),
 			'user-1'
 		);
+	});
+
+	it('resumes from the latest persisted deposit with a one-day overlap', async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2026-07-22T12:00:00.000Z'));
+		getLatestDepositTransferLogQuery.mockResolvedValue({
+			id: '1',
+			created: '2026-07-20 15:30:00.000Z'
+		});
+
+		const { checkForNewDepositsOnce } = await import('./data');
+		await checkForNewDepositsOnce();
+
+		expect(wiseFetch).toHaveBeenCalledWith(
+			'transfers?status=COMPLETED&createdDateStart=2026-07-19&createdDateEnd=2026-07-22',
+			'v1',
+			expect.any(Object)
+		);
+		vi.useRealTimers();
 	});
 	it('skips deposits that already have a transfer log', async () => {
 		const { checkForNewDepositsOnce } = await import('./data');
