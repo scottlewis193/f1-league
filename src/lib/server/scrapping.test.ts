@@ -33,6 +33,18 @@ describe('scraper result validation', () => {
 		expect(() => validateScrapedTeams(teams)).toThrow(/incomplete/);
 	});
 
+	it('accepts the complete 11-team 2026 standings', () => {
+		const teams = Array.from({ length: 11 }, (_, index) => ({
+			id: '',
+			position: index + 1,
+			name: `Team ${index + 1}`,
+			points: index,
+			year: 2026
+		}));
+
+		expect(validateScrapedTeams(teams)).toEqual(teams);
+	});
+
 	it('rejects a race schedule with too few races', () => {
 		expect(() => validateScrapedRaces([])).toThrow(/incomplete/);
 	});

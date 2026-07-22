@@ -186,9 +186,9 @@ export async function scrapeTeams(browserInstance?: Browser) {
 				const cols = row.querySelectorAll('td');
 				if (cols.length < 3) return null;
 				return {
-					position: cols[0]?.innerText.trim(),
+					position: Number(cols[0]?.innerText.trim()),
 					name: cols[1]?.innerText.trim().replace(/\n/g, ' '),
-					points: cols[2]?.innerText.trim()
+					points: Number(cols[2]?.innerText.trim())
 				};
 			});
 		})) as unknown as Team[];
