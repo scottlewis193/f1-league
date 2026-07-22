@@ -323,11 +323,7 @@
 					>
 				</li>
 				<li>
-					<form
-						{...logout}
-						class="flex h-16 items-center"
-						onclick={() => userPopover.hidePopover()}
-					>
+					<form {...logout} class="flex h-16 items-center">
 						<LogOutIcon /> <button type="submit">Log Out</button>
 					</form>
 				</li>
