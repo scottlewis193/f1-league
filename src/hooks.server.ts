@@ -3,6 +3,7 @@ import { env as publicEnv } from '$env/dynamic/public';
 import { env } from '$env/dynamic/private';
 import { redirect, type Handle, type ServerInit } from '@sveltejs/kit';
 import { checkForNewDeposits, refreshF1DataHourly } from '$lib/server/data';
+import { shouldRefreshAuth } from '$lib/server/auth';
 import { dev, building } from '$app/environment';
 
 export const init: ServerInit = async () => {
@@ -32,7 +33,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// --- Verify auth if exists ---
 	try {
 		if (event.locals.pb.authStore.isValid) {
-			await event.locals.pb.collection('users').authRefresh();
+			if (shouldRefreshAuth(event.locals.pb.authStore.token)) {
+				await event.locals.pb.collection('users').authRefresh();
+			}
 			event.locals.user = structuredClone(event.locals.pb.authStore.record);
 		} else {
 			event.locals.user = null;
