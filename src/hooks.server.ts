@@ -52,10 +52,26 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	const response = await resolve(event);
 
+	// The browser SDK still needs to read this cookie for authenticated wallet
+	// reads and realtime subscriptions, so httpOnly cannot be enabled yet.
+	response.headers.set(
+		'content-security-policy',
+		"base-uri 'self'; frame-ancestors 'none'; object-src 'none'"
+	);
+	response.headers.set('x-content-type-options', 'nosniff');
+	response.headers.set('x-frame-options', 'DENY');
+	response.headers.set('referrer-policy', 'strict-origin-when-cross-origin');
+	response.headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=()');
+
 	// --- Persist cookie ---
 	response.headers.set(
 		'set-cookie',
-		event.locals.pb.authStore.exportToCookie({ httpOnly: false, sameSite: 'lax', secure: !dev })
+		event.locals.pb.authStore.exportToCookie({
+			httpOnly: false,
+			sameSite: 'strict',
+			secure: !dev,
+			path: '/'
+		})
 	);
 
 	return response;

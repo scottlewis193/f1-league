@@ -3,5 +3,10 @@ import pb from '$lib/pocketbase';
 
 pb.authStore.loadFromCookie(document.cookie);
 pb.authStore.onChange(() => {
-	document.cookie = pb.authStore.exportToCookie({ httpOnly: false, sameSite: 'lax', secure: !dev });
+	document.cookie = pb.authStore.exportToCookie({
+		httpOnly: false,
+		sameSite: 'strict',
+		secure: !dev,
+		path: '/'
+	});
 }, true);
