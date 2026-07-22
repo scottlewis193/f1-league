@@ -5,7 +5,8 @@ import {
 	validateScrapedRaces,
 	validateScrapedTeams,
 	normalizeDriverName,
-	parseRaceSessionText
+	parseRaceSessionText,
+	parseRaceSessionTexts
 } from './scraping';
 
 describe('scraper result validation', () => {
@@ -25,6 +26,20 @@ describe('scraper result validation', () => {
 		expect(
 			parseRaceSessionText('Chequered Flag 19 Jul Race 13:00 Expand Report Results Highlights')
 		).toEqual({ date: '19 Jul', time: '13:00', title: 'Race' });
+	});
+
+	it('keeps schedule rows when F1 mixes related articles into the session list', () => {
+		expect(
+			parseRaceSessionTexts([
+				'24 Jul Practice 1 11:30 - 12:30',
+				'Why the Hungarian Grand Prix is special',
+				'26 Jul Race 13:00',
+				'Destination Budapest: An F1 fan’s guide'
+			])
+		).toEqual([
+			{ date: '24 Jul', time: '11:30 - 12:30', title: 'Practice 1' },
+			{ date: '26 Jul', time: '13:00', title: 'Race' }
+		]);
 	});
 
 	it('rejects a partial driver standings page', () => {
