@@ -1,5 +1,6 @@
 import type { Driver } from '$lib/types';
 import { getAdminPb } from './pocketbase';
+import { normalizeDriverName } from './scraping';
 
 export async function getDriversQuery() {
 	const pb = await getAdminPb();
@@ -19,13 +20,18 @@ export async function updateDriversQuery(drivers: Partial<Driver>[]) {
 
 	for (const driver of drivers) {
 		if (!driver) return;
+		const normalizedName = normalizeDriverName(driver.name ?? '');
 		const currentDriver = currentDrivers.find(
-			(d) => d.name === driver.name && d.year === driver.year
+			(d) =>
+				d.year === driver.year &&
+				(normalizeDriverName(d.name) === normalizedName ||
+					(normalizedName.split(' ').at(-1) === normalizeDriverName(d.name).split(' ').at(-1) &&
+						d.team === driver.team))
 		);
 
 		if (currentDriver) {
 			await pb.collection('drivers').update(currentDriver.id, {
-				name: driver.name,
+				name: normalizedName,
 				position: driver.position,
 				nationality: driver.nationality,
 				team: driver.team,
@@ -34,7 +40,7 @@ export async function updateDriversQuery(drivers: Partial<Driver>[]) {
 			});
 		} else {
 			await pb.collection('drivers').create({
-				name: driver.name,
+				name: normalizedName,
 				position: driver.position,
 				nationality: driver.nationality,
 				team: driver.team,

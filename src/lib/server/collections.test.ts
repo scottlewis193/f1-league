@@ -21,10 +21,7 @@ function makeCollection(records: any[] = []) {
 			const type = filter.match(/type\s*=\s*'([^']+)'/)?.[1];
 			const record = records.find(
 				(item) =>
-					item.id === id ||
-					item.user === user ||
-					item.endpoint === endpoint ||
-					item.type === type
+					item.id === id || item.user === user || item.endpoint === endpoint || item.type === type
 			);
 			if (!record) throw new Error('missing');
 			return record;
@@ -102,6 +99,34 @@ describe('server collection helpers', () => {
 			filter: `year = ${new Date().getFullYear()}`
 		});
 		expect(drivers.create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Piastri' }));
+	});
+
+	it('updates a driver when the source appends its three-letter code', async () => {
+		const { updateDriversQuery } = await import('./drivers');
+		const drivers = setCollection('drivers', [
+			{
+				id: 'driver-antonelli',
+				name: 'Antonelli',
+				team: 'Mercedes',
+				year: new Date().getFullYear()
+			}
+		]);
+
+		await updateDriversQuery([
+			{
+				name: 'Antonelli',
+				team: 'Mercedes',
+				position: 1,
+				points: 204,
+				year: new Date().getFullYear()
+			}
+		] as Partial<Driver>[]);
+
+		expect(drivers.update).toHaveBeenCalledWith(
+			'driver-antonelli',
+			expect.objectContaining({ name: 'Antonelli', points: 204 })
+		);
+		expect(drivers.create).not.toHaveBeenCalled();
 	});
 
 	it('queries and upserts teams', async () => {
@@ -210,10 +235,7 @@ describe('server collection helpers', () => {
 				return true;
 			});
 
-		const results = await Promise.allSettled([
-			spend(),
-			spend()
-		]);
+		const results = await Promise.allSettled([spend(), spend()]);
 
 		expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
 		expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);

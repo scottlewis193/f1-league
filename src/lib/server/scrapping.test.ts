@@ -3,10 +3,15 @@ import {
 	validateScrapedDrivers,
 	validateScrapedOdds,
 	validateScrapedRaces,
-	validateScrapedTeams
+	validateScrapedTeams,
+	normalizeDriverName
 } from './scraping';
 
 describe('scraper result validation', () => {
+	it('removes the driver code appended to the full name', () => {
+		expect(normalizeDriverName('Kimi AntonelliANT')).toBe('Antonelli');
+	});
+
 	it('rejects a partial driver standings page', () => {
 		const drivers = Array.from({ length: 19 }, (_, index) => ({
 			id: undefined,

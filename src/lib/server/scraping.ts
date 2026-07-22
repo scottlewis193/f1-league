@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import type { Browser } from 'puppeteer';
+import type { Browser, Page } from 'puppeteer';
 import type { Driver, Race, Team } from '../types';
 
 puppeteer.use(StealthPlugin());
@@ -23,6 +23,26 @@ function hasText(value: unknown): value is string {
 
 function hasFiniteNumber(value: unknown): value is number {
 	return typeof value === 'number' && Number.isFinite(value);
+}
+
+export function normalizeDriverName(name: string) {
+	const withoutCode = name
+		.trim()
+		.replace(/\s+/g, ' ')
+		.replace(/([a-z])([A-Z]{3})$/, '$1');
+	return withoutCode.split(' ').at(-1) || '';
+}
+
+async function closePage(page: Page) {
+	if (page.isClosed()) return;
+
+	try {
+		await page.close();
+	} catch (error) {
+		if (!(error instanceof Error) || !error.message.includes('No target with given id')) {
+			throw error;
+		}
+	}
 }
 
 export function validateScrapedDrivers(drivers: Driver[]) {
@@ -145,7 +165,7 @@ export async function scrapeDrivers(browserInstance?: Browser) {
 				if (cols.length < 5) return undefined;
 				return {
 					position: Number(cols[0]?.innerText.trim()),
-					name: cols[1]?.innerText.trim().replace(/\n/g, ' '),
+					name: normalizeDriverName(cols[1]?.innerText.trim().replace(/\n/g, ' ') || ''),
 					nationality: cols[2]?.innerText.trim(),
 					team: cols[3]?.innerText.trim(),
 					points: Number(cols[4]?.innerText.trim()),
@@ -162,7 +182,7 @@ export async function scrapeDrivers(browserInstance?: Browser) {
 	} catch (e) {
 		console.error(e);
 	} finally {
-		await page.close();
+		await closePage(page);
 		if (shouldCloseBrowser) await browser.close();
 	}
 }
@@ -201,7 +221,7 @@ export async function scrapeTeams(browserInstance?: Browser) {
 	} catch (e) {
 		console.error(e);
 	} finally {
-		await page.close();
+		await closePage(page);
 		if (shouldCloseBrowser) await browser.close();
 	}
 }
@@ -252,7 +272,7 @@ export async function scrapeRaceLocations(browserInstance?: Browser) {
 		results.push({ url: link, ...data });
 	}
 
-	await page.close();
+	await closePage(page);
 	if (shouldCloseBrowser) await browser.close();
 
 	return results;
@@ -306,7 +326,7 @@ export async function scrapeF1Races(browserInstance?: Browser) {
 			try {
 				await racePage.waitForSelector('#maincontent ul', { timeout: 3000 });
 			} catch {
-				await racePage.close();
+				await closePage(racePage);
 				continue;
 			}
 
@@ -374,10 +394,10 @@ export async function scrapeF1Races(browserInstance?: Browser) {
 				paidOut: false
 			});
 
-			await racePage.close();
+			await closePage(racePage);
 		}
 
-		await page.close();
+		await closePage(page);
 		if (shouldCloseBrowser) await browser.close();
 
 		//sort by date
@@ -394,7 +414,7 @@ export async function scrapeF1Races(browserInstance?: Browser) {
 
 		return validateScrapedRaces(allRaces);
 	} catch (e) {
-		await page.close();
+		await closePage(page);
 		if (shouldCloseBrowser) await browser.close();
 		console.error(e);
 	}
@@ -461,12 +481,12 @@ export const scrapeOdds = async (browserInstance?: Browser) => {
 			return driverOdds;
 		});
 
-		await podiumFinishPage.close();
-		await page.close();
+		await closePage(podiumFinishPage);
+		await closePage(page);
 		if (shouldCloseBrowser) await browser.close();
 		return validateScrapedOdds(driverOdds);
 	} catch (e) {
-		await page.close();
+		await closePage(page);
 		if (shouldCloseBrowser) await browser.close();
 		console.error(e);
 		console.log(`Warning: Odds Not Available (${page.url()})`);
