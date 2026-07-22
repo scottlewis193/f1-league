@@ -12,6 +12,82 @@ const DEFAULT_BROWSER_ARGS = [
 	'--disable-dev-shm-usage'
 ];
 
+const MIN_EXPECTED_RACES = 5;
+const MIN_EXPECTED_DRIVERS = 20;
+const MIN_EXPECTED_TEAMS = 10;
+const MIN_EXPECTED_ODDS = 20;
+
+function hasText(value: unknown): value is string {
+	return typeof value === 'string' && value.trim().length > 0;
+}
+
+function hasFiniteNumber(value: unknown): value is number {
+	return typeof value === 'number' && Number.isFinite(value);
+}
+
+export function validateScrapedDrivers(drivers: Driver[]) {
+	if (
+		drivers.length < MIN_EXPECTED_DRIVERS ||
+		drivers.some(
+			(driver) =>
+				!hasText(driver.name) ||
+				!hasText(driver.nationality) ||
+				!hasText(driver.team) ||
+				!hasFiniteNumber(driver.position) ||
+				!hasFiniteNumber(driver.points)
+		)
+	) {
+		throw new Error(`Driver standings are incomplete (${drivers.length} rows)`);
+	}
+
+	return drivers;
+}
+
+export function validateScrapedTeams(teams: Team[]) {
+	if (
+		teams.length < MIN_EXPECTED_TEAMS ||
+		teams.some(
+			(team) =>
+				!hasText(team.name) || !hasFiniteNumber(team.position) || !hasFiniteNumber(team.points)
+		)
+	) {
+		throw new Error(`Team standings are incomplete (${teams.length} rows)`);
+	}
+
+	return teams;
+}
+
+export function validateScrapedRaces(races: Race[]) {
+	if (
+		races.length < MIN_EXPECTED_RACES ||
+		races.some(
+			(race) =>
+				!hasText(race.raceName) ||
+				!hasText(race.location) ||
+				!hasFiniteNumber(race.raceNo) ||
+				race.sessions.length === 0 ||
+				race.sessions.some((session) => !hasText(session.date) || !hasText(session.title))
+		)
+	) {
+		throw new Error(`Race schedule is incomplete (${races.length} rows)`);
+	}
+
+	return races;
+}
+
+export function validateScrapedOdds(odds: { driverName: string; odds: number }[]) {
+	if (
+		odds.length < MIN_EXPECTED_ODDS ||
+		odds.some(
+			({ driverName, odds: value }) => !hasText(driverName) || !hasFiniteNumber(value) || value <= 0
+		)
+	) {
+		throw new Error(`Podium odds market is incomplete (${odds.length} rows)`);
+	}
+
+	return odds;
+}
+
 function launchBrowser(defaultViewport?: { width: number; height: number }) {
 	return puppeteer.launch({
 		headless: true,
@@ -63,7 +139,7 @@ export async function scrapeDrivers(browserInstance?: Browser) {
 		await page.waitForSelector('#results-table');
 
 		const standings = (await page.evaluate(() => {
-			const rows = Array.from(document.querySelectorAll('#results-table > div > table tbody tr'));
+			const rows = Array.from(document.querySelectorAll('#results-table table tbody tr'));
 			return rows.map((row) => {
 				const cols = row.querySelectorAll('td');
 				if (cols.length < 5) return undefined;
@@ -82,7 +158,7 @@ export async function scrapeDrivers(browserInstance?: Browser) {
 			driver.year = SEASON;
 		});
 
-		return standings;
+		return validateScrapedDrivers(standings);
 	} catch (e) {
 		console.error(e);
 	} finally {
@@ -105,7 +181,7 @@ export async function scrapeTeams(browserInstance?: Browser) {
 		await page.waitForSelector('#results-table');
 
 		const standings = (await page.evaluate(() => {
-			const rows = Array.from(document.querySelectorAll('#results-table > div > table tbody tr'));
+			const rows = Array.from(document.querySelectorAll('#results-table table tbody tr'));
 			return rows.map((row) => {
 				const cols = row.querySelectorAll('td');
 				if (cols.length < 3) return null;
@@ -121,7 +197,7 @@ export async function scrapeTeams(browserInstance?: Browser) {
 			team.year = SEASON;
 		});
 
-		return standings;
+		return validateScrapedTeams(standings);
 	} catch (e) {
 		console.error(e);
 	} finally {
@@ -228,10 +304,7 @@ export async function scrapeF1Races(browserInstance?: Browser) {
 
 			// Wait for the session table
 			try {
-				await racePage.waitForSelector(
-					'#maincontent > div > div:nth-child(2) > div > div > div:nth-child(1) > div.flex.flex-col.px-px-8.md\\:px-px-16.lg\\:px-px-24.py-px-8.md\\:py-px-16.lg\\:py-px-24.bg-surface-neutral-1.rounded-m > ul',
-					{ timeout: 3000 }
-				);
+				await racePage.waitForSelector('#maincontent ul', { timeout: 3000 });
 			} catch {
 				await racePage.close();
 				continue;
@@ -240,11 +313,7 @@ export async function scrapeF1Races(browserInstance?: Browser) {
 			const raceDetails = await racePage.evaluate(() => {
 				const raceName = document.querySelector('h1')?.innerText.trim() || '';
 
-				const sessionItems = Array.from(
-					document.querySelectorAll(
-						'#maincontent > div > div:nth-child(2) > div > div > div:nth-child(1) > div.flex.flex-col.px-px-8.md\\:px-px-16.lg\\:px-px-24.py-px-8.md\\:py-px-16.lg\\:py-px-24.bg-surface-neutral-1.rounded-m > ul > li'
-					)
-				);
+				const sessionItems = Array.from(document.querySelectorAll('#maincontent ul li'));
 
 				const sessions = sessionItems.map((li) => {
 					const detail = li.querySelector('span:nth-child(3)');
@@ -323,7 +392,7 @@ export async function scrapeF1Races(browserInstance?: Browser) {
 			allRaces[i].raceNo = i + 1;
 		}
 
-		return allRaces;
+		return validateScrapedRaces(allRaces);
 	} catch (e) {
 		await page.close();
 		if (shouldCloseBrowser) await browser.close();
@@ -395,14 +464,7 @@ export const scrapeOdds = async (browserInstance?: Browser) => {
 		await podiumFinishPage.close();
 		await page.close();
 		if (shouldCloseBrowser) await browser.close();
-		const validDriverOdds = driverOdds.filter(
-			({ driverName, odds }) => driverName.length > 0 && Number.isFinite(odds) && odds > 0
-		);
-		if (validDriverOdds.length !== driverOdds.length || validDriverOdds.length < 20) {
-			throw new Error('Podium odds market is incomplete');
-		}
-
-		return validDriverOdds;
+		return validateScrapedOdds(driverOdds);
 	} catch (e) {
 		await page.close();
 		if (shouldCloseBrowser) await browser.close();
