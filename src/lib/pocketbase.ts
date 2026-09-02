@@ -1,12 +1,12 @@
 import PocketBase from 'pocketbase';
-import { PUBLIC_PB_URL } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 
 let _pb: PocketBase | null = null;
 
 function getPb(): PocketBase {
   if (!_pb) {
     const url = typeof window !== 'undefined'
-      ? (window.__PB_URL__ || PUBLIC_PB_URL || '')
+      ? (window.__PB_URL__ || env.PUBLIC_PB_URL || '')
       : '';
     _pb = new PocketBase(url);
     _pb.autoCancellation(false);

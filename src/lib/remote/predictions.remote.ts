@@ -3,7 +3,6 @@ import { fail, redirect } from '@sveltejs/kit';
 import * as v from 'valibot';
 import { getFeatureFlagStatus } from '$lib/server/data';
 import { isPredictionEntryFeeBypassed } from '$lib/utils';
-import { PREDICTION_ENTRY_FEE, PREDICTION_WALLET_ID } from '$env/static/private';
 import { env } from '$env/dynamic/private';
 import { getWalletByUserIdQuery, transferBetweenWallets } from '$lib/server/wallets';
 import {
@@ -62,16 +61,28 @@ export const addUpdatePrediction = form(
 				env.PREDICTION_ENTRY_FEE_BYPASS_USER_IDS ?? ''
 			);
 			const entryFeeRequired = wageringEnabled && !entryFeeBypassed;
+			const predictionEntryFee = Number(env.PREDICTION_ENTRY_FEE);
+			const predictionWalletId = env.PREDICTION_WALLET_ID;
 			let sourceWalletId = '';
+			let configuredPredictionWalletId = '';
 
 			if (entryFeeRequired) {
+				if (
+					!env.PREDICTION_ENTRY_FEE ||
+					!Number.isFinite(predictionEntryFee) ||
+					!predictionWalletId
+				) {
+					return fail(500, { error: 'Prediction payments are not configured' });
+				}
+				configuredPredictionWalletId = predictionWalletId;
+
 				try {
 					const wallet = await getWalletByUserIdQuery(user || '');
 					sourceWalletId = wallet.id;
 					await transferBetweenWallets({
-						amount: Number(PREDICTION_ENTRY_FEE),
+						amount: predictionEntryFee,
 						sourceWalletId,
-						targetWalletId: PREDICTION_WALLET_ID,
+						targetWalletId: configuredPredictionWalletId,
 						userId: user
 					});
 				} catch {
@@ -92,8 +103,8 @@ export const addUpdatePrediction = form(
 				if (entryFeeRequired) {
 					try {
 						await transferBetweenWallets({
-							amount: Number(PREDICTION_ENTRY_FEE),
-							sourceWalletId: PREDICTION_WALLET_ID,
+							amount: predictionEntryFee,
+							sourceWalletId: configuredPredictionWalletId,
 							targetWalletId: sourceWalletId,
 							userId: user,
 							allowOverdraft: true
