@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const env = {
 	WISE_API_KEY: 'wise-key',
 	WISE_API_BASE: 'https://wise.test',
-	WISE_ACCOUNT_ID: '123'
+	WISE_ACCOUNT_ID: '123',
+	WISE_PROFILE_ID: '456'
 };
 const wiseFetch = vi.fn();
 const getAllWalletsQuery = vi.fn();
@@ -85,7 +86,7 @@ describe('deposit polling', () => {
 
 		expect(wiseFetch).toHaveBeenCalledWith(
 			expect.stringMatching(
-				/^transfers\?status=COMPLETED&createdDateStart=\d{4}-\d{2}-\d{2}&createdDateEnd=\d{4}-\d{2}-\d{2}$/
+				/^transfers\?profile=456&status=outgoing_payment_sent&offset=0&limit=100&createdDateStart=\d{4}-\d{2}-\d{2}&createdDateEnd=\d{4}-\d{2}-\d{2}$/
 			),
 			'v1',
 			expect.any(Object)
@@ -127,7 +128,7 @@ describe('deposit polling', () => {
 		await checkForNewDepositsOnce();
 
 		expect(wiseFetch).toHaveBeenCalledWith(
-			'transfers?status=COMPLETED&createdDateStart=2026-07-19&createdDateEnd=2026-07-22',
+			'transfers?profile=456&status=outgoing_payment_sent&offset=0&limit=100&createdDateStart=2026-07-19&createdDateEnd=2026-07-22',
 			'v1',
 			expect.any(Object)
 		);

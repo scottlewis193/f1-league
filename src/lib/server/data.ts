@@ -143,7 +143,7 @@ export async function refreshF1DataHourly() {
 }
 
 export async function checkForNewDepositsOnce() {
-	if (!env.WISE_API_KEY || !env.WISE_API_BASE || !env.WISE_ACCOUNT_ID) {
+	if (!env.WISE_API_KEY || !env.WISE_API_BASE || !env.WISE_ACCOUNT_ID || !env.WISE_PROFILE_ID) {
 		console.warn('Wise deposit polling skipped: Wise environment variables are not configured');
 		return;
 	}
@@ -153,7 +153,7 @@ export async function checkForNewDepositsOnce() {
 	const cursor = latestDeposit ? new Date(latestDeposit.created) : undefined;
 	const startDate = getDepositPollingStartDate(now, cursor);
 	const data: WiseTransfer[] = await wiseFetch(
-		`transfers?status=COMPLETED&createdDateStart=${toWiseDate(startDate)}&createdDateEnd=${toWiseDate(now)}`,
+		`transfers?profile=${env.WISE_PROFILE_ID}&status=outgoing_payment_sent&offset=0&limit=100&createdDateStart=${toWiseDate(startDate)}&createdDateEnd=${toWiseDate(now)}`,
 		'v1',
 		{
 			method: 'GET',
