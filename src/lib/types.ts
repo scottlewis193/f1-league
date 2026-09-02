@@ -106,13 +106,13 @@ export type WiseTransfer = {
 	quote: number;
 	quoteUuid: string;
 	status: string;
-	reference: string;
+	reference?: string;
 	rate: number;
 	created: string;
 	business: number;
 	transferRequest: number;
-	details: {
-		reference: string;
+	details?: {
+		reference?: string;
 	};
 	hasActiveIssues: boolean;
 	sourceCurrency: string;

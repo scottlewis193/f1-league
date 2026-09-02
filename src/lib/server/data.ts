@@ -170,14 +170,17 @@ export async function checkForNewDepositsOnce() {
 	//get all wallet ids and then filter data so we only have transfers where the reference equals one of the wallet ids
 	const walletIds = (await getAllWalletsQuery()).map((wallet) => wallet.id);
 
-	const filteredDeposits = deposits.filter((transfer) => walletIds.includes(transfer.reference));
+	const filteredDeposits = deposits.filter((transfer) =>
+		walletIds.includes(getWiseTransferReference(transfer))
+	);
 
 	for (const deposit of filteredDeposits) {
 		//check if deposit has log already, if not add it and update wallet balance
 		const existingTransferLog = await getTransferLogByIdQuery(String(deposit.id));
 		if (existingTransferLog) continue;
 
-		const wallet = await getWalletByIdQuery(deposit.reference);
+		const walletId = getWiseTransferReference(deposit);
+		const wallet = await getWalletByIdQuery(walletId);
 		if (!wallet) continue;
 
 		const transferLog = await createTransferLog(
@@ -187,7 +190,7 @@ export async function checkForNewDepositsOnce() {
 			deposit.targetValue,
 			'deposit'
 		);
-		await adjustWalletBalance(deposit.reference, deposit.targetValue);
+		await adjustWalletBalance(walletId, deposit.targetValue);
 
 		const payload = walletActivityNotificationPayload(transferLog);
 		if (payload) {
@@ -196,6 +199,10 @@ export async function checkForNewDepositsOnce() {
 			);
 		}
 	}
+}
+
+function getWiseTransferReference(transfer: WiseTransfer) {
+	return transfer.details?.reference || transfer.reference || '';
 }
 
 function getDepositPollingStartDate(now: Date, cursor?: Date) {

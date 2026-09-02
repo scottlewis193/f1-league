@@ -98,6 +98,23 @@ describe('deposit polling', () => {
 		);
 	});
 
+	it('credits deposits using the current Wise details reference', async () => {
+		wiseFetch.mockResolvedValue([
+			{
+				id: 4,
+				targetAccount: 123,
+				details: { reference: 'wallet-1' },
+				targetValue: 15
+			}
+		]);
+
+		const { checkForNewDepositsOnce } = await import('./data');
+		await checkForNewDepositsOnce();
+
+		expect(createTransferLog).toHaveBeenCalledWith('4', 'user-1', 'wallet-1', 15, 'deposit');
+		expect(adjustWalletBalance).toHaveBeenCalledWith('wallet-1', 15);
+	});
+
 	it('resumes from the latest persisted deposit with a one-day overlap', async () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date('2026-07-22T12:00:00.000Z'));
