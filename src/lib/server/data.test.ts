@@ -128,12 +128,28 @@ describe('deposit polling', () => {
 		await checkForNewDepositsOnce();
 
 		expect(wiseFetch).toHaveBeenCalledWith(
-			'transfers?profile=456&status=outgoing_payment_sent&offset=0&limit=100&createdDateStart=2026-07-19&createdDateEnd=2026-07-22',
+			'transfers?profile=456&status=outgoing_payment_sent&offset=0&limit=100&createdDateStart=2026-07-19&createdDateEnd=2026-07-23',
 			'v1',
 			expect.any(Object)
 		);
 		vi.useRealTimers();
 	});
+
+	it('includes deposits created during the current UTC day', async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2026-09-03T15:29:00.000Z'));
+
+		const { checkForNewDepositsOnce } = await import('./data');
+		await checkForNewDepositsOnce();
+
+		expect(wiseFetch).toHaveBeenCalledWith(
+			'transfers?profile=456&status=outgoing_payment_sent&offset=0&limit=100&createdDateStart=2026-08-27&createdDateEnd=2026-09-04',
+			'v1',
+			expect.any(Object)
+		);
+		vi.useRealTimers();
+	});
+
 	it('skips deposits that already have a transfer log', async () => {
 		const { checkForNewDepositsOnce } = await import('./data');
 

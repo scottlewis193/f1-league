@@ -152,8 +152,10 @@ export async function checkForNewDepositsOnce() {
 	const latestDeposit = await getLatestDepositTransferLogQuery();
 	const cursor = latestDeposit ? new Date(latestDeposit.created) : undefined;
 	const startDate = getDepositPollingStartDate(now, cursor);
+	const endDate = new Date(now);
+	endDate.setUTCDate(endDate.getUTCDate() + 1);
 	const data: WiseTransfer[] = await wiseFetch(
-		`transfers?profile=${env.WISE_PROFILE_ID}&status=outgoing_payment_sent&offset=0&limit=100&createdDateStart=${toWiseDate(startDate)}&createdDateEnd=${toWiseDate(now)}`,
+		`transfers?profile=${env.WISE_PROFILE_ID}&status=outgoing_payment_sent&offset=0&limit=100&createdDateStart=${toWiseDate(startDate)}&createdDateEnd=${toWiseDate(endDate)}`,
 		'v1',
 		{
 			method: 'GET',
