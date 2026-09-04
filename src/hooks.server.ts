@@ -1,6 +1,5 @@
 import PocketBase from 'pocketbase';
 import { env as publicEnv } from '$env/dynamic/public';
-import { env } from '$env/dynamic/private';
 import { redirect, type Handle, type ServerInit } from '@sveltejs/kit';
 import { checkForNewDeposits, refreshF1DataHourly } from '$lib/server/data';
 import { shouldRefreshAuth } from '$lib/server/auth';
@@ -50,7 +49,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 		if (!event.request.url.includes('/login')) redirect(308, '/login');
 	}
 
-	const response = await resolve(event);
+	const response = await resolve(event, {
+		// Module-preload links plus the auth cookie pushed the dashboard response headers
+		// past Nginx Proxy Manager's 4 KiB upstream-header buffer. Browsers still load the
+		// entry graph normally; keep only CSS/font preloads in the response header.
+		preload: ({ type }) => type !== 'js'
+	});
 
 	// The browser SDK still needs to read this cookie for authenticated wallet
 	// reads and realtime subscriptions, so httpOnly cannot be enabled yet.
