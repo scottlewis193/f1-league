@@ -4,8 +4,19 @@ services:
     ports:
       - '9173:9173'
     shm_size: '512mb'
-    env_file:
-      - .env.production
     environment:
-      - NODE_ENV=production
+      NODE_ENV: production
+      PUBLIC_PB_URL: ${PUBLIC_PB_URL:?Set PUBLIC_PB_URL in Arcane}
+      PB_USER: ${PB_USER:?Set PB_USER in Arcane}
+      PB_PASS: ${PB_PASS:?Set PB_PASS in Arcane}
+      WISE_API_KEY: ${WISE_API_KEY:?Set WISE_API_KEY in Arcane}
+      WISE_API_BASE: ${WISE_API_BASE:?Set WISE_API_BASE in Arcane}
+      WISE_PROFILE_ID: ${WISE_PROFILE_ID:?Set WISE_PROFILE_ID in Arcane}
+      WISE_ACCOUNT_ID: ${WISE_ACCOUNT_ID:?Set WISE_ACCOUNT_ID in Arcane}
+      PUBLIC_VAPID_PUBLIC_KEY: ${PUBLIC_VAPID_PUBLIC_KEY-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY-}
+      PREDICTION_ENTRY_FEE: ${PREDICTION_ENTRY_FEE:?Set PREDICTION_ENTRY_FEE in Arcane}
+      PREDICTION_WALLET_ID: ${PREDICTION_WALLET_ID:?Set PREDICTION_WALLET_ID in Arcane}
+      SEASON_WALLET_ID: ${SEASON_WALLET_ID:?Set SEASON_WALLET_ID in Arcane}
+      PREDICTION_ENTRY_FEE_BYPASS_USER_IDS: ${PREDICTION_ENTRY_FEE_BYPASS_USER_IDS-}
     restart: unless-stopped
