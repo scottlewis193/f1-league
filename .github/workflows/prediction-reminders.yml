@@ -1,11 +1,17 @@
 name: Prediction Reminder Notifications
 
 on:
-  # Run every 6 hours (to catch different timezones and race schedules)
   schedule:
+    # Keep reminders on their existing cadence.
     - cron: '0 */6 * * *'
+    # Check closures promptly without repeating reminders.
+    - cron: '*/10 * * * *'
   # Allow manual trigger
   workflow_dispatch:
+
+concurrency:
+  group: prediction-reminders
+  cancel-in-progress: false
 
 jobs:
   send-reminders:
@@ -14,12 +20,18 @@ jobs:
       - name: Send Prediction Reminders
         env:
           F1_LEAGUE_API_URL: ${{ secrets.F1_LEAGUE_API_URL || 'https://f1-league.hades.ws' }}
+          SCHEDULE: ${{ github.event.schedule }}
         run: |
           echo "Sending prediction reminder notifications..."
           echo "API URL: ${F1_LEAGUE_API_URL}"
+
+          API_URL="${F1_LEAGUE_API_URL}/api/notifications/predictions"
+          if [ "${SCHEDULE}" = '*/10 * * * *' ]; then
+            API_URL="${API_URL}?closure-only=1"
+          fi
           
           # Call the prediction reminder endpoint
-          RESPONSE=$(curl -s -X POST "${F1_LEAGUE_API_URL}/api/notifications/predictions" \
+          RESPONSE=$(curl -s -X POST "${API_URL}" \
             -H "Content-Type: application/json")
           
           echo "Response: ${RESPONSE}"

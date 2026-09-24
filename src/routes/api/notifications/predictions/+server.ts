@@ -8,16 +8,18 @@ import { sendPredictionReminderNotifications } from '$lib/server/notifications';
  *   - race: Optional race name filter (e.g., "British" for "British Grand Prix")
  *   - message: Custom message to override the default
  *   - dry-run: Set to "1" to get results without actually sending
+ *   - closure-only: Set to "1" for frequent deadline checks without sending reminders
  * 
- * Called by GitHub Actions cron workflow every 6 hours on race weekends.
+ * Called by GitHub Actions cron workflow every 10 minutes.
  */
 export const POST: RequestHandler = async ({ url }) => {
 	const raceName = url.searchParams.get('race') || undefined;
 	const customMessage = url.searchParams.get('message') || undefined;
 	const dryRun = url.searchParams.get('dry-run') === '1';
+	const closureOnly = url.searchParams.get('closure-only') === '1';
 
 	try {
-		const result = await sendPredictionReminderNotifications(raceName, customMessage, dryRun);
+		const result = await sendPredictionReminderNotifications(raceName, customMessage, dryRun, closureOnly);
 
 		return new Response(
 			JSON.stringify({

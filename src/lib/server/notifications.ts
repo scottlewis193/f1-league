@@ -2,14 +2,16 @@ import { getAdminPb } from './pocketbase';
 import { getRacesQuery, getNextRaceQuery } from './races';
 import { getPredictionsQuery } from './predictions';
 import { sendNotifications } from '$lib/notifications';
+import { parseLondon } from '$lib/utils';
 
 const REMINDER_WINDOW_MS = 48 * 60 * 60 * 1000;
-const CRON_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const CLOSURE_GRACE_MS = 6 * 60 * 60 * 1000;
 
 export async function sendPredictionReminderNotifications(
 	raceName?: string,
 	message?: string,
-	dryRun = false
+	dryRun = false,
+	closureOnly = false
 ): Promise<{
 	status: string;
 	totalUsers: number;
@@ -27,39 +29,49 @@ export async function sendPredictionReminderNotifications(
 	let race;
 	if (raceName) {
 		const races = await getRacesQuery();
-		console.log(`[notifications] races for year ${new Date().getFullYear()}:`, races.length, races.map((r) => r.raceName));
 		race = races.find((r) => r.raceName.includes(raceName));
 		if (!race) {
 			return { status: 'race_not_found', totalUsers: 0, submittedUsers: 0, nonSubmitters: [] };
 		}
 	} else {
-		const races = await getRacesQuery();
-		console.log(`[notifications] next race query - year ${new Date().getFullYear()}, races found:`, races.length);
-		if (races.length) console.log('[notifications] races:', JSON.stringify(races.map((r) => ({ id: r.id, name: r.raceName, sessions: r.sessions?.length ?? 'MISSING' }))));
 		race = await getNextRaceQuery();
 	}
-	console.log(`[notifications] resolved race:`, race ? `${race.raceName} (sessions: ${race.sessions?.length ?? 'MISSING'})` : 'null');
-
-	// Get all predictions for this race
-	const allPredictions = await getPredictionsQuery();
-	const racePredictions = allPredictions.filter((p) => p.race === race.id);
-	const submittedUserIds = new Set(racePredictions.map((p) => p.user));
-
-	// Get all users
-	const allUsers = await pb.collection('users').getFullList();
-	const totalUsers = allUsers.length;
-
-	// Find users who haven't submitted
-	const nonSubmitters = allUsers.filter((u) => !submittedUserIds.has(u.id));
+	if (!race) {
+		return { status: 'race_not_found', totalUsers: 0, submittedUsers: 0, nonSubmitters: [] };
+	}
 
 	// Prediction window closes at the start of the first race session.
 	const firstSession = race.sessions[0];
-	const submissionDeadline = new Date(
-		Date.parse(firstSession.date + ' ' + race.year + ' ' + firstSession.time)
-	);
+	if (!firstSession) {
+		throw new Error(`Missing first session for race ${race.id}`);
+	}
+	const deadlineTime = parseLondon(firstSession.date, firstSession.time, race.year);
+	if (!Number.isFinite(deadlineTime)) {
+		throw new Error(`Invalid prediction deadline for race ${race.id}`);
+	}
+	const submissionDeadline = new Date(deadlineTime);
 	const now = Date.now();
-	const deadlineTime = submissionDeadline.getTime();
 	const reminderStartTime = deadlineTime - REMINDER_WINDOW_MS;
+	if (closureOnly && (now < deadlineTime || now > deadlineTime + CLOSURE_GRACE_MS)) {
+		return {
+			status: now < deadlineTime ? 'awaiting_closure' : 'window_closed',
+			totalUsers: 0,
+			submittedUsers: 0,
+			nonSubmitters: [],
+			raceName: race.raceName,
+			deadline: submissionDeadline.toISOString(),
+			successCount: 0,
+			failCount: 0
+		};
+	}
+
+	// Counts are needed only when the reminder window is active or closure is due.
+	const allPredictions = await getPredictionsQuery();
+	const racePredictions = allPredictions.filter((p) => p.race === race.id);
+	const submittedUserIds = new Set(racePredictions.map((p) => p.user));
+	const allUsers = await pb.collection('users').getFullList();
+	const totalUsers = allUsers.length;
+	const nonSubmitters = allUsers.filter((u) => !submittedUserIds.has(u.id));
 	const nonSubmitterNames = nonSubmitters.map((u) => u.name);
 
 	if (now < reminderStartTime) {
@@ -77,7 +89,7 @@ export async function sendPredictionReminderNotifications(
 	}
 
 	if (now >= deadlineTime) {
-		if (now > deadlineTime + CRON_INTERVAL_MS) {
+		if (now > deadlineTime + CLOSURE_GRACE_MS) {
 			return {
 				status: 'window_closed',
 				totalUsers,
@@ -103,6 +115,29 @@ export async function sendPredictionReminderNotifications(
 			};
 		}
 
+		const markerName = `prediction-window-closed-${race.id}`;
+		let alreadyNotified = false;
+		try {
+			const marker = await pb.collection('feature_flags').getFirstListItem(
+				pb.filter('name = {:name}', { name: markerName })
+			);
+			alreadyNotified = marker.enabled;
+		} catch (error) {
+			if ((error as { status?: number }).status !== 404) throw error;
+		}
+		if (alreadyNotified) {
+			return {
+				status: 'window_already_notified',
+				totalUsers,
+				submittedUsers: submittedUserIds.size,
+				nonSubmitters: nonSubmitterNames,
+				raceName: race.raceName,
+				deadline: submissionDeadline.toISOString(),
+				successCount: 0,
+				failCount: 0
+			};
+		}
+
 		const result = await sendNotifications({
 			title: `🔒 ${race.raceName} Predictions Closed`,
 			body: 'The prediction window has closed. Good luck!',
@@ -114,6 +149,9 @@ export async function sendPredictionReminderNotifications(
 				raceName: race.raceName
 			}
 		});
+		if (result.successCount > 0) {
+			await pb.collection('feature_flags').create({ name: markerName, enabled: true });
+		}
 		return {
 			status: result.status || 'window_closed_notification_sent',
 			totalUsers,

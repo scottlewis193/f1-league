@@ -69,12 +69,15 @@ describe('API routes', () => {
 
 		const response = await POST({ url: new URL('https://app.test/api/notifications/predictions?race=British&message=Go&dry-run=1') } as any);
 
-		expect(sendPredictionReminderNotifications).toHaveBeenCalledWith('British', 'Go', true);
+		expect(sendPredictionReminderNotifications).toHaveBeenCalledWith('British', 'Go', true, false);
 		expect(await jsonOf(response)).toMatchObject({
 			success: true,
 			dryRun: true,
 			data: { status: 'dry_run', nonSubmitterCount: 1, raceName: 'British GP' }
 		});
+
+		await POST({ url: new URL('https://app.test/api/notifications/predictions?closure-only=1') } as any);
+		expect(sendPredictionReminderNotifications).toHaveBeenLastCalledWith(undefined, undefined, false, true);
 	});
 
 	it('wraps notification test endpoint results', async () => {
