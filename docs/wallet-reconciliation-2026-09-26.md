@@ -1,8 +1,8 @@
 # Wallet reconciliation — 26 September 2026
 
-Read-only investigation. No production balances, logs or code changed by the agent.
+Investigation followed by the exact production correction explicitly approved by the user. See the completed reconciliation below.
 
-**Latest finding:** signed-in admin request logs confirm manual wallet-record edits between today’s payouts. The earlier £0.50 “balance before today” calculation is not established: it omitted these edits. See the admin-log follow-up below.
+**Final status:** deleted the approved extra payout and changed Rachel’s wallet from £15.50 to £8.50. Verified wallet total £90.50 = live Wise GBP £90.51 minus £0.01. Historical ledger limitations below remain unresolved.
 
 ## Finding
 
@@ -115,3 +115,15 @@ The user requested deleting one payout and calculating balances from `transfer_l
 | **Total** | | | | | **£90.51** |
 
 The total agrees with Wise's API balance, including the extra penny the user asked us to ignore. Individual balances are not trustworthy: old payout logs recorded £5 irrespective of actual credited amounts, a China credit to Rachel appears absent, and manual record updates intervened. Removing an internal transfer log reallocates £7.50 between source and recipient in a ledger replay; it does not change the ledger total and does not itself change stored wallet balances. No wallet balances were updated. Exact per-user balances need historical ledger corrections or a verified opening balance/snapshot before any reset is supported.
+
+## Completed user-approved reconciliation
+
+The user explicitly approved deleting Rachel’s first £7.50 payout `i2mq85y615w6jge` and setting her balance to £8.50. Completed both operations through the PocketBase API:
+
+- Backed up the exact removed record to `docs/reconciliation/removed-duplicate-payout-2026-09-26.json`. Deletion returned HTTP 204; subsequent lookup returned 404.
+- Verified the paired second payouts `o2xfn1cngsatiq8` (Rachel) and `z5fj2jzyhrdrmkn` (Nathan) still exist.
+- Backed up the wallet records before the correction to `docs/reconciliation/wallet-balances-before-2026-09-26.json`. Patched only Rachel’s balance from £15.50 to £8.50, a £7 reduction.
+- Verified all four other wallet balances remain unchanged. Final values: Scott £0.50; Rachel £8.50; Nathan £10.50; prediction £0; season £71. Total £90.50.
+- Fresh Wise GBP balance read returned £90.51. Verified `wallet total = Wise balance - £0.01`. PocketBase now has 132 transfer logs.
+
+This is an explicitly approved reconciliation adjustment, not a claim that the historical transfer ledger now reproduces every wallet. Removing the £7.50 log and reducing the wallet by £7 are intentionally separate operations; the user approved the £90.50 target and Rachel’s £8.50 balance despite the unresolved old/manual-edit history. No Wise funds moved and no application code changed.

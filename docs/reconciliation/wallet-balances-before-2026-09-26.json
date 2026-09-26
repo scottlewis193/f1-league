@@ -1,0 +1,66 @@
+{
+  "reason": "User-approved reconciliation to Wise GBP balance minus £0.01; Rachel £15.50 to £8.50.",
+  "capturedAt": "2026-09-26T18:08:45.012Z",
+  "wallets": [
+    {
+      "balance": 0.5,
+      "collectionId": "pbc_120182150",
+      "collectionName": "wallets",
+      "created": "2026-02-18 20:06:51.379Z",
+      "id": "4tlqef10qd0abye",
+      "profit": 0,
+      "type": "user",
+      "updated": "2026-09-22 13:43:44.577Z",
+      "user": "s37stisvmqvaip8",
+      "wiseRecipientId": 1352160694
+    },
+    {
+      "balance": 15.5,
+      "collectionId": "pbc_120182150",
+      "collectionName": "wallets",
+      "created": "2026-02-18 20:07:06.816Z",
+      "id": "roz4aohd5er8z3v",
+      "profit": 0,
+      "type": "user",
+      "updated": "2026-09-26 17:11:50.867Z",
+      "user": "j9h0izyz9e9ho02",
+      "wiseRecipientId": 1352095847
+    },
+    {
+      "balance": 10.5,
+      "collectionId": "pbc_120182150",
+      "collectionName": "wallets",
+      "created": "2026-02-18 20:07:16.361Z",
+      "id": "xtc6ftybbkzra8v",
+      "profit": 0,
+      "type": "user",
+      "updated": "2026-09-26 17:11:50.926Z",
+      "user": "r7z4fopkw7tm3ni",
+      "wiseRecipientId": 1356087046
+    },
+    {
+      "balance": 0,
+      "collectionId": "pbc_120182150",
+      "collectionName": "wallets",
+      "created": "2026-02-18 20:11:51.725Z",
+      "id": "s3xplu2rtlb8o0d",
+      "profit": 0,
+      "type": "prediction",
+      "updated": "2026-09-26 17:11:50.911Z",
+      "user": "",
+      "wiseRecipientId": 0
+    },
+    {
+      "balance": 71,
+      "collectionId": "pbc_120182150",
+      "collectionName": "wallets",
+      "created": "2026-02-18 20:18:11.151Z",
+      "id": "6ktan6n8znpo4zr",
+      "profit": 0,
+      "type": "season",
+      "updated": "2026-09-22 13:43:44.583Z",
+      "user": "",
+      "wiseRecipientId": 0
+    }
+  ]
+}

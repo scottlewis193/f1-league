@@ -1,0 +1,16 @@
+{
+  "reason": "User-authorized removal of extra first Rachel payout; retain the second paired Rachel/Nathan payouts.",
+  "backedUpAt": "2026-09-26T18:08:40.830Z",
+  "record": {
+    "amount": 7.5,
+    "collectionId": "pbc_558815055",
+    "collectionName": "transfer_logs",
+    "created": "2026-09-26 13:54:49.869Z",
+    "id": "i2mq85y615w6jge",
+    "targetWallet": "roz4aohd5er8z3v",
+    "type": "transfer",
+    "updated": "2026-09-26 13:54:49.869Z",
+    "user": "j9h0izyz9e9ho02",
+    "wallet": "s3xplu2rtlb8o0d"
+  }
+}
