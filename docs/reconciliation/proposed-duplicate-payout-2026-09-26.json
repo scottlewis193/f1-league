@@ -1,0 +1,16 @@
+{
+  "status": "Proposed deletion only; live record has NOT been deleted.",
+  "reason": "Extra first Rachel payout; retain paired second Rachel/Nathan payouts.",
+  "record": {
+    "amount": 7.5,
+    "collectionId": "pbc_558815055",
+    "collectionName": "transfer_logs",
+    "created": "2026-09-26 13:54:49.869Z",
+    "id": "i2mq85y615w6jge",
+    "targetWallet": "roz4aohd5er8z3v",
+    "type": "transfer",
+    "updated": "2026-09-26 13:54:49.869Z",
+    "user": "j9h0izyz9e9ho02",
+    "wallet": "s3xplu2rtlb8o0d"
+  }
+}

@@ -98,3 +98,20 @@ Given the £7.50 second application credit and current £15.50 balance, Rachel�
 A coherent hypothesis is: reconstructed Rachel balance £1 → first winnings £7.50 → £8.50; manual edit reduces it to £8; second winnings £7.50 → £15.50. The pool is restored from £7.50 to £15, then pays £15 on the second pass. The combined manual balance changes would create £7 net (£7.50 added to the pool minus £0.50 removed from Rachel), matching the user’s reported gap. **The log timestamps support this sequence, but the missing old/new values mean the £0.50 reduction and pool restoration are not proven.**
 
 Correction to earlier conclusions: £0.50 is only current balance minus the two payout logs, not a verified balance before the first payout. The apparent 50p discrepancy need not be historical; today’s manual edit is a concrete candidate. £1.00 before the first payout and £8.50 after one correct payout remain reconstruction-based figures. No production correction was performed.
+
+## Proposed duplicate removal and literal ledger balances
+
+The user requested deleting one payout and calculating balances from `transfer_logs`. Live preflight still found 133 records and £97.50 stored across wallets. Proposed removal: first Rachel £7.50 payout `i2mq85y615w6jge` (26 September 14:54:49.869 BST), retaining `o2xfn1cngsatiq8` and `z5fj2jzyhrdrmkn`, the final paired Rachel/Nathan payments. Full proposed record is backed up in `docs/reconciliation/proposed-duplicate-payout-2026-09-26.json`.
+
+**Deletion has NOT occurred.** Automatic approval review rejected deleting a live financial record without confirmation of the exact chosen payout. No alternative mutation path was used. The following is a hypothetical replay excluding only the proposed duplicate, with zero opening balances:
+
+| Wallet | Deposits | Withdrawals | Incoming internal | Outgoing internal | Ledger balance |
+|---|---:|---:|---:|---:|---:|
+| Scott | £42.57 | £0.06 | £52.51 | £112.00 | -£16.98 |
+| Rachel | £48.00 | £0.00 | £47.50 | £107.00 | -£11.50 |
+| Nathan | £35.00 | £35.00 | £70.00 | £67.00 | £3.00 |
+| Prediction | £0.00 | £0.00 | £215.00 | £170.01 | £44.99 |
+| Season | £0.00 | £0.00 | £71.00 | £0.00 | £71.00 |
+| **Total** | | | | | **£90.51** |
+
+The total agrees with Wise's API balance, including the extra penny the user asked us to ignore. Individual balances are not trustworthy: old payout logs recorded £5 irrespective of actual credited amounts, a China credit to Rachel appears absent, and manual record updates intervened. Removing an internal transfer log reallocates £7.50 between source and recipient in a ledger replay; it does not change the ledger total and does not itself change stored wallet balances. No wallet balances were updated. Exact per-user balances need historical ledger corrections or a verified opening balance/snapshot before any reset is supported.
