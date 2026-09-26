@@ -1,6 +1,8 @@
 # Wallet reconciliation — 26 September 2026
 
-Read-only investigation. No production balances, logs or code changed.
+Read-only investigation. No production balances, logs or code changed by the agent.
+
+**Latest finding:** signed-in admin request logs confirm manual wallet-record edits between today’s payouts. The earlier £0.50 “balance before today” calculation is not established: it omitted these edits. See the admin-log follow-up below.
 
 ## Finding
 
@@ -52,7 +54,7 @@ Read authenticated PocketBase wallet/log/race/prediction/odds/driver records and
 
 ## Follow-up: Rachel's historical 50p — 26 September 2026
 
-Rachel's actual balance before today's two credits was £0.50. The previously stated £1.00 is a counterfactual reconstruction using current race records, not a verified historical balance.
+Before inspecting admin logs, subtracting today's two credits from the current balance yielded £0.50. **This is not a verified prior balance:** the later admin-log follow-up establishes an intervening wallet-record edit. The £1.00 figure is a counterfactual reconstruction using current race records.
 
 | Component before today's payouts | Amount |
 |---|---:|
@@ -73,3 +75,26 @@ No Rachel withdrawal is recorded, and all her logged deposits match completed Wi
 Ran `node /tmp/f1-rachel-fraction-check.mjs`: 38 earlier records, all whole-pound amounts, stored prior balance £0.50, fractional-remainder check FAIL under the zero-opening-balance assumption. This is an integer-penny accounting mismatch, not ordinary floating-point rounding. Read-only access to PocketBase `/api/logs` returned HTTP 403 with the available application account; no historical request logs or balance snapshots were available to date the missing movement.
 
 Conclusion: an opening balance, an unlogged/incorrectly logged credit, a manual edit, or original race data different from current data is needed to explain the residual. The available records cannot pinpoint the date or justify crediting Rachel 50p. No production records changed.
+
+## Admin request-log follow-up — 26 September 2026
+
+The user signed in as a PocketBase superuser and authorized inspection of request logs through the admin UI. Included superuser requests in the search; no credentials/session tokens were extracted.
+
+| UK time (BST) | Observed request | Evidence |
+|---|---|---|
+| 14:54:49.862 | Application PATCH of Rachel’s wallet | Corresponds to the first £7.50 payout log |
+| 18:10:08.934 | Superuser PATCH of prediction wallet | Manual wallet-record update |
+| 18:10:42.008 | Superuser PATCH of Rachel’s wallet | Log ID `xtb1ikfyl3ht48t`; admin-dashboard referer and Firefox user agent |
+| 18:11:50.867 | Application PATCH of Rachel’s wallet | Corresponds to the second £7.50 payout log |
+
+Another superuser wallet-record edit affected Nathan on 24 September at 13:12:12.619 BST, so his historical reconstruction also cannot assume only logged transfers affected his wallet.
+
+The inspected Rachel admin-log details contain request method, path, authentication collection, timestamp, status, execution time, referer, IP and user agent. They do **not** contain a request body, changed fields, old balance or new balance. A successful wallet-record PATCH proves the record was edited, but by itself does not prove the balance field changed. Auth ID logging is disabled, so the log cannot identify the specific superuser.
+
+Logs settings show five-day retention. Filtering Rachel’s wallet PATCH requests returned only today’s three writes; this cannot establish whether older edits occurred before the retention window. The user does not recall what was changed at 18:10:42.
+
+Given the £7.50 second application credit and current £15.50 balance, Rachel’s balance immediately before the second payout was £8.00, assuming that payout applied as logged. Likewise, the two second-pass £7.50 payouts and the pool’s current zero balance imply £15 in the pool immediately before the second pass, assuming both debits applied as logged.
+
+A coherent hypothesis is: reconstructed Rachel balance £1 → first winnings £7.50 → £8.50; manual edit reduces it to £8; second winnings £7.50 → £15.50. The pool is restored from £7.50 to £15, then pays £15 on the second pass. The combined manual balance changes would create £7 net (£7.50 added to the pool minus £0.50 removed from Rachel), matching the user’s reported gap. **The log timestamps support this sequence, but the missing old/new values mean the £0.50 reduction and pool restoration are not proven.**
+
+Correction to earlier conclusions: £0.50 is only current balance minus the two payout logs, not a verified balance before the first payout. The apparent 50p discrepancy need not be historical; today’s manual edit is a concrete candidate. £1.00 before the first payout and £8.50 after one correct payout remain reconstruction-based figures. No production correction was performed.
