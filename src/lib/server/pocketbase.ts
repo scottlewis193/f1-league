@@ -25,7 +25,7 @@ function configurePocketBaseUrl() {
 export async function getAdminPb() {
 	configurePocketBaseUrl();
 
-	if (!authenticated) {
+	if (!authenticated || !pb.authStore.isValid) {
 		if (!env.PB_USER || !env.PB_PASS) {
 			throw new Error('PocketBase server auth is not configured. Set PB_USER and PB_PASS runtime environment variables.');
 		}
