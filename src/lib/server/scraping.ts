@@ -61,6 +61,18 @@ export function getPodiumFinishUrl(urls: string[]) {
 	return winnerUrl?.replace(/\/winner$/, '/podium-finish');
 }
 
+export function parseOddsValue(value: string) {
+	const normalized = value.replace(/\s+/g, '');
+	if (/^\d+(\.\d+)?$/.test(normalized)) return Number(normalized);
+
+	const fraction = normalized.match(/^(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/);
+	if (!fraction) return Number.NaN;
+
+	const numerator = Number(fraction[1]);
+	const denominator = Number(fraction[2]);
+	return denominator > 0 ? 1 + numerator / denominator : Number.NaN;
+}
+
 async function closePage(page: Page) {
 	if (page.isClosed()) return;
 
@@ -464,42 +476,42 @@ export const scrapeOdds = async (browserInstance?: Browser) => {
 
 		const podiumFinishPage = await browser.newPage();
 		await podiumFinishPage.goto(podiumFinishUrl, { waitUntil: 'domcontentloaded' });
-		await podiumFinishPage.waitForSelector('table.eventTable');
-		await podiumFinishPage.waitForSelector('#OddsDropdown-2');
+		await podiumFinishPage.waitForFunction(() =>
+			document.querySelectorAll('[data-testid="odds-grid-bet-row"]').length >= 20 ||
+			document.querySelectorAll('table.eventTable tbody tr').length >= 20
+		);
 
-		const decimalOddsSelected = await podiumFinishPage.evaluate(() => {
+		await podiumFinishPage.evaluate(() => {
 			Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
 				.find((button) => button.textContent?.trim() === 'Accept all')
 				?.click();
-			const decimalButton = document.querySelector<HTMLButtonElement>('#OddsDropdown-2');
-			decimalButton?.click();
-			return Boolean(decimalButton);
-		});
-		if (!decimalOddsSelected) throw new Error('Decimal odds selector was not found');
-		await podiumFinishPage.waitForFunction(() => {
-			const rows = Array.from(document.querySelectorAll('table.eventTable tbody tr'));
-			return (
-				rows.length >= 20 &&
-				rows.every((row) =>
-					/^\d+(\.\d+)?$/.test(
-						row.querySelector<HTMLParagraphElement>('td > p')?.textContent?.trim() || ''
-					)
-				)
-			);
+			document.querySelector<HTMLButtonElement>('#OddsDropdown-2')?.click();
 		});
 
-		//iterate over table rows and grab driver name and odds
-		const driverOdds = await podiumFinishPage.evaluate(() => {
-			const driverOdds: { driverName: string; odds: number }[] = [];
-			const table = document.querySelector('table.eventTable');
-			const rows = table?.querySelectorAll('tbody > tr');
-			rows?.forEach((row) => {
-				const driverName = row.querySelector<HTMLAnchorElement>('td.sel.nm a')?.innerText || '';
-				const odds = row.querySelector<HTMLParagraphElement>('td > p')?.innerText || '';
-				driverOdds.push({ driverName, odds: Number(odds) });
-			});
-			return driverOdds;
+		const rawDriverOdds = await podiumFinishPage.evaluate(() => {
+			const gridRows = Array.from(
+				document.querySelectorAll('[data-testid="odds-grid-bet-row"]')
+			);
+			if (gridRows.length > 0) {
+				return gridRows.map((row) => ({
+					driverName: row.querySelector('[data-testid="grid-bet"]')?.textContent?.trim() || '',
+					odds:
+						Array.from(row.querySelectorAll('[data-testid="odds-cell"]'))
+							.map((cell) => cell.textContent?.trim() || '')
+							.find(Boolean) || ''
+				}));
+			}
+
+			return Array.from(document.querySelectorAll('table.eventTable tbody tr')).map((row) => ({
+				driverName: row.querySelector<HTMLAnchorElement>('td.sel.nm a')?.innerText.trim() || '',
+				odds: row.querySelector<HTMLParagraphElement>('td > p')?.innerText.trim() || ''
+			}));
 		});
+
+		const driverOdds = rawDriverOdds.map(({ driverName, odds }) => ({
+			driverName,
+			odds: parseOddsValue(odds)
+		}));
 
 		await closePage(podiumFinishPage);
 		await closePage(page);

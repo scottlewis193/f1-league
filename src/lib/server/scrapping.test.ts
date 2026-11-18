@@ -7,7 +7,8 @@ import {
 	normalizeDriverName,
 	parseRaceSessionText,
 	parseRaceSessionTexts,
-	getPodiumFinishUrl
+	getPodiumFinishUrl,
+	parseOddsValue
 } from './scraping';
 
 describe('scraper result validation', () => {
@@ -43,6 +44,12 @@ describe('scraper result validation', () => {
 				'https://www.oddschecker.com/motorsport/formula-1/drivers-championship/winner'
 			])
 		).toBe('https://www.oddschecker.com/motorsport/formula-1/hungarian-grand-prix/podium-finish');
+	});
+
+	it('parses the current fractional odds format', () => {
+		expect(parseOddsValue('2/7')).toBeCloseTo(1.2857);
+		expect(parseOddsValue('30/ 100')).toBe(1.3);
+		expect(parseOddsValue('2.5')).toBe(2.5);
 	});
 
 	it('keeps schedule rows when F1 mixes related articles into the session list', () => {
